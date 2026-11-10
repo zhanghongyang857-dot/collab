@@ -18,10 +18,10 @@ ROOT="$(cd "$HERE/.." && pwd)"  # 工具包根：开发时是 src/，本机发�
 SERVER="$HERE/server.py"
 PYTHON="/usr/bin/python3"
 PORT="${BOARD_PORT:-3100}"
-# NOW 目录：BOARD_NOW_DIR > 已安装配置里的 NOW_DIR > ~/Collab/NOW
+# NOW 目录（可选）：BOARD_NOW_DIR > 工具包旁边的 NOW（有 config.json）> 已安装配置里的 NOW_DIR；都没有就不启用 NOW，首页是项目列表
 _conf_now="$(awk -F= '/^NOW_DIR=/{sub(/^NOW_DIR=/, ""); print; exit}' "$HOME/Library/Application Support/ai-company-board/config" 2>/dev/null || true)"
 _beside_now=""; [ -f "$ROOT/../config.json" ] && _beside_now="$(cd "$ROOT/.." && pwd)"
-NOW_DIR="${BOARD_NOW_DIR:-${_beside_now:-${_conf_now:-$HOME/Collab/NOW}}}"
+NOW_DIR="${BOARD_NOW_DIR:-${_beside_now:-${_conf_now:-}}}"
 AGENTS_DIR="$HOME/Library/LaunchAgents"
 PLIST="$AGENTS_DIR/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/ai-company-board"
@@ -247,7 +247,9 @@ install() {
   [ -f "$SERVER" ] || die "找不到 $SERVER"
   [ -x "$PYTHON" ] || die "找不到 $PYTHON"
   [ -x /usr/bin/open ] || die "找不到 /usr/bin/open"
-  [ -d "$NOW_DIR" ] || die "NOW 目录不存在：${NOW_DIR}（可用 BOARD_NOW_DIR 指定）"
+  if [ -z "$NOW_DIR" ]; then say "没启用 NOW：首页是项目列表（以后建了 NOW，用 BOARD_NOW_DIR 指定后重新 install）"
+  else [ -d "$NOW_DIR" ] || die "NOW 目录不存在：${NOW_DIR}（可用 BOARD_NOW_DIR 指定）"
+  fi
 
   local port="$PORT" old_port
   old_port="$(installed_port)"

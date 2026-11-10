@@ -37,15 +37,16 @@
 
 | 命令 | 作用 |
 |---|---|
-| `new [目录] [-n 项目名] [--no-now]` | 给项目装工作台；目录默认当前目录，项目名默认目录名。按班子生成 `collab/成员.md`，装 Stop hook，`.gitignore` 加 `.scratch/`，并在 NOW 任务表加一行（`NOW_PATH` 指向 `NOW.md`，默认 `~/Desktop/NOW.md`；`--no-now` 不加）。已有 `collab/PROGRESS.md` 时不做任何改动 |
-| `register [目录] [-n 项目名]` | 把已有工作台的项目加回 NOW 任务表（状态进行中）；在 `NOW/已完成.md` 里的移回来，保留名称和分类 |
-| `unregister [目录] [-m 一句话结果] [--drop]` | 从 NOW 任务表移到 `NOW/已完成.md`（补今天的日期和结果）；`--drop` 直接删去。项目文件和 `collab/` 不动 |
+| `new [目录] [-n 项目名] [--no-now]` | 给项目装工作台；目录默认当前目录，项目名默认目录名。按班子生成 `collab/成员.md`，装 Stop hook，`.gitignore` 加 `.scratch/`，登记到工具包旁边的 `projects.json`（`COLLAB_PROJECTS` 可另指；开发版工具包不登记）并打印看板网址；启用了 NOW 时再在 NOW 任务表加一行（`NOW_PATH` 指向 `NOW.md`，没设时找工具包旁边的 NOW；都没有就是没启用 NOW；`--no-now` 不加）。已有 `collab/PROGRESS.md` 时不做任何改动 |
+| `open [目录] [--print]` | 看板在运行就在浏览器打开本项目（`--print` 只打印网址）；没运行时提示前台运行 `board/server.py` 或常驻 |
+| `register [目录] [-n 项目名]` | 把已有工作台的项目登记到看板；启用了 NOW 时加回 NOW 任务表（状态进行中）；在 `NOW/已完成.md` 里的移回来，保留名称和分类 |
+| `unregister [目录] [-m 一句话结果] [--drop]` | 从看板登记表移除；启用了 NOW 时从任务表移到 `NOW/已完成.md`（补今天的日期和结果）；`--drop` 直接删去。项目文件和 `collab/` 不动 |
 | `protocol [目录]` | 用最新工作台更新 `collab/协议.md`（保留末尾「本项目补充」一节）、各 `_模板.md` 和 PROGRESS「加载地图」；PROGRESS 其余内容不动 |
-| `tidy [目录] [--all]` | 把旧位置的 `collab/流转`、`流程`、`运行记录` 搬进 `collab/内部/`；两边都有内容时不动，提示手动合并。`--all` 处理 NOW 任务表里的全部项目 |
+| `tidy [目录] [--all]` | 把旧位置的 `collab/流转`、`流程`、`运行记录` 搬进 `collab/内部/`；两边都有内容时不动，提示手动合并。`--all` 处理登记表和 NOW 任务表里的全部项目 |
 | `hook [目录]` | 给已有项目装 Stop hook（写进 `.claude/settings.json`）：每轮结束运行 `core/check.py --hook`，校验有错就不让这一轮结束 |
-| `now [目录]` | 建立 NOW 总看板，见 [board/now/README.md](../board/now/README.md) |
+| `now <目录>` | 建立 NOW 总看板（可选），目录必写，见 [board/now/README.md](../board/now/README.md) |
 | `team [班子目录]` | 从 `team-example/班子.json` 建立班子配置 |
-| `team-sync [目录] [--all] [--force]` | 按班子配置重新生成 `collab/成员.md`；`--all` 刷 NOW 任务表里的全部项目；不是生成的文件要加 `--force`（原文件备份为 `成员.md.bak`） |
+| `team-sync [目录] [--all] [--force]` | 按班子配置重新生成 `collab/成员.md`；`--all` 刷登记表和 NOW 任务表里的全部项目；不是生成的文件要加 `--force`（原文件备份为 `成员.md.bak`） |
 | `module list / enable <id> / disable <id> / init <id> [--now-dir 目录]` | 管理看板模块，见 [modules/README.md](../modules/README.md)；`enable`、`disable` 会重新合并口令 |
 | `rules [--now-dir 目录]` | 把核心和已启用模块的口令合并成 NOW 数据目录下的 `口令.md` |
 

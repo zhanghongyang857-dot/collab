@@ -2,7 +2,7 @@
 """把演示案例「万历新政」做成静态网站：八回各生成一次、各导出一份只读看板，加一个回目录首页。
 
 用法：python3 demo/site.py [--输出 目录]（默认 demo/站点，不进版本库）
-公开仓库的 GitHub Actions 用它生成 GitHub Pages；本机看：python3 -m http.server -d demo/站点 8000
+线上版部署在产品站 https://collab.hongyangz.top/demo/ ；本机看：python3 -m http.server -d demo/站点 8000
 目录：index.html（首页：故事和回目）、chN/（第 N 回，chN/ 自己跳到项目页）、chN/p/15730301/（项目看板）……
 只用 Python 标准库。
 """

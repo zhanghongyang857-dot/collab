@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 # 批红初始化脚本
 # 用法：
-#   init.sh new       [目标目录] [-n 项目名] [--no-now]   给项目装上工作台（AGENTS.md + collab/），并在 NOW 任务表加一行（--no-now 不加）
+#   init.sh new       [目标目录] [-n 项目名] [--no-now]   给项目装上工作台（AGENTS.md + collab/），登记到看板，打印看板网址；启用了 NOW 时再在 NOW 任务表加一行（--no-now 不加）
 #   init.sh protocol  [目标目录]   用最新工作台更新 collab/协议.md（保留「本项目补充」一节）、各 _模板.md 和 PROGRESS「加载地图」
 #   init.sh hook      [目标目录]   给已有项目装 Claude Code Stop hook：每轮结束校验 collab/，有错交回 Claude 修（new 会自动装）
-#   init.sh now       [目录，默认 ~/Desktop]   建立 NOW 总看板（NOW.md + NOW/ 数据目录；生成代码在工具包 board/now/）
-#   init.sh register  [目标目录] [-n 项目名]   把已有工作台的项目加回 NOW 任务表（状态进行中）；在「已完成」里的移回来
-#   init.sh unregister [目标目录] [-m 一句话结果] [--drop]   从 NOW 任务表移到「已完成」（--drop 直接删去）；项目文件和 collab/ 不动
+#   init.sh open      [目标目录] [--print]   看板在运行就在浏览器打开本项目（--print 只打印网址）；没运行时提示怎么启动
+#   init.sh now       <目录>   建立 NOW 总看板（可选：汇总多个项目、加日程等个人模块；NOW.md + NOW/ 数据目录；生成代码在工具包 board/now/）
+#   init.sh register  [目标目录] [-n 项目名]   把已有工作台的项目登记到看板；启用了 NOW 时加回 NOW 任务表（状态进行中），在「已完成」里的移回来
+#   init.sh unregister [目标目录] [-m 一句话结果] [--drop]   从看板登记表移除；启用了 NOW 时从任务表移到「已完成」（--drop 直接删去）；项目文件和 collab/ 不动
 #   init.sh team      [班子目录]   从示例建立你的 班子.json
-#   init.sh team-sync [目标目录] [--all] [--force]   按 班子.json 重新生成 collab/成员.md；--all 刷 NOW 任务表里的全部项目
+#   init.sh team-sync [目标目录] [--all] [--force]   按 班子.json 重新生成 collab/成员.md；--all 刷登记表和 NOW 任务表里的全部项目
 #   init.sh module list | enable <id> | disable <id> | init <id> [--now-dir <NOW 数据目录>]   管理看板模块；enable、disable 会重新合并口令
-#   init.sh tidy      [目标目录] [--all]   把旧位置的 collab/流转、流程、运行记录 搬进 collab/内部/；--all 处理 NOW 任务表里的全部项目
+#   init.sh tidy      [目标目录] [--all]   把旧位置的 collab/流转、流程、运行记录 搬进 collab/内部/；--all 处理登记表和 NOW 任务表里的全部项目
 #   init.sh rules     [--now-dir <NOW 数据目录>]   把核心和已启用模块的口令合并成 NOW 数据目录下的 口令.md
 # 工作台在工具包的 workbench/：协作文件全部在 collab/ 下；项目根目录只放 AGENTS.md，Claude Code 通过 .claude/CLAUDE.md 导入它。
+# 看板登记表：工具包旁边的 projects.json（COLLAB_PROJECTS 可另指；开发版工具包不登记），只记项目目录和名字。
+# NOW（可选）：NOW_PATH 指的 NOW.md；没设时找工具包旁边的 NOW（有 config.json）和本工具包装的看板常驻配置；都没有就是没启用 NOW。
 # 班子目录：COLLAB_TEAM；没设时用工具包旁边的 班子/；都没有时 ~/.collab-team。有 班子.json 时，新项目的 成员.md 按它生成。
 # 原则：除 protocol 外从不覆盖已有文件；已有 AGENTS.md / CLAUDE.md 只追加入口说明。
 set -euo pipefail
@@ -23,7 +26,7 @@ WB="$KIT/workbench"                    # 装进项目的工作台
 NOWCODE="$KIT/board/now"               # NOW 看板代码；sample/ 是 NOW 数据样板
 MODE="${1:-}"; shift || true
 if [ "$MODE" = module ] || [ "$MODE" = rules ]; then exec python3 "$SRC/modules.py" "$KIT" "$MODE" "$@"; fi
-DEST="."; NAME=""; ALL=0; FORCE=""; NO_NOW=0; RESULT=""; DROP=0
+DEST="."; DEST_SET=0; NAME=""; ALL=0; FORCE=""; NO_NOW=0; RESULT=""; DROP=0; PRINT=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -n) NAME="${2:?-n 需要项目名}"; shift 2 ;;
@@ -32,13 +35,20 @@ while [ $# -gt 0 ]; do
     --all) ALL=1; shift ;;
     --force) FORCE="--force"; shift ;;
     --no-now) NO_NOW=1; shift ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
-    *) DEST="$1"; shift ;;
+    --print) PRINT="--print"; shift ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
+    *) DEST="$1"; DEST_SET=1; shift ;;
   esac
 done
 
-case "$MODE" in new|protocol|hook|now|team|team-sync|register|unregister|tidy) ;; *) sed -n '2,17p' "$0"; exit 1 ;; esac
-if [ "$MODE" = now ]; then [ "$DEST" != "." ] || DEST="$HOME/Desktop"; fi
+case "$MODE" in new|open|protocol|hook|now|team|team-sync|register|unregister|tidy) ;; *) sed -n '2,21p' "$0"; exit 1 ;; esac
+if [ "$MODE" = now ] && [ "$DEST_SET" = 0 ]; then echo "init.sh now 要写目录：NOW.md 和 NOW/ 建在哪里（例如 init.sh now ~/NOW）"; exit 1; fi
+NOW_FILE="$(python3 "$SRC/registry.py" now-md "$KIT")"  # 空 = 没启用 NOW
+if [ "$MODE" = open ]; then
+  DEST="$(cd "$DEST" && pwd)"
+  [ -e "$DEST/collab/PROGRESS.md" ] || { echo "未找到 collab/PROGRESS.md：$DEST（先运行 init.sh new）"; exit 1; }
+  exec python3 "$SRC/registry.py" open "$KIT" "$DEST" $PRINT
+fi
 if [ -n "${COLLAB_TEAM:-}" ]; then TEAM_DIR="$COLLAB_TEAM"; elif [ -d "$KIT/../班子" ]; then TEAM_DIR="$(cd "$KIT/../班子" && pwd)"; else TEAM_DIR="$HOME/.collab-team"; fi
 TEAM_FILE="$TEAM_DIR/班子.json"
 if [ "$MODE" = team ]; then
@@ -48,11 +58,10 @@ fi
 if [ "$MODE" = team-sync ]; then
   [ -f "$TEAM_FILE" ] || { echo "没有班子配置：${TEAM_FILE}（先运行 init.sh team）"; exit 1; }
   if [ "$ALL" = 1 ]; then
-    NOW_FILE="${NOW_PATH:-$HOME/Desktop/NOW.md}"
     rc=0
     while IFS= read -r proj; do
       python3 "$SRC/team.py" render "$TEAM_FILE" "$proj/collab/成员.md" $FORCE || rc=1
-    done < <(python3 "$SRC/team.py" projects "$NOW_FILE")
+    done < <(python3 "$SRC/registry.py" roots "$KIT")
     exit $rc
   fi
   DEST="$(cd "$DEST" && pwd)"
@@ -61,15 +70,15 @@ if [ "$MODE" = team-sync ]; then
 fi
 if [ "$MODE" = tidy ] && [ "$ALL" = 1 ]; then
   rc=0
-  while IFS= read -r proj; do bash "$0" tidy "$proj" || rc=1; done < <(python3 "$SRC/team.py" projects "${NOW_PATH:-$HOME/Desktop/NOW.md}")
+  while IFS= read -r proj; do bash "$0" tidy "$proj" || rc=1; done < <(python3 "$SRC/registry.py" roots "$KIT")
   exit $rc
 fi
 mkdir -p "$DEST"
 DEST="$(cd "$DEST" && pwd)"
 [ -n "$NAME" ] || NAME="$(basename "$DEST")"
-NOW_FILE="${NOW_PATH:-$HOME/Desktop/NOW.md}"
-# PROGRESS.md 在 collab/ 下，NOW 链接相对 collab/ 计算
-NOW_REL="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$NOW_FILE" "$DEST/collab")"
+# PROGRESS.md 在 collab/ 下，NOW 链接相对 collab/ 计算；没启用 NOW 时 PROGRESS 不放「← NOW」这一行
+NOW_REL=""
+[ -z "$NOW_FILE" ] || NOW_REL="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$NOW_FILE" "$DEST/collab")"
 TODAY="$(date +%Y-%m-%d)"
 
 created=(); skipped=(); appended=(); notes=()
@@ -81,11 +90,13 @@ copy_one() {  # $1 源文件  $2 目标文件
   mkdir -p "$(dirname "$dst")"
   if [ "${src##*.}" = "md" ]; then
     python3 - "$src" "$dst" "$NAME" "$NOW_REL" "$TODAY" <<'PY'
-import sys, datetime as dt
+import re, sys, datetime as dt
 src, dst, name, now, today = sys.argv[1:]
 wd = "一二三四五六日"
 d0 = dt.date.today(); d1 = d0 + dt.timedelta(days=14)
 t = open(src, encoding="utf-8").read()
+if not now:
+    t = re.sub(r"(?m)^\[← NOW\]\(\{\{NOW路径\}\}\)\n\n?", "", t)
 for k, v in {"项目名": name, "NOW路径": now, "日期": today, "今天": d0.strftime("%m-%d"),
              "周几": "周" + wd[d0.weekday()], "示例日期": d1.isoformat(), "示例周几": "周" + wd[d1.weekday()]}.items():
     t = t.replace("{{" + k + "}}", v)
@@ -107,16 +118,29 @@ copy_tree() {  # $1 源目录  $2 只复制该子路径（可空）
   done < <(find "$base/$sub" -type f -print0 | sort -z)
 }
 
-# NOW 任务表加一行，链接到本项目 collab/PROGRESS.md；已有链接或找不到 NOW 时跳过；在「已完成」里的移回来
+# 看板登记表加上本项目；开发版工具包没有登记表时只提示
+REGISTERED=0; IN_NOW=0
+reg_add() {
+  case "$(python3 "$SRC/registry.py" add "$KIT" "$DEST" "$NAME")" in
+    added) REGISTERED=1; appended+=("看板登记表（$(dirname "$KIT")/projects.json）") ;;
+    exists) REGISTERED=1; skipped+=("看板登记表（已有本项目）") ;;
+    *) notes+=("开发版工具包不登记项目（发布后再用，或设 COLLAB_PROJECTS 指定登记表）") ;;
+  esac
+}
+
+# NOW 任务表加一行，链接到本项目 collab/PROGRESS.md；已有链接或没启用 NOW 时跳过；在「已完成」里的移回来
 now_row() {
   [ "$NO_NOW" = 0 ] || return 0
+  if [ -z "$NOW_FILE" ]; then
+    [ "$REGISTERED" = 0 ] || notes+=("NOW 未启用，项目已登记"); return 0
+  fi
   if [ ! -f "$NOW_FILE" ]; then
-    notes+=("没找到 NOW：${NOW_FILE}，未加进 NOW 任务表（用 NOW_PATH 指明，或加 --no-now）"); return 0
+    notes+=("没找到 NOW：${NOW_FILE}，未加进 NOW 任务表（NOW_PATH 指错了，或加 --no-now）"); return 0
   fi
   case "$(python3 "$SRC/now_rows.py" register "$NOW_FILE" "$DEST/collab/PROGRESS.md" "$NAME")" in
-    added) appended+=("NOW 任务表（${NOW_FILE}；分类、等级待填）") ;;
-    restored) appended+=("NOW 任务表（从「已完成」移回，状态进行中；等级待填）") ;;
-    exists) skipped+=("NOW 任务表（已有本项目）") ;;
+    added) IN_NOW=1; appended+=("NOW 任务表（${NOW_FILE}；分类、等级待填）") ;;
+    restored) IN_NOW=1; appended+=("NOW 任务表（从「已完成」移回，状态进行中；等级待填）") ;;
+    exists) IN_NOW=1; skipped+=("NOW 任务表（已有本项目）") ;;
     *) notes+=("$NOW_FILE 里没找到「## 任务」表，未加行") ;;
   esac
 }
@@ -208,18 +232,26 @@ case "$MODE" in
     fi
     hook_install
     gitignore_add
+    reg_add
     now_row ;;
   register)
     [ -e "$DEST/collab/PROGRESS.md" ] || { echo "未找到 collab/PROGRESS.md：$DEST（新项目用 init.sh new）"; exit 1; }
+    reg_add
     NO_NOW=0; now_row ;;
   unregister)
-    [ -f "$NOW_FILE" ] || { echo "没找到 NOW：${NOW_FILE}（用 NOW_PATH 指明）"; exit 1; }
-    args=(unregister "$NOW_FILE" "$DEST/collab/PROGRESS.md" --result "$RESULT"); [ "$DROP" = 0 ] || args+=(--drop)
-    case "$(python3 "$SRC/now_rows.py" "${args[@]}")" in
-      moved) appended+=("NOW/已完成.md（从任务表移来，完成于今天）") ;;
-      dropped) notes+=("已从 NOW 任务表删去") ;;
-      *) notes+=("NOW 任务表里没有本项目，未改动") ;;
-    esac ;;
+    case "$(python3 "$SRC/registry.py" remove "$KIT" "$DEST")" in
+      removed) notes+=("已从看板登记表移除") ;;
+      missing) notes+=("看板登记表里没有本项目") ;;
+    esac
+    if [ -n "$NOW_FILE" ] && [ -f "$NOW_FILE" ]; then
+      args=(unregister "$NOW_FILE" "$DEST/collab/PROGRESS.md" --result "$RESULT"); [ "$DROP" = 0 ] || args+=(--drop)
+      case "$(python3 "$SRC/now_rows.py" "${args[@]}")" in
+        moved) appended+=("NOW/已完成.md（从任务表移来，完成于今天）") ;;
+        dropped) notes+=("已从 NOW 任务表删去") ;;
+        *) notes+=("NOW 任务表里没有本项目，未改动") ;;
+      esac
+    elif [ -n "$NOW_FILE" ]; then notes+=("没找到 NOW：${NOW_FILE}，NOW 任务表未改动")
+    fi ;;
   tidy)
     [ -e "$DEST/collab/PROGRESS.md" ] || { echo "未找到 collab/PROGRESS.md：$DEST"; exit 1; }
     for _d in 流转 流程 运行记录; do
@@ -290,6 +322,12 @@ echo "目标：${DEST}（${MODE}）"
 [ ${#appended[@]} -eq 0 ] || printf '  追加  %s\n' "${appended[@]}"
 [ ${#skipped[@]}  -eq 0 ] || printf '  跳过（已存在）  %s\n' "${skipped[@]}"
 [ ${#notes[@]}    -eq 0 ] || printf '  注意  %s\n' "${notes[@]}"
+
+if [ "$MODE" = new ] || [ "$MODE" = register ]; then
+  if [ "$REGISTERED" = 1 ] || [ "$IN_NOW" = 1 ]; then
+    echo "  看板  $(python3 "$SRC/registry.py" url "$KIT" "$DEST")（看板没运行时：python3 $KIT/board/server.py；之后 $SRC/init.sh open ${DEST}）"
+  fi
+fi
 
 if [ "$MODE" = now ]; then cat <<MSG
 

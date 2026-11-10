@@ -110,13 +110,14 @@ class TestPlanning(FrameBase):
         text = "\n".join(res["改动"])
         self.assertIn("执行 codex → deepseek", text)
         self.assertIn("标题", text)
-        self.assertIn(f"取消 {ids['hook']}", text)
-        self.assertIn("新增", text)
+        self.assertIn(f"{ids['hook']} 改为「新接入」（原「接入看板」）", text)  # 批准前按位置复用编号，不取消
+        self.assertNotIn("取消", text)
         self.assertEqual(self.goal(sim, g)["本轮改动"], res["改动"])
-        now = {t["键"]: t for t in sim.view()["任务"] if t["目标"] == g and t["状态"] != "取消"}
+        now = {t["键"]: t for t in sim.view()["任务"] if t["目标"] == g}
         self.assertEqual(now["doc"]["编号"], ids["doc"])  # 改标题还是同一张卡
         self.assertEqual(now["doc"]["标题"], "写说明")
-        self.assertEqual(now["ship"]["前置"], [ids["mod"], now["new"]["编号"]])
+        self.assertEqual(now["new"]["编号"], ids["hook"])
+        self.assertEqual(now["ship"]["前置"], [ids["mod"], ids["hook"]])
         self.assertEqual(flow.frame(sim.proj, g, spec, {})["改动"], [])
         self.assertEqual(self.errors(sim.check()), [])
 
@@ -128,6 +129,116 @@ class TestPlanning(FrameBase):
         flow.frame(sim.proj, g, spec, {})
         t = next(x for x in sim.view()["任务"] if x["键"] == "mod")
         self.assertEqual(t["内容"]["硬约束"], "不动真实数据")
+
+
+def six():
+    return {"阶段": [
+        {"序": 1, "名称": "开发", "类型": "执行", "前置": [], "任务": [
+            {"键": f"k{i}", "标题": f"任务{i}", "执行": "codex", **FILL} for i in range(1, 4)]},
+        {"序": 2, "名称": "收尾", "类型": "执行", "前置": [1], "任务": [
+            {"键": f"k{i}", "标题": f"任务{i}", "执行": "deepseek", "确认": "codex", **FILL} for i in range(4, 7)]},
+    ]}
+
+
+class TestDraftRewrite(FrameBase):
+    """批准前改框架是整版重写：按位置复用编号，从 T1 连续；多出来的卡撤下，不记取消；批准后照旧取消加续号。"""
+
+    def merged_three(self):
+        return {"阶段": [
+            {"序": 1, "名称": "开发", "类型": "执行", "前置": [], "任务": [
+                {"键": "a", "标题": "合并一二", "执行": "codex", "来自": ["k1", "k2"], **FILL},
+                {"键": "b", "标题": "合并三四", "执行": "deepseek", "确认": "codex", "来自": ["k3", "k4"], **FILL}]},
+            {"序": 2, "名称": "收尾", "类型": "执行", "前置": [1], "任务": [
+                {"键": "c", "标题": "合并五六", "执行": "codex", "前置": ["a"], "来自": ["k5", "k6"], **FILL}]},
+        ]}
+
+    def tids(self, sim, g):
+        return [t["编号"] for t in sim.view()["任务"] if t["目标"] == g]
+
+    def test_six_to_three_then_two_versions(self):
+        sim = Sim(self.root)
+        g = self.framed(sim, six())
+        sim.log(g, "提交", 说明="框架", 建议="批准")
+        res = flow.frame(sim.proj, g, self.merged_three(), {"说明": "6 张合并为 3 张"})
+        text = "\n".join(res["改动"])
+        self.assertIn("任务 6 张 → 3 张", text)
+        self.assertIn(f"{g}-T1 改为「合并一二」（原「任务1」），合并自 {g}-T1、{g}-T2", text)
+        self.assertIn(f"撤下 {g}-T4 任务4", text)
+        self.assertEqual(self.tids(sim, g), [f"{g}-T{i}" for i in (1, 2, 3)])
+        # 第 3 版：再加一张，用回撤下的 T4，不开 T7
+        spec = self.merged_three()
+        spec["阶段"][1]["任务"].append({"键": "d", "标题": "补一张", "执行": "codex", **FILL})
+        res = flow.frame(sim.proj, g, spec, {})
+        self.assertIn(f"新增 {g}-T4 补一张", "\n".join(res["改动"]))
+        self.assertEqual(self.tids(sim, g), [f"{g}-T{i}" for i in (1, 2, 3, 4)])
+        v, goal = sim.view(), self.goal(sim, g)
+        self.assertEqual(goal["框架版本"], 3)
+        self.assertEqual([t for s in goal["阶段"] for t in s["任务"]], [f"{g}-T{i}" for i in (1, 2, 3, 4)])
+        self.assertEqual([it["编号"] for s in goal["结构"]["阶段"] for it in s["任务"]], [f"{g}-T{i}" for i in (1, 2, 3, 4)])
+        _, evs, _ = flow.replay_all(sim.proj)
+        self.assertFalse([r for o, rs in evs.items() if o.startswith(g) for r in rs if r["边"] == "取消"])
+        # 卡片：留下的换了标题、内容和文件名；撤下的草稿卡删掉
+        cards = sorted(p.name for p in (self.root / "collab" / "任务").glob(f"{g}-T*.md"))
+        self.assertEqual(cards, [f"{g}-T1-合并一二.md", f"{g}-T2-合并三四.md", f"{g}-T3-合并五六.md", f"{g}-T4-补一张.md"])
+        t1 = (self.root / "collab" / "任务" / cards[0]).read_text(encoding="utf-8")
+        self.assertTrue(t1.startswith(f"# {g}-T1 合并一二\n"))
+        t3 = next(t for t in v["任务"] if t["编号"] == f"{g}-T3")
+        self.assertEqual((t3["键"], t3["阶段"], t3["拟执行"], t3["前置"]), ("c", 2, "codex", [f"{g}-T1"]))
+        progress = (self.root / "collab" / "PROGRESS.md").read_text(encoding="utf-8")
+        self.assertNotIn(f"{g}-T5", progress)
+        self.assertNotIn("已取消", progress)
+        changes = [r for r in v["目标"][0]["事件"] if r["对象"] == g and r["边"] == "变更"]
+        self.assertEqual([r["说明"] for r in changes], ["框架第 1 版", "6 张合并为 3 张", "框架第 3 版"])
+        self.assertEqual(self.errors(sim.check()), [])
+        # 批准后：T5、T6 留在撤下，不进批准版，也不算差别
+        sim.log(g, "批准", "总裁", 依据="总裁：批准")
+        goal = self.goal(sim, g)
+        self.assertEqual(goal["差别"], [])
+        self.assertEqual(self.errors(sim.check()), [])
+
+    def test_after_approval_still_cancel_and_continue_numbering(self):
+        sim = Sim(self.root)
+        g = self.framed(sim, six())
+        flow.frame(sim.proj, g, self.merged_three(), {})
+        sim.log(g, "提交", 说明="框架", 建议="批准")
+        sim.log(g, "批准", "总裁", 依据="总裁：批准")
+        spec = self.merged_three()
+        del spec["阶段"][0]["任务"][1]
+        spec["阶段"][1]["任务"].append({"键": "e", "标题": "批准后补的", "执行": "codex", **FILL})
+        res = flow.frame(sim.proj, g, spec, {})
+        text = "\n".join(res["改动"])
+        self.assertIn(f"取消 {g}-T2 合并三四", text)  # 批准后去掉的卡照旧取消
+        self.assertIn(f"新增 {g}-T4 批准后补的", text)  # 新卡先用撤下的编号，接着 T3
+        extra = next(t for t in sim.view()["任务"] if t["编号"] == f"{g}-T4")
+        self.assertEqual(extra["状态"], "已批准")
+        kinds = {(d["类型"], d["任务"]) for d in self.goal(sim, g)["差别"]}
+        self.assertEqual(kinds, {("取消", f"{g}-T2"), ("新增", f"{g}-T4")})
+        self.assertEqual(self.errors(sim.check()), [])
+
+    def test_withdraw_only_before_approval(self):
+        sim = Sim(self.root)
+        g = self.approved(sim)
+        with self.assertRaises(flow.FlowError) as e:
+            flow.record(sim.proj, self.ids(sim, g)["mod"], "撤下", {"发起": "总管", "说明": "x"})
+        self.assertIn("批准前", e.exception.msg)
+
+    def test_old_ledger_cancel_before_approval_still_hidden(self):
+        """旧账本里批准前取消的卡：照常回放、不显示，编号不被复用。"""
+        sim = Sim(self.root)
+        g = self.framed(sim)
+        hook = self.ids(sim, g)["hook"]
+        sim.log(hook, "取消", 说明="旧做法：框架去掉")
+        spec = json.loads(json.dumps(SPEC, ensure_ascii=False))
+        spec["阶段"][1]["任务"][0] = {"键": "hook2", "标题": "新接入", "执行": "codex", **FILL}
+        spec["阶段"][2]["任务"][0]["前置"] = ["mod", "hook2"]
+        flow.frame(sim.proj, g, spec, {})
+        ids = self.ids(sim, g)
+        self.assertNotEqual(ids["hook2"], hook)
+        sim.log(g, "提交", 说明="框架", 建议="批准")
+        sim.log(g, "批准", "总裁", 依据="总裁：批准")
+        goal = self.goal(sim, g)
+        self.assertNotIn(hook, [t for s in goal["阶段"] for t in s["任务"]])
+        self.assertEqual(self.errors(sim.check()), [])
 
 
 class TestApproval(FrameBase):

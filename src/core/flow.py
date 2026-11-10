@@ -59,6 +59,7 @@ BOSS, LEAD = "总裁", "总管"
 MANAGERS = (BOSS, LEAD)
 BOSS_ALIASES = ("总裁", "用户", "本人")
 SPECIAL = ("变更", "进展", "更正", "意见", "起草阶段")
+REOPEN = ("重开", "重拟")  # 终止状态唯一能走的边：通过后重开，撤下的草稿编号重拟
 DRAFT_STAGES = ("想法", "讨论", "方案")  # 起草状态下的阶段，只由「起草阶段」事件回放得出，默认第一个
 APPROVE_BASIS = "总裁在看板批准第 {} 版框架"  # 看板批准写的依据；带批注时后面接「：批注」
 RETURN_EDGES = ("打回", "退回")
@@ -343,7 +344,7 @@ def apply_event(st: Dict[str, Any], ev: Dict[str, Any]) -> None:
         if ev.get("与会") is not None:
             st["与会"] = ev["与会"]
         if st["种类"] == "任务":
-            for k in ("阶段", "标题", "拟执行", "拟确认", "前置"):
+            for k in ("阶段", "键", "标题", "拟执行", "拟确认", "前置"):
                 if ev.get(k) is not None:
                     st[k] = ev[k]
             return
@@ -363,8 +364,9 @@ def apply_event(st: Dict[str, Any], ev: Dict[str, Any]) -> None:
         st["持有人"] = ev.get("发起")
     elif edge not in KEEP_HOLDER:
         st["持有人"] = None if to in (None, "无") else to
-    if edge == "建立":
-        st["骨架"] = ev.get("骨架")
+    if edge in ("建立", "重拟"):
+        if edge == "建立":
+            st["骨架"] = ev.get("骨架")
         for k in ("目标", "阶段", "计划", "键", "标题", "类型", "拟执行", "拟确认", "前置", "依据", "与会"):
             if ev.get(k) is not None:
                 st[k] = ev[k]
@@ -480,9 +482,14 @@ def cancelled_before_approval(goal: Dict[str, Any], t: Dict[str, Any]) -> bool:
     return bool(appr) and 0 < cancel < appr
 
 
+def dropped_draft(goal: Dict[str, Any], t: Dict[str, Any]) -> bool:
+    """框架草稿里去掉的卡：批准前改框架撤下的，或旧账本里批准前就取消的。不进阶段、时序图和任务表，事件只在记录里。"""
+    return t["状态"] == "撤下" or cancelled_before_approval(goal, t)
+
+
 def stage_table(proj: Project, goal: Dict[str, Any], states: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     tasks = [s for s in states.values() if s["种类"] == "任务" and s["目标"] == goal["编号"]
-             and not cancelled_before_approval(goal, s)]
+             and not dropped_draft(goal, s)]
     out: Dict[int, Dict[str, Any]] = {}
     for s in sorted(goal["阶段实例"], key=lambda x: x.get("序", 0)):
         no = s.get("序")
@@ -745,7 +752,7 @@ def plan(proj: Project, states: Dict[str, Dict[str, Any]], obj: str, edge: str, 
         if edge == "意见" and actor != BOSS:
             raise hard("「意见」只有总裁能提")
         if edge == "变更" and kind == "任务":
-            for k in ("标题", "拟执行", "拟确认", "前置"):
+            for k in ("键", "标题", "拟执行", "拟确认", "前置"):
                 if a.get(k) is not None:
                     ev[k] = a[k]
             if a.get("任务阶段") is not None:
@@ -837,12 +844,12 @@ def plan(proj: Project, states: Dict[str, Dict[str, Any]], obj: str, edge: str, 
         issue_guards(proj, states, st, edge, ev, a, rules, sk)
     else:
         goal_guards(proj, states, st, edge, ev, a, rules)
-    if edge == "建立":
+    if edge in ("建立", "重拟"):
         for k in ("目标", "阶段", "键", "标题", "类型", "拟执行", "拟确认"):
             if a.get(k) not in (None, ""):
                 ev[k] = a[k]
-        if a.get("前置"):
-            ev["前置"] = a["前置"]
+        if a.get("前置") or edge == "重拟":
+            ev["前置"] = a.get("前置") or []
         if kind == "任务":  # 目标批准前建的卡在规划中；批准后补的卡直接可派，图上标「批准后新增」
             g = states.get(a.get("目标")) or {}
             to_state = "规划中" if g.get("状态") in ("起草", "待批准") else "已批准"
@@ -941,6 +948,13 @@ def task_guards(proj, states, st, edge, ev, res, rules, sk):
         return
     if edge == "批准" and not ev.get("随目标"):
         raise hard("任务没有单独的批准：批准目标时，它下面的任务一起批准")
+    if edge in ("撤下", "重拟"):
+        g = states.get(st["目标"]) or {}
+        if edge == "撤下" and (g.get("状态") not in ("起草", "待批准") or g.get("批准版")):
+            raise hard(f"{st['编号']}：只有目标批准前改框架才能撤下；批准后要停走取消")
+        if g.get("状态") in ("完成", "取消"):
+            raise hard(f"目标 {st['目标']} 已{g['状态']}，不能再重拟任务")
+        return
     if st["状态"] == "规划中" and edge not in ("批准", "取消"):
         raise hard(f"{st['编号']} 还在规划中：目标 {st['目标']} 批准后才能开工，这一步不能越过")
     if edge == "交付":
@@ -1074,7 +1088,7 @@ def handoff_gaps(proj: Project, tid: str) -> List[str]:
 
 
 def goal_tasks(states: Dict[str, Dict[str, Any]], goal: str) -> List[Dict[str, Any]]:
-    return sorted((t for t in states.values() if t["种类"] == "任务" and t["目标"] == goal and t["状态"] != "取消"),
+    return sorted((t for t in states.values() if t["种类"] == "任务" and t["目标"] == goal and t["状态"] not in ("取消", "撤下")),
                   key=lambda t: id_key(t["编号"]))
 
 
@@ -1116,6 +1130,8 @@ def approved_diff(proj: Project, goal: Dict[str, Any], states: Dict[str, Dict[st
     all_tasks = sorted((t for t in states.values() if t["种类"] == "任务" and t["目标"] == goal["编号"]), key=lambda t: id_key(t["编号"]))
     for t in all_tasks:
         tid, was = t["编号"], old.get(t["编号"])
+        if t["状态"] == "撤下":
+            continue
         if not was:
             if t["状态"] != "取消":
                 out.append({"类型": "新增", "任务": tid, "说明": f"{t['标题']}（{t['拟执行'] or t['执行'] or '—'}）"})
@@ -1342,9 +1358,14 @@ def frame(proj: Project, goal: str, spec: Dict[str, Any], a: Dict[str, Any]) -> 
                         raise hard(f"任务「{title}」的前置「{p}」要写排在它前面的任务的键")
                 seen[key] = True
                 items.append({"键": key, "标题": title, "阶段": s["序"], "拟执行": doer, "拟确认": checker,
-                              "前置键": [str(p) for p in t.get("前置", [])],
+                              "前置键": [str(p) for p in t.get("前置", [])], "来自": list(t.get("来自") or []),
                               "交接": {k: t[k] for k in HANDOFF_FIELDS if k in t}})
-        existing = {(t["键"] or t["标题"]): t for t in goal_tasks(states, goal)}
+        live = goal_tasks(states, goal)
+        existing = {(t["键"] or t["标题"]): t for t in live}
+        spare = sorted((t["编号"] for t in states.values() if t["种类"] == "任务" and t["目标"] == goal and t["状态"] == "撤下"),
+                       key=id_key)  # 撤下的草稿编号，新卡先用它们，编号不断
+        # 批准前框架只是草稿：按位置给编号，第 i 张卡用第 i 个编号，整版重写；多出来的旧卡撤下，不记取消
+        draft = g["状态"] in ("起草", "待批准") and not g["批准版"]
         basis = a.get("依据") or f"{goal} 框架"
         base = {"发起": LEAD, "写入者": a.get("写入者") or LEAD}
         changes: List[str] = []
@@ -1352,25 +1373,27 @@ def frame(proj: Project, goal: str, spec: Dict[str, Any], a: Dict[str, Any]) -> 
         def refresh(obj):
             states[obj] = replay(obj, evs[obj])
         version = g["框架版本"] + 1
-        for item in items:
-            need = [ids[k] for k in item["前置键"]]
-            old = existing.get(item["键"])
-            if not old:
-                obj = next_id(proj, "任务", goal)
-                ids[item["键"]] = obj
-                text = set_handoff(new_card_text("任务", obj, item["标题"], proj.small), item["交接"])
-                path = proj.collab / "任务" / f"{obj}-{slug(item['标题'])}.md"
-                write_if_changed(path, text)
-                b = {**base, "目标": goal, "阶段": item["阶段"], "键": item["键"], "标题": item["标题"], "依据": basis,
-                     "拟执行": item["拟执行"], "拟确认": item["拟确认"], "前置": need}
-                ev = plan(proj, states, obj, "建立", b)
-                append(proj, evs, obj, ev, b)
-                refresh(obj)
-                changes.append(f"新增 {obj} {item['标题']}（{item['拟执行']} 做，{item['拟确认']} 确认）")
-                continue
+        old_ref = {k: t["编号"] for k, t in existing.items()}
+        def origin(item):
+            src = [old_ref.get(str(x), str(x)) for x in item["来自"]]
+            return f"，合并自 {'、'.join(src)}" if src else ""
+        def add(item, need, tid=None):
+            obj = tid or next_id(proj, "任务", goal)
+            text = set_handoff(new_card_text("任务", obj, item["标题"], proj.small), item["交接"])
+            write_if_changed(proj.collab / "任务" / f"{obj}-{slug(item['标题'])}.md", text)
+            b = {**base, "目标": goal, "阶段": item["阶段"], "键": item["键"], "标题": item["标题"], "依据": basis,
+                 "拟执行": item["拟执行"], "拟确认": item["拟确认"], "前置": need}
+            edge = "重拟" if tid else "建立"
+            append(proj, evs, obj, plan(proj, states, obj, edge, b), b)
+            refresh(obj)
+            changes.append(f"新增 {obj} {item['标题']}（{item['拟执行']} 做，{item['拟确认']} 确认）{origin(item)}")
+            return obj
+        def update(old, item, need):
             tid = old["编号"]
-            ids[item["键"]] = tid
+            same = (old["键"] or old["标题"]) == item["键"]
             diff, what = {}, []
+            if not same:
+                diff["键"] = item["键"]
             if old["标题"] != item["标题"]:
                 diff["标题"] = item["标题"]
                 what.append("标题")
@@ -1388,24 +1411,76 @@ def frame(proj: Project, goal: str, spec: Dict[str, Any], a: Dict[str, Any]) -> 
                 what.append("依赖")
             path = card_path(proj, tid)
             cur_fields = handoff_fields(card_section(proj, tid, "交接"))
-            merged = {**cur_fields, **{k: str(v).strip() for k, v in item["交接"].items()}}  # 框架文件没写的字段保留卡片原样
-            if path and any(merged.get(k, "") != cur_fields.get(k, "") for k in HANDOFF_FIELDS):
-                path.write_text(set_handoff(path.read_text(encoding="utf-8"), merged), encoding="utf-8")
-                what.append("内容")
-            if what:
-                b = {**base, **diff, "说明": "框架第 %d 版：%s" % (version, "、".join(what)), "变更项": what}
-                append(proj, evs, tid, plan(proj, states, tid, "变更", b), b)
+            # 同一张卡：框架文件没写的字段保留卡片原样；换成了另一张卡（批准前按位置复用编号）：整版换掉
+            given = {k: str(v).strip() for k, v in item["交接"].items()}
+            merged = {**cur_fields, **given} if same else given
+            if path:
+                text = path.read_text(encoding="utf-8")
+                if any(merged.get(k, "") != cur_fields.get(k, "") for k in HANDOFF_FIELDS):
+                    text = set_handoff(text, merged)
+                    what.append("内容")
+                if "标题" in diff:  # 卡片标题跟着改；批准前文件名也跟着改
+                    text = re.sub(r"^(#{1,2})\s*" + re.escape(tid) + r"(?![-\w]).*$", lambda m: f"{m.group(1)} {tid} {item['标题']}",
+                                  text, count=1, flags=re.M)
+                write_if_changed(path, text)
+                if "标题" in diff and draft and not proj.small and path.parent == proj.collab / "任务":
+                    dest = path.with_name(f"{tid}-{slug(item['标题'])}.md")
+                    if dest != path and not dest.exists():
+                        path.rename(dest)
+            if not what and not diff:
+                return
+            if not what:
+                what.append("键")
+            b = {**base, **diff, "说明": "框架第 %d 版：%s" % (version, "、".join(what)), "变更项": what}
+            append(proj, evs, tid, plan(proj, states, tid, "变更", b), b)
+            refresh(tid)
+            if same:
+                changes.append(f"改 {tid} {item['标题']}：{'、'.join(what)}{origin(item)}")
+            else:
+                changes.append(f"{tid} 改为「{item['标题']}」（原「{old['标题']}」）{origin(item)}")
+        if draft:
+            for t in live:
+                if t["状态"] != "规划中":
+                    raise hard(f"{t['编号']} 是「{t['状态']}」：目标还没批准，任务不该开工，先查账本")
+            slots = sorted([t["编号"] for t in live] + spare, key=id_key)
+            if len(items) < len(live):  # 合并或删减时写明张数；只加卡时逐条「新增」已经够清楚
+                changes.append(f"任务 {len(live)} 张 → {len(items)} 张")
+            for i, item in enumerate(items):
+                need = [ids[k] for k in item["前置键"]]
+                tid = slots[i] if i < len(slots) else None
+                if tid and states[tid]["状态"] != "撤下":
+                    ids[item["键"]] = tid
+                    update(states[tid], item, need)
+                else:
+                    ids[item["键"]] = add(item, need, tid)
+            for tid in slots[len(items):]:
+                if states[tid]["状态"] == "撤下":
+                    continue
+                b = {**base, "说明": f"框架第 {version} 版去掉了这张草稿卡"}
+                append(proj, evs, tid, plan(proj, states, tid, "撤下", b), b)
                 refresh(tid)
-                changes.append(f"改 {tid} {item['标题']}：{'、'.join(what)}")
-        for key, old in existing.items():
-            if key in seen:
-                continue
-            if old["状态"] not in ("规划中", "已批准"):
-                raise hard(f"{old['编号']} 已经开工（{old['状态']}），不能从框架里删；要停先走取消")
-            b = {**base, "说明": f"框架第 {version} 版去掉了这个任务"}
-            append(proj, evs, old["编号"], plan(proj, states, old["编号"], "取消", b), b)
-            refresh(old["编号"])
-            changes.append(f"取消 {old['编号']} {old['标题']}")
+                path = card_path(proj, tid)
+                if path and not proj.small and path.parent == proj.collab / "任务":
+                    path.unlink()
+                changes.append(f"撤下 {tid} {states[tid]['标题']}")
+        else:
+            for item in items:
+                need = [ids[k] for k in item["前置键"]]
+                old = existing.get(item["键"])
+                if old:
+                    ids[item["键"]] = old["编号"]
+                    update(old, item, need)
+                else:
+                    ids[item["键"]] = add(item, need, spare.pop(0) if spare else None)
+            for key, old in existing.items():
+                if key in seen:
+                    continue
+                if old["状态"] not in ("规划中", "已批准"):
+                    raise hard(f"{old['编号']} 已经开工（{old['状态']}），不能从框架里删；要停先走取消")
+                b = {**base, "说明": f"框架第 {version} 版去掉了这个任务"}
+                append(proj, evs, old["编号"], plan(proj, states, old["编号"], "取消", b), b)
+                refresh(old["编号"])
+                changes.append(f"取消 {old['编号']} {old['标题']}")
         if g["阶段实例"] and [dict(s) for s in g["阶段实例"]] != stages:
             changes.insert(0, "调整了阶段")
         if not changes and g["框架版本"]:
@@ -1556,7 +1631,7 @@ def view(proj: Project) -> Dict[str, Any]:
         mine = [t for t in tasks if t["目标"] == obj]
         gcls = proj.skeleton("目标")["状态"].get(st["状态"], {}).get("类别", "")
         basis_of = {t["编号"]: next((r.get("依据") or "" for r in eff[t["编号"]] if r.get("边") == "建立"), "") for t in mine}
-        gone = [t["编号"] for t in mine if cancelled_before_approval(st, states[t["编号"]])]
+        gone = [t["编号"] for t in mine if dropped_draft(st, states[t["编号"]])]
         S = structure(st, stages, by_task, eff[obj], basis_of, [r["项目序"] for o in gone for r in eff[o]])
         evrows = event_rows(states, [obj] + [t["编号"] for t in mine], eff, by_task,
                             {x for s in stages for x in s["批准后新增"]})
@@ -1592,7 +1667,7 @@ def view(proj: Project) -> Dict[str, Any]:
     return {
         "规约": VIEW, "截至": max(all_seq or [0]),
         "称谓": render_rule.get("称谓", {}),
-        "目标": goals, "零散": loose_group, "任务": tasks, "当前": current,
+        "目标": goals, "零散": loose_group, "任务": [t for t in tasks if t["状态"] != "撤下"], "当前": current,
         "议题": [issue_view(proj, states[o]) for o in sorted(states, key=id_key) if states[o]["种类"] == "议题"],
         "待你决定": decisions(proj, states, eff),
         "检查": [p for p in check(proj, now=None) if p["level"] == "error"],
@@ -1837,7 +1912,7 @@ def check_skeleton(sk: Dict[str, Any], f: str) -> List[Dict[str, Any]]:
         for x in spec["从"]:
             if x != "无" and x not in states:
                 out.append(issue("error", f, None, f"边「{e}」的起点「{x}」不是状态"))
-            if x in ends and e != "重开":
+            if x in ends and e not in REOPEN:
                 out.append(issue("error", f, None, f"终止状态「{x}」只能走「重开」，不能走「{e}」"))
         for t in targets(spec):
             if t and not t.startswith("@") and t not in states:
@@ -1886,9 +1961,9 @@ def check(proj: Project, now: Optional[dt.datetime] = None) -> List[Dict[str, An
             continue
         ended = False
         for r in st["事件"]:
-            if ended and r.get("边") not in SPECIAL + ("重开",):
+            if ended and r.get("边") not in SPECIAL + REOPEN:
                 out.append(issue("error", f, None, f"终止后还有事件 seq {r.get('seq')}「{r.get('边')}」"))
-            if r.get("边") == "重开":
+            if r.get("边") in REOPEN:
                 ended = False
             elif r.get("后状态") in sk["终止"]:
                 ended = True
@@ -1909,7 +1984,7 @@ def check(proj: Project, now: Optional[dt.datetime] = None) -> List[Dict[str, An
             g = states.get(st["目标"])
             if not g:
                 out.append(issue("error", f, None, f"所属目标 {st['目标']} 没有建立"))
-            elif g["状态"] in ("起草", "待批准") and st["状态"] not in ("规划中", "已批准", "取消"):
+            elif g["状态"] in ("起草", "待批准") and st["状态"] not in ("规划中", "已批准", "取消", "撤下"):
                 out.append(issue("error", f, None, f"目标 {g['编号']} 还没批准，任务已经派出"))
         if st["种类"] == "目标" and st["状态"] in ("进行中", "待确认", "完成"):
             table = stage_table(proj, st, states)

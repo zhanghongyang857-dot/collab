@@ -82,6 +82,7 @@ class TestDemo(unittest.TestCase):
         seen = {r["边"] for rows in evs.values() for r in rows}
         proj = flow.Project(out)
         wanted = set(proj.skeleton("任务")["边"]) | set(proj.skeleton("目标")["边"]) | set(flow.SPECIAL)
+        wanted -= {"撤下", "重拟"}  # 批准前整版重写框架才有，演示不演，由 test_frame.TestDraftRewrite 覆盖
         self.assertEqual(wanted - seen, set())
 
 

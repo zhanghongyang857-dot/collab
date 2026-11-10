@@ -1,10 +1,11 @@
-# 演示站：每次推送到 main，跑测试、生成「万历新政」八回的只读看板，发布到 GitHub Pages。
-# 第一次用要在仓库 Settings → Pages 里把 Source 选成 GitHub Actions。生成物不进版本库。
-name: 演示站
+# GitHub Pages：演示站已搬到 https://collab.hongyangz.top/ ，这里只发布跳转页 pages/（index.html、404.html），
+# 把旧的 github.io 演示站链接按路径跳到新站。测试在导出时于本机跑过，这里不再构建演示。
+name: 跳转页
 
 on:
   push:
     branches: [main]
+    paths: [pages/**, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -17,29 +18,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    # 工具包目前只在 macOS 上用过（init.sh 等脚本按 macOS 写），演示也在 macOS 上生成
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: 测试
-        run: python3 -m unittest discover -s tests
-      - name: 生成演示站
-        run: python3 demo/site.py --输出 _site
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""看板网页服务：NOW 页（复用模板里的 build.py 读 NOW 数据目录，生成到临时文件）和各项目的御前看板页。
+"""看板网页服务：各项目的御前看板页，和可选的 NOW 页（复用模板里的 build.py 读 NOW 数据目录，生成到临时文件）。
 
-用法：python3 board/server.py [--port 3100] [--now-dir ~/Collab/NOW] [--project 目录 ...]
-页面：NOW（/）、御前看板（/p/<项目>）、朝会（/p/<项目>/meet/<议题>）、班子（/team）、人才市场（/talent）。
+用法：python3 board/server.py [--port 3100] [--now-dir <NOW 数据目录>] [--project 目录 ...]
+项目来自工具包旁的登记表 projects.json（init.sh new / register 写）、NOW 任务表和已完成表、--project，按根目录去重。
+页面：首页（/：启用了 NOW 是 NOW 页，没有时是项目列表）、项目列表（/projects）、御前看板（/p/<项目>）、朝会（/p/<项目>/meet/<议题>）、班子（/team）、人才市场（/talent）。
 只读，加只能追加经过校验的黑板事件：不直接写 NOW、各项目 collab/ 或运行记录；动作只有两个——
 /api/open 用系统默认应用打开本机文件；/api/p/<项目>/meet/<议题> 由总裁在朝会页发言、开始、结束、裁决，
 经 flow.py 同一套检查写一条事件，带 @ 的发言和「开始」在后台用 dispatch.py meet 叫醒相关成员。
@@ -11,7 +12,6 @@
 import argparse
 import contextlib
 import datetime as dt
-import hashlib
 import importlib.util
 import io
 import json
@@ -31,12 +31,14 @@ sys.path.insert(0, str(HERE.parent / "core"))
 import collab_parse  # noqa: E402  与派活脚本共用的任务卡、目标卡解析
 import check as collab_check  # noqa: E402  collab/ 校验，与派活脚本、Stop hook 共用
 import flow  # noqa: E402  新结构项目（有 collab/内部/流转/）的投影：状态、阶段和视图模型都从这里来
+import registry  # noqa: E402  项目登记表和 NOW 位置，与 init.sh 共用
 STATIC = HERE / "static"
 STATIC_FILES = {"board.css": "text/css", "project.js": "text/javascript", "project.html": "text/html",
                 "meet.html": "text/html", "meet.js": "text/javascript",
                 "now-inject.css": "text/css", "now-inject.js": "text/javascript",
                 "team.html": "text/html", "team.js": "text/javascript",
-                "talent.html": "text/html", "talent.js": "text/javascript"}
+                "talent.html": "text/html", "talent.js": "text/javascript",
+                "projects.html": "text/html", "projects.js": "text/javascript"}
 TEAM_DIR = flow.team_dir()
 TALENT_EXAMPLE = HERE.parent / "core" / "team-example" / "人才.json"
 RUNS_DIR = "内部/运行记录"
@@ -53,16 +55,27 @@ ARGS: argparse.Namespace
 
 def default_now_dir() -> str:
     """本机发布在 NOW/系统/ 时，NOW 数据目录就是它的上一级（有 config.json 即是，不要求装了哪个模块）；
-    开发时没有就用 ~/Collab/NOW。"""
-    beside = flow.TOOLKIT.parent
-    return str(beside) if (beside / "config.json").exists() else "~/Collab/NOW"
+    其次 NOW_PATH、本工具包装的常驻配置（见 core/registry.py）；都没有时为空，即没启用 NOW。"""
+    found = registry.now_data_dir(flow.TOOLKIT)
+    return str(found) if found else ""
+
+
+def now_enabled() -> bool:
+    """启用了 NOW：给了 NOW 数据目录，且其中有 config.json 或上一级有 NOW.md。"""
+    if not ARGS.now_dir:
+        return False
+    d = Path(ARGS.now_dir).expanduser()
+    return (d / "config.json").exists() or (d.parent / "NOW.md").exists()
 
 
 # ---------- NOW：每次请求重新加载 build.py，让它把看板生成到临时文件 ----------
 
 def load_build():
     # build.py 在导入时按 NOW_DATA_DIR 定数据目录；代码用工具包里模板那份，NOW 目录只放数据
-    os.environ["NOW_DATA_DIR"] = str(Path(ARGS.now_dir).expanduser())
+    if ARGS.now_dir:
+        os.environ["NOW_DATA_DIR"] = str(Path(ARGS.now_dir).expanduser())
+    else:  # 没启用 NOW：build.py 退回它自己的目录，那里没有 NOW 数据，只借用解析函数
+        os.environ.pop("NOW_DATA_DIR", None)
     path = BUILD_PY
     spec = importlib.util.spec_from_file_location("now_build", path)
     mod = importlib.util.module_from_spec(spec)
@@ -86,10 +99,31 @@ def now_html() -> str:
     return page.replace("</head>", inject + "</head>", 1)
 
 
-# ---------- 项目发现：NOW 任务表和已完成表里链接的 collab/PROGRESS.md，加上 --project ----------
+# ---------- 项目发现：NOW 任务表和已完成表里链接的 collab/PROGRESS.md、登记表，加上 --project ----------
 
 def project_id(root: Path) -> str:
-    return hashlib.sha1(str(root).encode("utf-8")).hexdigest()[:8]
+    return registry.project_id(root)
+
+
+def flow_goal_summary(v: Dict[str, Any], issues: List[Dict[str, Any]]) -> str:
+    """新结构项目的一行摘要，格式同 collab_parse.goal_summary：「G001 ②/5 · G002 受阻 · I003 待裁决」。"""
+    circled = "①②③④⑤⑥⑦⑧⑨⑩"
+    blocked = {t["目标"] for t in v["任务"] if t["状态"] == "受阻"}
+    parts = []
+    for g in v["目标"]:
+        if g["状态"] != "进行中" or not g["阶段"]:
+            continue
+        cur = next((s for s in g["阶段"] if s["状态"] != "通过"), None)
+        if g["编号"] in blocked or (cur and cur["状态"] == "受阻"):
+            parts.append(f"{g['编号']} 受阻")
+        elif cur:
+            no = cur.get("序") or g["阶段"].index(cur) + 1
+            mark = circled[no - 1] if 0 < no <= len(circled) else str(no)
+            parts.append(f"{g['编号']} {mark}/{len(g['阶段'])}")
+        else:
+            parts.append(f"{g['编号']} 待批准完成")
+    parts += [f"{i['id']} 待裁决" for i in issues if i["stage"] == "待裁决" and not i["archived"]]
+    return " · ".join(parts)
 
 
 def discover() -> List[Dict[str, Any]]:
@@ -103,22 +137,29 @@ def discover() -> List[Dict[str, Any]]:
         if pid not in found:
             try:
                 flowed = (progress.parent / "内部" / "流转").is_dir()
-                issues = flow_issue_rows(root) if flowed else collab_parse.load_issues(progress.parent)
-                summary = collab_parse.goal_summary(collab_parse.load_goals(progress.parent), issues)
+                if flowed:
+                    v = flow.view(flow.Project(root))
+                    summary = flow_goal_summary(v, flow_issue_rows(root, v))
+                else:
+                    summary = collab_parse.goal_summary(collab_parse.load_goals(progress.parent), collab_parse.load_issues(progress.parent))
             except Exception:
                 summary = ""
             found[pid] = {"id": pid, "name": name or root.name, "root": str(root), "progress": str(progress),
                           "source": source, "state": state, "summary": summary}
 
-    try:
-        mod = load_build()
-        for md, src in ((mod.NOW_MD, "now"), (mod.DONE_MD, "done")):
-            if md.exists():
-                for r in mod.table_dicts(md.read_text(encoding="utf-8").splitlines()):
-                    name, path = mod.link_parts(r.get("任务", ""), md.parent)
-                    add(path, name, src, r.get("状态", "") if src == "now" else "已完成")
-    except Exception as e:  # NOW 坏了也不影响 --project 指定的项目
-        print(f"读取 NOW 失败：{e}", file=sys.stderr)
+    if ARGS.now_dir:
+        try:
+            mod = load_build()
+            for md, src in ((mod.NOW_MD, "now"), (mod.DONE_MD, "done")):
+                if md.exists():
+                    for r in mod.table_dicts(md.read_text(encoding="utf-8").splitlines()):
+                        name, path = mod.link_parts(r.get("任务", ""), md.parent)
+                        add(path, name, src, r.get("状态", "") if src == "now" else "已完成")
+        except Exception as e:  # NOW 坏了也不影响登记表和 --project 指定的项目
+            print(f"读取 NOW 失败：{e}", file=sys.stderr)
+    if not getattr(ARGS, "no_registry", False):
+        for r in registry.load(registry.path(flow.TOOLKIT)):
+            add(Path(r["root"]) / "collab" / "PROGRESS.md", r.get("name", ""), "registry")
     for p in ARGS.project or []:
         root = Path(p).expanduser().resolve()
         add(root / "collab" / "PROGRESS.md", "", "extra")
@@ -676,8 +717,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = unquote(urlparse(self.path).path)
         try:
-            if path in ("/", "/now"):
+            if path in ("/", "/now") and now_enabled():
                 return self.send(200, now_html().encode("utf-8"), "text/html", csp=False)
+            if path in ("/", "/now", "/projects"):
+                return self.send(200, (STATIC / "projects.html").read_bytes(), "text/html")
+            if path == "/api/home":
+                return self.json({"now": now_enabled()})
             if path == "/api/projects":
                 return self.json(discover())
             if path == "/api/team":
@@ -761,9 +806,10 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     global ARGS
-    ap = argparse.ArgumentParser(description="NOW 与御前看板网页服务")
+    ap = argparse.ArgumentParser(description="御前看板与 NOW 网页服务")
     ap.add_argument("--port", type=int, default=3100)
-    ap.add_argument("--now-dir", default=os.environ.get("COLLAB_NOW_DIR") or default_now_dir())
+    ap.add_argument("--now-dir", default=os.environ.get("COLLAB_NOW_DIR") or default_now_dir(),
+                    help="NOW 数据目录；不给且找不到时不启用 NOW，首页是项目列表")
     ap.add_argument("--project", action="append", help="额外显示的项目目录（含 collab/PROGRESS.md），可重复")
     ap.add_argument("--verbose", action="store_true")
     ARGS = ap.parse_args()

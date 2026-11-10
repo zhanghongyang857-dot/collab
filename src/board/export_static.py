@@ -37,7 +37,8 @@ def _server(project: Path, team: Optional[Path]):
         os.environ["COLLAB_TEAM"] = str(team)
     sys.path.insert(0, str(HERE))
     import server  # noqa: E402  导入时按 COLLAB_TEAM 定班子目录
-    server.ARGS = argparse.Namespace(project=[str(project)], now_dir=tempfile.mkdtemp(prefix="now-"), verbose=False)
+    server.ARGS = argparse.Namespace(project=[str(project)], now_dir=tempfile.mkdtemp(prefix="now-"), verbose=False,
+                                     no_registry=True)
     return server
 
 
