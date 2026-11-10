@@ -1,0 +1,12 @@
+{
+  "id": "calendar",
+  "name": "日历",
+  "version": 1,
+  "contract": 1,
+  "tabs": [{"id": "calendar", "title": "日历"}],
+  "slots": [],
+  "files": ["日历/日历.md"],
+  "requires": [],
+  "uses": ["deadlines"],
+  "provides": ["events"]
+}

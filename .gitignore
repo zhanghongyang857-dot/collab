@@ -1,0 +1,11 @@
+# 编译产物与缓存
+src/board/build/
+__pycache__/
+*.pyc
+.DS_Store
+
+# 演示案例生成的项目（随时用 demo/build.py 重建）
+demo/万历新政/
+
+# 成员工位
+.scratch/
