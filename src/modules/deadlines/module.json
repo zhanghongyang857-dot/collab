@@ -1,0 +1,12 @@
+{
+  "id": "deadlines",
+  "name": "截止",
+  "version": 1,
+  "contract": 1,
+  "tabs": [],
+  "slots": ["today.side"],
+  "files": [],
+  "requires": [],
+  "uses": [],
+  "provides": ["deadlines"]
+}

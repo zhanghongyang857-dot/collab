@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>朝会</title>
+<link rel="stylesheet" href="/static/board.css">
+<script src="/static/meet.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <a class="back" id="back" href="/">← 看板</a>
+  <h1 id="name">朝会</h1>
+  <span class="meta" id="meta"></span>
+  <span class="spacer"></span>
+  <span class="meta" id="tick"></span>
+</header>
+<main class="meet">
+  <nav class="rooms" id="rooms"></nav>
+  <section class="chat">
+    <div class="chead" id="chead"></div>
+    <div class="tl" id="tl"><div class="empty">加载中…</div></div>
+    <div class="composer" id="composer">
+      <div class="menu" id="menu" hidden></div>
+      <div class="box">
+        <textarea id="box" rows="1" placeholder="输入 @ 叫人；回车发送，Shift+回车换行"></textarea>
+        <button id="priv" class="round" type="button" title="私下：只有总管能看到，不叫醒任何人" aria-pressed="false">私</button>
+        <button id="send" class="round send" type="button" aria-label="发送">发</button>
+      </div>
+      <div class="hintrow"><span id="hint">不 @ 只记录，不叫醒人</span><span id="err" class="err"></span><span id="acts"></span></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,37 @@
+/* 只给 NOW 页加看板摘要和「文档」按钮，不改 NOW 自身样式 */
+.bd-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 18px;
+  vertical-align: 1px;
+  color: var(--accent, #2f5bea);
+  background: var(--accent-soft, #eaf0ff);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.bd-chip:hover { text-decoration: underline; }
+.bd-live {
+  position: fixed;
+  right: 14px;
+  bottom: 12px;
+  z-index: 50;
+  font-size: 12px;
+  color: var(--ink-3, #8c8e94);
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e6e4df);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.bd-chip.bd-warn { color: var(--amber, #c98a06); background: var(--amber-soft, #fdf4dc); }
+.bd-chip.bd-doc { color: var(--ink-3, #8c8e94); background: transparent; border: 1px solid var(--line, #e6e4df); line-height: 16px; }
+
+/* 朝会入口：各项目进行中和待裁决的议题，点进朝会页 */
+.bd-meet { position: fixed; right: 16px; bottom: 44px; z-index: 30; background: #fff; color: #1d1d1f; border: 1px solid #e8eaee; border-radius: 10px;
+  padding: 8px 12px; font-size: 12.5px; max-width: 320px; box-shadow: 0 4px 16px rgba(0, 0, 0, .08); }
+.bd-meet b { font-weight: 600; }
+.bd-meet a { display: block; margin-top: 3px; color: #2f5bea; text-decoration: none; }
+.bd-meet .bd-w { color: #c98a06; }
+@media (prefers-color-scheme: dark) { .bd-meet { background: #1c1c1e; color: #f2f2f3; border-color: #2d2d31; } .bd-meet a { color: #7b9bff; } }

@@ -1,0 +1,15 @@
+/* 截止 */
+.dl { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.dl:first-of-type { border-top: 0; padding-top: 2px; }
+.days { text-align: center; border-radius: 12px; padding: 6px 0 5px; background: var(--soft); color: var(--ink-2); }
+.days b { display: block; font-size: 22px; line-height: 1.1; font-weight: 650; }
+.days small { font-size: 11px; }
+.dl.urgent .days { background: var(--red-soft); color: var(--red); }
+.dl.soon .days { background: var(--amber-soft); color: var(--amber); }
+.dl .title { font-size: 14.5px; font-weight: 550; }
+.dl .title .w { color: var(--ink-3); font-weight: 400; margin-left: 6px; font-size: 13px; }
+.dl .when { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+.flag { font-size: 11px; color: var(--amber); border: 1px solid currentColor; border-radius: 6px; padding: 0 5px; margin-left: 6px; }
+.course { font-size: 11.5px; font-weight: 600; letter-spacing: .02em; margin-right: 6px; color: var(--c, var(--other)); }
+.finals-head { margin: 16px 0 2px; font-size: 12px; color: var(--ink-3); font-weight: 600; letter-spacing: .04em; }
+.finals .dl { opacity: .75; }

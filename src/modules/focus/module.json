@@ -1,0 +1,12 @@
+{
+  "id": "focus",
+  "name": "对照",
+  "version": 1,
+  "contract": 1,
+  "tabs": [{"id": "focus", "title": "对照", "hidden": true}],
+  "slots": ["today.top", "schedule.timeline.lanes"],
+  "files": [],
+  "requires": ["schedule"],
+  "uses": [],
+  "provides": []
+}

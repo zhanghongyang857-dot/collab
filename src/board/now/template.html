@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOW 看板</title>
+<style>
+:root {
+  --bg: #f6f5f2;
+  --card: #ffffff;
+  --ink: #1d1d1f;
+  --ink-2: #55575d;
+  --ink-3: #8c8e94;
+  --line: #e6e4df;
+  --soft: #f1efea;
+  --accent: #2f5bea;
+  --accent-soft: #eaf0ff;
+  --cat-blue: #3b6ff0;
+  --cat-green: #12a37f;
+  --cat-orange: #e07b28;
+  --cat-purple: #9157e0;
+  --cat-gray: #7d8590;
+  --cat-teal: #0f9fb3;
+  --cat-pink: #d6457f;
+  --cat-red: #d64545;
+  --cat-yellow: #f2c200;
+  --other: #7d8590;
+  --rest: #c9c6bf;
+  --red: #dc3b3b;
+  --red-soft: #fdecec;
+  --amber: #c98a06;
+  --amber-soft: #fdf4dc;
+  --shadow: 0 1px 2px rgba(20, 20, 20, .04), 0 4px 16px rgba(20, 20, 20, .04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141415;
+    --card: #1c1c1e;
+    --ink: #f2f2f3;
+    --ink-2: #b4b5ba;
+    --ink-3: #7c7e85;
+    --line: #2d2d31;
+    --soft: #242427;
+    --accent: #7b9bff;
+    --accent-soft: #1f2740;
+    --cat-blue: #6c93ff;
+    --cat-green: #33c49c;
+    --cat-orange: #f09a52;
+    --cat-purple: #b388f5;
+    --cat-gray: #9aa1ab;
+    --cat-teal: #3cc5d6;
+    --cat-pink: #f07aa6;
+    --cat-red: #ff7a7a;
+    --cat-yellow: #ffd43b;
+    --other: #9aa1ab;
+    --rest: #4a4a4f;
+    --red: #ff6b6b;
+    --red-soft: #3a1f21;
+    --amber: #f0b43c;
+    --amber-soft: #352b14;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+em { font-style: normal; color: var(--ink-2); }  /* 中文没有真斜体，用弱一点的字色 */
+a:hover { text-decoration: underline; }
+del { color: var(--ink-3); }
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .9em; background: var(--soft); padding: 0 4px; border-radius: 4px; }
+.num { font-variant-numeric: tabular-nums; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
+
+/* 顶部 */
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.eyebrow { font-size: 13px; color: var(--ink-3); letter-spacing: .02em; }
+h1 { font-size: 30px; line-height: 1.2; margin: 4px 0 0; font-weight: 650; letter-spacing: -.01em; }
+.clock { text-align: right; }
+.clock .time { font-size: 30px; font-weight: 600; line-height: 1.2; }
+.clock .sub { font-size: 13px; color: var(--ink-2); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; box-shadow: var(--shadow); }
+.card + .card { margin-top: 20px; }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+h2 { font-size: 17px; margin: 0; font-weight: 650; }
+.card-head .meta { font-size: 12px; color: var(--ink-3); }
+.card-head .meta a { color: var(--ink-3); }
+
+.pill { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; color: var(--c, var(--ink-2)); background: color-mix(in srgb, var(--c, var(--ink-3)) 13%, transparent); white-space: nowrap; }
+.note { font-size: 13.5px; color: var(--ink-2); background: var(--soft); border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; }
+.stale { font-size: 13.5px; color: var(--amber); background: var(--amber-soft); border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; font-weight: 500; }
+
+.empty { color: var(--ink-3); font-size: 13.5px; }
+
+
+/* 任务 */
+.tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.task { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 12px; border-top: 3px solid var(--c, var(--other)); display: flex; flex-direction: column; gap: 8px; }
+.task.paused { opacity: .55; }
+.task-top { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lv { font-size: 11px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; }
+.task .name { font-size: 15.5px; font-weight: 600; color: var(--ink); }
+.task .goal { font-size: 12.5px; color: var(--ink-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.task .next { font-size: 13.5px; background: var(--soft); border-radius: 10px; padding: 8px 10px; }
+.task .next b { font-size: 11.5px; color: var(--ink-3); font-weight: 600; display: block; }
+.task .foot { display: flex; gap: 6px 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-3); margin-top: auto; }
+.task .foot .dlt { flex-basis: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.task .warn { color: var(--amber); font-weight: 600; }
+.task .err { color: var(--red); font-size: 13px; }
+
+/* 大方向与已完成 */
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+.grid2 .card + .card { margin-top: 0; }
+.dir { display: grid; grid-template-columns: 4px 1fr; gap: 0 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.dir:first-of-type { border-top: 0; padding-top: 2px; }
+.dir .bar { border-radius: 99px; background: var(--c, var(--other)); }
+.dir .dname { font-weight: 600; font-size: 14.5px; }
+.dir .dname small { font-weight: 400; color: var(--ink-3); margin-left: 8px; font-size: 12.5px; }
+.dir .dgoal { font-size: 13.5px; color: var(--ink-2); }
+.dir .dms { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.dir .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.done-row { padding: 9px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.done-row:first-of-type { border-top: 0; padding-top: 2px; }
+.done-row .dd { font-size: 12px; color: var(--ink-3); margin-right: 8px; }
+.done-row .dr { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+/* 标签页 */
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--soft); border-radius: 12px; margin-bottom: 18px; }
+.tabs[hidden] { display: none; }
+.tabs button, .tabs a { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--ink-2); padding: 6px 16px; border-radius: 9px; cursor: pointer; text-decoration: none; }
+.tabs .tab-sep { align-self: stretch; width: 1px; margin: 7px 5px; background: var(--line); }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
+.tabs button .cnt { font-size: 12px; color: var(--ink-3); margin-left: 4px; font-weight: 400; }
+.pane[hidden] { display: none; }
+
+/* 方向泳道 */
+.attn { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--amber); background: var(--amber-soft); border-radius: 10px; padding: 8px 12px; margin-bottom: 14px; }
+.lane { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 0 20px; padding: 14px 0; border-top: 1px solid var(--line); }
+.lane:first-of-type { border-top: 0; padding-top: 4px; }
+.lane-head { border-left: 3px solid var(--c, var(--other)); padding-left: 12px; }
+.lane-head .ln { font-weight: 650; font-size: 15px; }
+.lane-head .ln small { font-weight: 400; color: var(--ink-3); margin-left: 8px; font-size: 12.5px; }
+.lane-head .lg { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.lane-head .lm { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.lane-empty { font-size: 13px; color: var(--amber); align-self: center; }
+.lane-empty.quiet { color: var(--ink-3); }
+.trow { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; gap: 4px 16px; align-items: center; padding: 8px 12px; border-left: 4px solid var(--c, var(--other)); border-radius: 0; background: color-mix(in srgb, var(--c, var(--other)) 6%, transparent); }
+.trow + .trow { margin-top: 6px; }
+.trow:hover { background: color-mix(in srgb, var(--c, var(--other)) 12%, transparent); }
+.tno { display: inline-block; min-width: 20px; height: 20px; line-height: 20px; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--c, var(--ink-2)); background: color-mix(in srgb, var(--c, var(--other)) 15%, transparent); border-radius: 6px; margin-right: 8px; vertical-align: 1px; }
+.trow.paused { opacity: .5; }
+.trow .tn { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.trow .tn .lv { margin-left: 6px; vertical-align: 1px; }
+.trow .tx { font-size: 13px; color: var(--ink-2); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.trow .tx b { color: var(--ink-3); font-weight: 600; font-size: 11.5px; margin-right: 4px; }
+.trow .tmeta { font-size: 12px; color: var(--ink-3); margin-top: 3px; }
+.trow .fresh { font-size: 12px; color: var(--ink-3); text-align: right; white-space: nowrap; }
+.trow .fresh.warn, .trow .warn { color: var(--amber); font-weight: 600; }
+.act { display: grid; grid-template-columns: repeat(14, 11px); gap: 3px; }
+.act i { width: 11px; height: 11px; border-radius: 3px; background: var(--soft); display: block; }
+.act i.l1 { background: color-mix(in srgb, var(--c) 40%, transparent); }
+.act i.l2 { background: var(--c); }
+.act i.today { outline: 1px solid var(--ink-3); outline-offset: 1px; }
+@media (max-width: 760px) {
+  .lane { grid-template-columns: 1fr; gap: 10px; }
+  .trow { grid-template-columns: minmax(0, 1fr) 64px; }
+  .trow .act { grid-column: 1 / -1; }
+}
+
+footer { margin-top: 26px; font-size: 12px; color: var(--ink-3); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer a { color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--line); }
+@media (max-width: 520px) {
+  .wrap { padding: 20px 16px 40px; }
+  .slot, .gap { grid-template-columns: 64px 4px 1fr; gap: 0 10px; }
+  h1, .clock .time { font-size: 24px; }
+}
+
+/* 模块 */
+.mod-err { font-size: 13.5px; color: var(--red); background: var(--red-soft); border-radius: 10px; padding: 10px 12px; }
+.mod-err b { display: block; margin-bottom: 2px; }
+.notes { flex-basis: 100%; color: var(--amber); }
+/*MODULE_CSS*/
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="title"></h1>
+    </div>
+    <div class="clock">
+      <div class="time num" id="clock"></div>
+      <div class="sub" id="status"></div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="panes"></div>
+
+  <footer>
+    <span id="built"></span>
+    <span id="howto"></span>
+    <span class="notes" id="notes"></span>
+  </footer>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+
+const CAT = DATA.catNames;
+const YEAR = Number(DATA.built.slice(0, 4));
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, "0");
+const mins = (hm) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
+const md = (s) => { const [m, d] = s.split("-").map(Number); return new Date(YEAR, m - 1, d); };
+const dayKey = (d) => `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fmtDur = (m) => m >= 60 ? `${Math.floor(m / 60)} 小时${m % 60 ? ` ${m % 60} 分` : ""}` : `${m} 分钟`;
+const WD = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// 模块用 NOW.register(id, {tabs: {标签页 id: (el, ctx) => …}, slots: {挂点: (ctx) => HTML}}) 登记自己的渲染；
+// 挂点：header（标题上方一行文字）、status（时钟下一行文字）、today.side、today.top、tasks.below（「任务」页里任务下面）
+const NOW = {
+  util: { CAT, YEAR, $, pad, mins, md, dayKey, fmtDur, WD, esc },
+  defs: {}, errors: {},
+  register(id, def) { this.defs[id] = def; },
+  fail(id, e) { this.errors[id] = String((e && e.message) || e); },
+};
+</script>
+<script>
+/*MODULE_JS*/
+</script>
+<script>
+const MODS = DATA.modules;
+const errCard = (name, msg) => `<section class="card"><div class="mod-err"><b>模块「${esc(name)}」出错</b>${esc(msg)}</div></section>`;
+// 标签页：主板块是核心的「任务」加内嵌模块（按 config.json 的 modules 顺序，tab_order 可再调），扩展板块是链接标签，排在最后
+const MOD_TABS = MODS.flatMap(m => m.tabs.map(t => ({ ...t, mod: m })));
+// 主板块的先后由 build.py 算好放在 DATA.tabOrder；没有时按 modules 顺序
+const INNER_TABS = [{ id: "tasks", title: "任务" }, ...MOD_TABS.filter(t => !t.url)];
+const TAB_SEQ = DATA.tabOrder || INNER_TABS.map(t => t.id);
+const TABS = [...TAB_SEQ.map(id => INNER_TABS.find(t => t.id === id)).filter(Boolean), ...MOD_TABS.filter(t => t.url)];
+// 带 url 的是链接标签：只在标签栏放一个跳转按钮，没有面板，也不渲染
+const PANES = TABS.filter(t => !t.url);
+
+function makeCtx(now, m) {
+  const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return { now, today0, nowMin: now.getHours() * 60 + now.getMinutes(), data: m ? m.data : null, module: m, slot: (name, ...args) => slot(name, now, ...args) };
+}
+
+// 挂点：依次调用声明了这个挂点、且已登记渲染的模块，拼起来；某个模块出错只丢掉它自己那块。
+// 宿主模块开放的扩展点也走这里，可以带参数：ctx.slot(名字, ...参数) → 渲染函数 (ctx, ...参数)
+function slot(name, now, ...args) {
+  return MODS.filter(m => !m.error && !NOW.errors[m.id] && m.slots.includes(name) && NOW.defs[m.id]?.slots?.[name])
+    .map(m => { try { return NOW.defs[m.id].slots[name](makeCtx(now, m), ...args) || ""; } catch (e) { console.error(m.id, e); return ""; } })
+    .filter(Boolean).join("");
+}
+
+function renderModuleTab(t, el, now) {
+  const m = t.mod, err = m.error || NOW.errors[m.id];
+  if (err) { el.innerHTML = errCard(m.name, err); return; }
+  const fn = NOW.defs[m.id]?.tabs?.[t.id];
+  if (!fn) { el.innerHTML = errCard(m.name, `没有登记标签页 ${t.id} 的渲染`); return; }
+  try { fn(el, makeCtx(now, m)); } catch (e) { console.error(m.id, e); el.innerHTML = errCard(m.name, String(e.message || e)); }
+}
+
+function render() {
+  const now = new Date();
+  const { today0 } = makeCtx(now);
+
+  // 顶部：日期和时钟是核心的；上方一行和时钟下一行由模块挂点提供
+  $("eyebrow").innerHTML = slot("header", now);
+  $("title").textContent = `${now.getMonth() + 1} 月 ${now.getDate()} 日 ${WD[now.getDay()]}`;
+  $("clock").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  $("status").innerHTML = slot("status", now);
+
+  PANES.filter(t => t.mod).forEach(t => renderModuleTab(t, $(`pane-${t.id}`), now));
+
+  // 任务：按大方向分泳道，每行带近 14 天活跃度
+  const N = DATA.now;
+  const daysAgo = s => s ? Math.round((today0 - new Date(s + "T00:00:00")) / 864e5) : null;
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const days14 = [...Array(14)].map((_, i) => new Date(today0.getTime() - (13 - i) * 864e5));
+  const actCells = t => `<div class="act" title="近 14 天日志（深色 = 3 条以上）">` + days14.map((d, i) => {
+    const n = (t.activity || {})[iso(d)] || 0;
+    return `<i class="${n >= 3 ? "l2" : n ? "l1" : ""} ${i === 13 ? "today" : ""}" title="${iso(d).slice(5)}：${n ? n + " 条日志" : "无日志"}"></i>`;
+  }).join("") + `</div>`;
+  const trow = (t, no) => {
+    if (t.missing) return `<div class="trow" style="--c:var(--${t.cat})"><div><span class="tno num">${no}</span><span class="tn">${t.name}</span><div class="tx warn">找不到 PROGRESS.md，检查 NOW.md 中的链接</div></div></div>`;
+    const ago = daysAgo(t.last);
+    const fresh = ago === null ? "无日志" : ago <= 0 ? "今天" : `${ago} 天前`;
+    const tip = [t.next ? `下一步：${t.next.replace(/<[^>]+>/g, "")}` : "", t["截止"] ? `截止：${t["截止"]}` : ""].filter(Boolean).join("\n");
+    return `<div class="trow ${t.state === "暂停" ? "paused" : ""}" style="--c:var(--${t.cat})" title="${tip.replace(/"/g, "&quot;")}">
+      <div><span class="tno num">${no}</span><a class="tn" href="${t.href}">${t.name}</a>${t.level ? `<span class="lv">${t.level}</span>` : ""}${t.state && t.state !== "进行中" ? ` <span class="pill" style="--c:var(--other)">${t.state}</span>` : ""}${t.blockers ? ` <span class="warn" style="font-size:12px">卡点 ${t.blockers}</span>` : ""}</div>
+      ${actCells(t)}
+      <div class="fresh ${ago !== null && ago >= 4 ? "warn" : ""}">${fresh}</div>
+    </div>`;
+  };
+  const order = t => (t.state === "暂停") - 0;
+  const used = new Set();
+  const lanes = N.dirs.map(d => {
+    const ts = N.tasks.filter(t => d.cat !== "other" && t.cat === d.cat).sort((a, b) => order(a) - order(b));
+    ts.forEach(t => used.add(t));
+    return { ...d, ts };
+  });
+  const rest = N.tasks.filter(t => !used.has(t));
+  if (rest.length) lanes.push({ name: "其他", cat: "other", share: "", goal: "", milestones: "", ts: rest });
+
+  const attn = [];
+  lanes.forEach(l => { if (l.cat !== "other" && !l.ts.some(t => t.state !== "暂停")) attn.push(`${l.name}：没有进行中的任务`); });
+  N.tasks.forEach(t => {
+    const ago = daysAgo(t.last);
+    if (t.missing) attn.push(`${t.name}：找不到 PROGRESS.md`);
+    else if (t.state !== "暂停" && ago !== null && ago >= 4) attn.push(`${t.name}：${ago} 天没有日志`);
+    if (t.blockers) attn.push(`${t.name}：卡点 ${t.blockers} 条`);
+  });
+
+  const active = N.tasks.filter(t => t.state !== "暂停").length;
+  let th = `<div class="card-head"><h2>${N.dirTitle || "方向与任务"} <span style="font-weight:400;color:var(--ink-3);font-size:14px">${active} 个进行中</span></h2><span class="meta"><a href="${DATA.sources.now}">NOW.md</a> · 详情以各 PROGRESS.md 为准</span></div>`;
+  if (attn.length) th += `<div class="attn">${attn.map(a => `<span>${a}</span>`).join("")}</div>`;
+  th += lanes.map(l => `<div class="lane" style="--c:var(--${l.cat})">
+    <div class="lane-head"><div class="ln">${l.name}${l.share ? `<small>${l.share}</small>` : ""}</div>
+      ${l.goal ? `<div class="lg">${l.goal}</div>` : ""}${l.milestones ? `<div class="lm">关键节点：${l.milestones}</div>` : ""}</div>
+    <div>${l.ts.length ? l.ts.map((t, i) => trow(t, i + 1)).join("") : `<div class="lane-empty ${l.cat === "other" ? "quiet" : ""}">${l.cat === "other" ? "不挂任务" : "没有进行中的任务"}</div>`}</div>
+  </div>`).join("");
+
+  // 已完成
+  const D = DATA.done;
+  let doh = `<div class="card-head"><h2>最近完成</h2><span class="meta">共 ${D.total} 条 · <a href="${DATA.sources.done}">已完成.md</a></span></div>`;
+  doh += D.items.length ? D.items.map(x => `<div class="done-row"><span class="dd num">${x.date}</span>${x.href ? `<a href="${x.href}">${x.name}</a>` : x.name}<div class="dr">${x.result}</div></div>`).join("") : `<div class="empty">还没有完成的任务</div>`;
+
+  $("pane-tasks").innerHTML = `<section class="card">${th}</section>${slot("tasks.below", now)}<section class="card" style="margin-top:20px">${doh}</section>`;
+  const cnt = document.querySelector('.tabs button[data-tab="tasks"] .cnt');
+  if (cnt) cnt.textContent = active || "";
+
+  $("howto").innerHTML = `改内容：编辑 Markdown 后运行 <code>${DATA.buildCmd}</code>`;
+  $("built").innerHTML = `生成于 ${DATA.built} · <a href="${DATA.sources.now}">NOW.md</a>`;
+  $("notes").textContent = DATA.notes.join("；");
+}
+
+// 标签栏和各页的容器
+// hidden 的标签页不进标签栏，只能从链接（#id 或 #标题）打开，也不当作"上次查看的标签"记住
+const SHOWN = TABS.filter(t => !t.hidden);
+const SHOWN_PANES = SHOWN.filter(t => !t.url);  // 能切换到的标签，至少有「任务」
+// 默认打开的标签：有内嵌模块时打开第一个模块标签，「任务」排在最前也不改变这一点
+const DEFAULT_TAB = (SHOWN_PANES.find(t => t.id !== "tasks") || SHOWN_PANES[0]).id;
+$("tabs").innerHTML = SHOWN.map((t, i) => t.url
+  ? `${i && !SHOWN[i - 1].url ? `<span class="tab-sep" aria-hidden="true"></span>` : ""}<a href="${esc(t.url)}" data-link="${esc(t.id)}">${esc(t.title)}</a>`
+  : `<button role="tab" data-tab="${t.id}" aria-selected="false">${esc(t.title)}${t.id === "tasks" ? `<span class="cnt"></span>` : ""}</button>`).join("");
+$("panes").innerHTML = PANES.map(t => `<div class="pane" id="pane-${t.id}" hidden></div>`).join("");
+$("tabs").hidden = SHOWN.length < 2;  // 只装核心时只有「任务」，不显示标签栏
+
+// 标签页：记住上次查看的标签（浏览器存储不可用时默认第一个）；地址栏 #标签 id 或 #标题（去空格）直接打开
+function showTab(name) {
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  PANES.forEach(t => { $(`pane-${t.id}`).hidden = t.id !== name; });
+  if (SHOWN_PANES.some(t => t.id === name)) try { localStorage.setItem("now-tab", name); } catch (e) {}
+}
+// 点标签时清掉地址栏的 #：否则留着 #对照，再点同一个链接地址不变，不会触发 hashchange
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  showTab(b.dataset.tab);
+}));
+let saved = DEFAULT_TAB;
+try { saved = localStorage.getItem("now-tab") || saved; } catch (e) {}
+const tabFromHash = () => {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  return PANES.find(t => hash && (t.id === hash || t.title.replace(/\s/g, "") === hash));
+};
+const fromHash = tabFromHash();
+showTab(fromHash ? fromHash.id : SHOWN_PANES.some(t => t.id === saved) ? saved : DEFAULT_TAB);
+window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t) showTab(t.id); });
+
+render();
+setInterval(render, 30000);
+</script>
+</body>
+</html>
