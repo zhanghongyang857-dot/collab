@@ -540,3 +540,10 @@ button.act:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 静态演示（export_static.py 导出）：只读，隐藏写入口 */
 html.static .composer, html.static #addbtn, html.static [data-goalact], html.static textarea[data-draft] { display: none; }
+
+/* 项目列表页（没启用 NOW 时的首页） */
+.proj-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.proj-row:first-of-type { border-top: 0; }
+.proj-row:hover b { color: var(--accent); }
+.proj-row .proj-root { margin-left: auto; font-size: 11.5px; }
+.proj-done { opacity: .6; }

@@ -1,7 +1,8 @@
 # 看板网页服务
 
-一个本地网页，两页互相独立：
+一个本地网页，本机所有项目共用一个服务（默认端口 3100），不用每个项目各起一个：
 
+- **首页**（`/`）：没启用 NOW 时是项目列表，列出项目登记表（工具包旁边的 `projects.json`，`init.sh new` 自动登记）里的项目；启用了 NOW 时是 NOW 页，项目列表另在 `/projects`。
 - **NOW 页**（`/`）：每次打开都调用本仓库 `board/now/build.py`（`--now-dir` 指向 NOW 数据目录）当场生成，不另写解析，生成结果只放临时目录；各 Markdown 和 `config.json` 里 `output` 指向的静态文件都不改。NOW 目录只放数据，代码不再复制过去，改样式改模板里的 `template.html`。桌面静态 `看板.html` 和 Stop hook 已于 2026-10-22 停用，这一页就是 NOW 看板；手动运行 `build.py --now-dir <NOW 目录>` 仍能出静态文件（现在生成到 `NOW/备份/看板.html`）。额外做了三件事：有 `collab/` 的任务，点标题进项目看板，标题后的小按钮「文档」用默认应用打开它的 `PROGRESS.md`；点 Markdown 链接用系统默认应用打开；离开再回到此页时自动刷新。
 - **御前看板**（`/p/<项目>`）：上面是总览，下面用选择器一次只呈现一个板块，不再把所有目标、议题、任务从上到下铺开——
   - 顶部摘要：在推进的目标数、待你决定数、各状态任务数、是否有派活在跑、派活次数和 token 合计。
@@ -46,7 +47,7 @@ python3 board/server.py
 | 参数 | 作用 |
 |---|---|
 | `--port` | 端口，默认 3100 |
-| `--now-dir` | NOW 数据目录（Markdown 和 `config.json`），默认环境变量 `COLLAB_NOW_DIR`，没有时：工具包发布在 NOW 目录下（`NOW/系统/`）就用它的上一级，否则 `~/Collab/NOW`；生成代码在 `board/now/` |
+| `--now-dir` | NOW 数据目录（Markdown 和 `config.json`），默认环境变量 `COLLAB_NOW_DIR`，没有时：工具包发布在 NOW 目录下（`NOW/系统/`）就用它的上一级，其次 `NOW_PATH`；都没有就不启用 NOW，首页（`/`）是项目列表，有 NOW 时项目列表在 `/projects`；生成代码在 `board/now/` |
 | `--project <目录>` | 额外显示一个不在 NOW 里的项目，可重复 |
 
 ## 静态导出
@@ -89,7 +90,7 @@ bash board/service.sh uninstall  # 停用、删 plist/应用/配置，日志保�
 | 启动器日志 | `~/Library/Logs/ai-company-board/launcher.log`、`launcher.err.log` |
 | 服务日志 | `~/Library/Logs/ai-company-board/board.log`、`board.err.log` |
 
-- 端口默认 3100，安装时可用 `BOARD_PORT=3200 bash board/service.sh install` 改；NOW 目录可用 `BOARD_NOW_DIR=...` 指定；不指定时沿用已安装配置里的值，首次安装默认 `~/Collab/NOW`。改过的值写进配置，之后 `status` / `restart` 以配置为准。
+- 端口默认 3100，安装时可用 `BOARD_PORT=3200 bash board/service.sh install` 改；NOW 目录可用 `BOARD_NOW_DIR=...` 指定；不指定时用工具包旁边的 NOW 或已安装配置里的值，都没有就不启用 NOW（照样能装，首页是项目列表）。改过的值写进配置，之后 `status` / `restart` 以配置为准。
 - 只监听 `127.0.0.1`。`KeepAlive` 为真：杀启动器约 5 秒后由 launchd 拉起；杀 Python 由启动器 3 秒后拉起。
 - 改 `server.py` 不需要重建应用；应用里只放启动器，每次启动都读取配置里的 `SERVER`，指向当前的 `board/server.py`。项目目录移动后重跑 `install` 会重写配置，应用不用重建。只有改 `launcher.c` / `build_app.sh` 后 `install` 才重建；重建后签名会变，系统可能再问一次「文稿」。
 - `build_app.sh` 会做 `plutil -lint` 和 `codesign --verify --deep --strict`；应用是 ad-hoc 签名，不需要开发者证书。
@@ -114,7 +115,7 @@ bash board/service.sh uninstall  # 停用、删 plist/应用/配置，日志保�
 
 | 内容 | 来源 |
 |---|---|
-| 项目列表 | NOW.md「任务」表和 `NOW/已完成.md` 里链接到 `collab/PROGRESS.md` 的行，加 `--project` |
+| 项目列表 | 项目登记表 `projects.json`，NOW.md「任务」表和 `NOW/已完成.md` 里链接到 `collab/PROGRESS.md` 的行（启用了 NOW 时），加 `--project`；按项目根目录去重 |
 | 下一步、现状、决议、待你决定 | 项目 `collab/PROGRESS.md` |
 | 目标卡 | `collab/目标/G*.md`（旧的小版本项目读 `collab/目标.md`），含归档；卡头「状态」和「流程」表 |
 | 任务卡 | `collab/任务/T*.md`（旧的小版本项目读 `collab/任务.md`），含归档；卡头「状态：… ｜ 目标：… ｜ 阶段：… ｜ 执行：… ｜ 验收：…」和「流转」表。解析在 `core/collab_parse.py`，与派活脚本共用 |

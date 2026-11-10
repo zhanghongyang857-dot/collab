@@ -4,7 +4,7 @@
 用法：modules.py <工具包目录> module list
       modules.py <工具包目录> module enable|disable|init <id>
       modules.py <工具包目录> rules
-都可以加 --now-dir <NOW 数据目录>；没写时依次看环境变量 NOW_DATA_DIR、工具包旁边的 config.json、NOW_PATH、~/Desktop/NOW。
+都可以加 --now-dir <NOW 数据目录>；没写时依次看环境变量 NOW_DATA_DIR、工具包旁边的 config.json、NOW_PATH、本工具包装的看板常驻配置（core/registry.py）。
 
 enable 把模块加进 config.json 的 modules，缺的数据文件从 sample/ 生成（只生成 module.json 的 files 列出的），再合并口令；
 disable 只从 modules 去掉、再合并口令，数据文件不动。
@@ -12,11 +12,13 @@ disable 只从 modules 去掉、再合并口令，数据文件不动。
 """
 import datetime as dt
 import json
-import os
 import re
 import shutil
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import registry  # noqa: E402  NOW 位置和 init.sh、看板服务同一套规则
 
 CONTRACT = 1  # 和 board/now/build.py 的 CONTRACT 一致
 DEFAULT_MODULES = ["schedule", "deadlines"]  # 和 board/now/build.py 一致：config.json 没写 modules 时启用
@@ -25,13 +27,10 @@ DEFAULT_MODULES = ["schedule", "deadlines"]  # 和 board/now/build.py 一致：c
 def data_dir(kit, explicit):
     if explicit:
         return Path(explicit).expanduser().resolve()
-    if os.environ.get("NOW_DATA_DIR"):
-        return Path(os.environ["NOW_DATA_DIR"]).expanduser().resolve()
-    if (kit.parent / "config.json").exists():  # 工具包发布在 NOW/系统/ 时
-        return kit.parent.resolve()
-    if os.environ.get("NOW_PATH"):
-        return Path(os.environ["NOW_PATH"]).expanduser().resolve().parent / "NOW"
-    return Path.home() / "Desktop" / "NOW"
+    found = registry.now_data_dir(kit)
+    if not found:
+        sys.exit("没启用 NOW：用 --now-dir 指明 NOW 数据目录，或先运行 init.sh now <目录>")
+    return found
 
 
 def read_config(data):

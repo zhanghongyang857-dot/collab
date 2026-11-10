@@ -71,7 +71,7 @@
 
 本机常驻一个网页看板（http://127.0.0.1:3100），每次打开都从 Markdown 当场生成：
 
-- **NOW 页**：所有项目、今天的安排、未来 7 天、本月布局。
+- **首页**：所有登记过的项目；启用了可选的 NOW 后，首页换成 NOW 页（所有项目的任务表、今天的安排、近期截止等）。
 - **项目看板**：待你决定、时序图（整体流程：阶段、任务、谁交给谁，没发生是灰色，发生后就地变成带时间的实线）和关系图（现在谁手里拿着什么）、任务卡、正在跑的派活、每次派活的用时和 token。开工前就能看图、提意见、改图和批准，开工后能看到实际和批准版的差别。
 - **归档页**：已完成的目标和任务，同样可以看时序图、任务卡和记录。
 
@@ -100,44 +100,58 @@
 
 > 目前只在 macOS 上用过；统一的 `collab` 命令还在做。
 
-需要 Python 3（只用标准库），以及至少一个 AI 助手（Claude Code、Codex CLI 等）。
+需要 Python 3（只用标准库）、git，以及至少一个 AI 助手（Claude Code、Codex CLI 等）。
 
-本目录是工具包本身。日常使用的是发布出来的独立拷贝，下文记为 `<工具包>`；它放在 NOW 数据目录里的 `系统/`，班子配置放在旁边的 `班子/`：
+本目录是工具包的开发版。日常使用的是发布出来的独立拷贝，下文记为 `<工具包>`，例如 `~/批红/系统`；看板的项目登记表 `projects.json` 放在它旁边。
 
-```
-<NOW 所在目录>/
-  NOW.md          总看板
-  NOW/            数据：安排、已完成、本月布局、config.json
-    系统/         工具包（core/publish.sh 发布，不带 git）
-    班子/         班子.json，以后放人才
-```
+### 核心三步：装工作台就能看项目看板
 
-1. 建立 NOW 总看板（`NOW.md` 和 `NOW/` 数据）：
+1. 在本仓库根目录把工具包发布出去：
 
    ```bash
-   core/init.sh now <NOW 所在目录>
+   src/core/publish.sh ~/批红/系统
    ```
 
-2. 把工具包发布进去，并让看板开机常驻：
+2. 让看板开机常驻（端口 3100）：
 
    ```bash
-   core/publish.sh <NOW 所在目录>/NOW/系统
-   bash <NOW 所在目录>/NOW/系统/board/service.sh install
+   bash ~/批红/系统/board/service.sh install
    ```
 
-   打开 http://127.0.0.1:3100 ，点项目标题进项目看板。之后改了工具包，提交后再运行一次 `core/publish.sh` 即可，看板会自动重启。
+   不想常驻时，用 `python3 ~/批红/系统/board/server.py` 前台运行，Ctrl+C 停止。
 
-3. 在要推进的项目目录里装上工作台（`AGENTS.md` + `collab/`），项目会自动加进 NOW 的任务表：
+3. 在要推进的项目目录里装上工作台（`AGENTS.md` + `collab/`）：
 
    ```bash
-   NOW_PATH=<NOW 所在目录>/NOW.md <工具包>/core/init.sh new
+   cd <项目目录>
+   ~/批红/系统/core/init.sh new
    ```
 
-   然后让助手按 `collab/PROGRESS.md` 填好目标、截止日期和「▶ 下一步」。
+   项目会自动登记到看板，命令最后打印这个项目的看板网址；之后随时用 `~/批红/系统/core/init.sh open` 打开。http://127.0.0.1:3100 首页列出所有登记过的项目。
 
-4. 需要派活给命令行成员时，用派活脚本，见 [core/README.md](core/README.md)「派活」。
+然后让助手按 `collab/PROGRESS.md` 填好目标和「▶ 下一步」。需要派活给命令行成员时，用派活脚本，见 [core/README.md](core/README.md)「派活」。之后更新工具包：在本仓库拉取最新版，再运行一次第 1 步，看板会自动重启。
 
-init.sh 的全部命令和班子配置见 [core/README.md](core/README.md)「init.sh」，NOW 总看板见 [board/now/README.md](board/now/README.md)，看板常驻见 [board/README.md](board/README.md)。
+### 可选：NOW 总看板（多个项目 + 个人日程）
+
+项目看板管一个项目；NOW 是管多个项目的总看板：一张任务表登记各项目的分类、等级和状态，再按需加上今天的安排、近期截止、专注记录、日历等模块。不需要就不用建。
+
+1. 建立 NOW（`NOW.md` 和 `NOW/` 数据目录）：
+
+   ```bash
+   ~/批红/系统/core/init.sh now ~/批红
+   ```
+
+2. 让看板认出 NOW，重新安装常驻：
+
+   ```bash
+   BOARD_NOW_DIR=~/批红/NOW bash ~/批红/系统/board/service.sh install
+   ```
+
+   此后首页是 NOW 页，项目列表在 http://127.0.0.1:3100/projects 。
+
+3. 之后 `init.sh new` 建的项目会自动加进 NOW 任务表；之前已建的项目用 `~/批红/系统/core/init.sh register <项目目录>` 加进去。
+
+init.sh 的全部命令和班子配置见 [core/README.md](core/README.md)「init.sh」，NOW 总看板和模块见 [board/now/README.md](board/now/README.md)，看板常驻见 [board/README.md](board/README.md)。
 
 ## 目录
 
@@ -147,11 +161,11 @@ core/check.py          collab/ 校验：派活前、Claude 每轮结束（Stop h
 core/collab_parse.py   任务卡、目标卡解析（旧结构项目和卡片手写字段）
 core/skeletons/        流程骨架：task、goal（general / research / dev 三种阶段模板）、issue，加载清单 loading，渲染规约 render；history/ 放旧版本
 core/dispatch.py       派活：派活、续接、停止、按流程检查、朝会、写运行记录（用法见 core/README.md）
-core/init.sh          给项目装工作台、建 NOW、建班子、team-sync、装 hook、register / unregister、管理看板模块、合并口令；core/team.py、core/now_rows.py、core/modules.py 是它的帮手
-core/publish.sh       把工具包发布到本机 NOW/系统/；--core 只带核心，--module 单独导出一个模块
+core/init.sh          给项目装工作台并登记到看板、open 打开项目看板、建 NOW、建班子、team-sync、装 hook、register / unregister、管理看板模块、合并口令；core/registry.py（项目登记表、NOW 位置）、core/team.py、core/now_rows.py、core/modules.py 是它的帮手
+core/publish.sh       把工具包发布成本机独立拷贝（如 ~/批红/系统）；--core 只带核心，--module 单独导出一个模块
 core/口令.md          核心的口令，和已启用模块的口令合并成 NOW/口令.md
 core/team-example/    班子、人才示例
-board/                 看板网页服务：NOW 页、各项目看板和归档页、朝会、班子；board/now/ 是 NOW 看板的核心（「任务」页、模块加载器）和数据样板
+board/                 看板网页服务：首页（项目列表或 NOW 页）、各项目看板和归档页、朝会、班子；board/now/ 是 NOW 看板的核心（「任务」页、模块加载器）和数据样板
 modules/               NOW 看板的模块：schedule（今天、短期）、deadlines（近期截止）、focus（计划与实际对照）、calendar（日历），用 init.sh module 按需打开
 workbench/             工作台：init.sh new 装进项目的那一套（AGENTS.md、.claude/、collab/）
 ```
@@ -164,9 +178,9 @@ workbench/             工作台：init.sh new 装进项目的那一套（AGENTS
 
 ## 更多文档
 
-- [init.sh 与班子](core/README.md)：装工作台、NOW、班子配置。
+- [init.sh 与班子](core/README.md)：装工作台、项目登记、NOW、班子配置。
 - [NOW 总看板](board/now/README.md)：核心与模块、数据、config.json。
 - [看板模块](modules/README.md)：模块怎么写、怎么装、挂点。
 - [协作协议](workbench/collab/协议.md)：各席位的职责、目标与流程、派活、验收、上报、朝会、校验与把关。
-- [看板](board/README.md)：NOW 页、项目看板、归档页，以及开机常驻。
+- [看板](board/README.md)：首页、项目看板、归档页，以及开机常驻。
 - [派活脚本](core/README.md)：派活、续接、停止、朝会，以及派活前的三道关。
