@@ -2,7 +2,16 @@
 // 只画 /api/p/<项目>/meet/<议题> 给的数据；总裁的动作经 POST 同一路径写一条黑板事件，服务端走 flow.py 的检查，
 // 总裁带 @ 的发言在后台叫醒相关成员（只有总裁的 @ 能叫醒人，成员写的 @ 只是普通文字）。每 3 秒刷新。
 (function () {
-  const [, pid, iid] = location.pathname.match(/^\/p\/([0-9a-f]{8})\/meet\/(I\d+)/) || [];
+  // 静态演示（board/export_static.py 导出、放到 GitHub Pages 等处）：window.BOARD_STATIC 给出项目、页面和到导出根的相对路径；
+  // 这时数据读导出好的 JSON，链接改成相对路径，只读、不轮询。本机服务下没有它，行为不变。
+  const SITE = window.BOARD_STATIC || null;
+  const U = (p) => { if (!SITE) return p; const [a, h] = p.split("#"); return SITE.base + a + "/" + (h ? "#" + h : ""); };
+  const getJSON = async (p) => {
+    if (!SITE) return (await fetch(p, {cache: "no-store"})).json();
+    const t = await (await fetch(SITE.base + p + ".json")).text();
+    return JSON.parse(t.split("{{FILES}}").join(SITE.base + "/files"));
+  };
+  const [, pid, iid] = SITE ? [null, SITE.project, SITE.issue] : location.pathname.match(/^\/p\/([0-9a-f]{8})\/meet\/(I\d+)/) || [];
   const $ = (x) => document.getElementById(x);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
   const fmtDur = (s) => (s == null ? "—" : s < 60 ? s + " 秒" : Math.floor(s / 60) + " 分 " + (s % 60) + " 秒");
@@ -40,12 +49,12 @@
   function render() {
     const d = data, i = d.issue;
     document.title = `${i.编号} ${i.标题} · 朝会`;
-    $("back").href = "/p/" + pid + "#issues";
+    $("back").href = U("/p/" + pid + "#issues");
     $("back").textContent = "← " + d.project.name;
     $("name").textContent = `${i.编号} ${i.标题}`;
     $("meta").textContent = `${i.类型 === "会审" ? "框架会审" : "朝会"}${d.goal ? ` · ${d.goal.id} ${d.goal.title}（${d.goal.state}）` : " · 项目级"} · ${i.状态}`;
     $("rooms").innerHTML = `<div class="rh">${esc(d.project.name)} · 朝会</div>` + d.rooms.map((r) =>
-      `<a class="room ${r.id === iid ? "on" : ""}" href="/p/${pid}/meet/${esc(r.id)}"><div class="rt"><b>${esc(r.id)} ${esc(r.title)}</b><span class="pill ${r.stage === "待裁决" ? "warn" : r.stage === "讨论中" ? "run" : ""}">${esc(r.stage)}</span></div>
+      `<a class="room ${r.id === iid ? "on" : ""}" href="${U(`/p/${pid}/meet/${esc(r.id)}`)}"><div class="rt"><b>${esc(r.id)} ${esc(r.title)}</b><span class="pill ${r.stage === "待裁决" ? "warn" : r.stage === "讨论中" ? "run" : ""}">${esc(r.stage)}</span></div>
         <div class="meta">${r.goal ? esc(r.goal) : "项目级"}${r.thinking.length ? " · " + esc(r.thinking.join("、")) + " 运行中" : r.last ? ` · ${esc(r.last.who)}${r.last.private ? "（私下）" : r.last.text ? "：" + esc(r.last.text.slice(0, 18)) : ""}` : ""}</div></a>`).join("");
     const rd = (d.ready && d.ready.members) || {};
     const heads = i.与会.map((a) => {
@@ -223,6 +232,7 @@
 
   async function post(body) {
     if (busy) return false;
+    if (SITE) { $("err").textContent = "静态演示只读"; return false; }
     busy = true;
     $("err").textContent = "";
     try {
@@ -242,20 +252,20 @@
 
   async function load() {
     try {
-      const r = await fetch(`/api/p/${pid}/meet/${iid}`, {cache: "no-store"});
-      const j = await r.json();
+      const j = await getJSON(`/api/p/${pid}/meet/${iid}`);
       if (j.error) throw new Error(j.error);
       const sig = JSON.stringify({...j, generated: 0});
       data = j;
       if (sig !== lastSig) render();
       lastSig = sig;
-      $("tick").textContent = (data.runs.some((r) => r.status === "运行中") ? "有人在跑，每秒刷新 · " : "每 3 秒刷新 · ") + new Date().toLocaleTimeString("zh-CN", {hour12: false});
+      $("tick").textContent = SITE ? "静态演示 · 只读" : (data.runs.some((r) => r.status === "运行中") ? "有人在跑，每秒刷新 · " : "每 3 秒刷新 · ") + new Date().toLocaleTimeString("zh-CN", {hour12: false});
     } catch (e) {
       $("tick").textContent = "刷新失败：" + e.message;
     }
   }
   if (!pid) { $("tl").innerHTML = '<div class="empty">地址不对：应为 /p/&lt;项目&gt;/meet/&lt;议题&gt;</div>'; return; }
   load();
+  if (SITE) return;
   // 有人在跑时约 1 秒刷新，否则 3 秒
   let last = 0;
   setInterval(() => {

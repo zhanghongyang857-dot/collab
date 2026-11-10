@@ -537,3 +537,6 @@ button.act:disabled { opacity: .5; cursor: not-allowed; }
 .runmeta { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .runmeta .act { padding: 1px 8px; font-size: 11.5px; }
 @media (max-width: 640px) { .runmeta .act, .addpanel .act { padding: 5px 12px; } .chead .who { flex-wrap: wrap; gap: 4px 10px; } .ahead .meta { display: none; } .chead .tip { font-size: 11.5px; } }
+
+/* 静态演示（export_static.py 导出）：只读，隐藏写入口 */
+html.static .composer, html.static #addbtn, html.static [data-goalact], html.static textarea[data-draft] { display: none; }

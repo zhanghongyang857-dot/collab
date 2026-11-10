@@ -55,7 +55,11 @@ class TestDemo(unittest.TestCase):
         self.assertEqual(pending[7], ["G002"])      # 清丈告成待结案
         self.assertTrue(any("偏离" in x["msg"] for x in self.checks[5]))  # 陛下特许兵部先行接洽
         end = {g["编号"]: g["状态"] for g in self.views[8]["目标"]}
-        self.assertEqual(end, {"G001": "完成", "G002": "完成", "G003": "完成", "G004": "进行中"})
+        self.assertEqual(end, {"G001": "完成", "G002": "完成", "G003": "完成", "G004": "进行中", "G005": "起草", "G006": "起草"})
+        stage = {g["编号"]: g.get("起草阶段") for g in self.views[8]["目标"] if g["状态"] == "起草"}
+        self.assertEqual(stage, {"G005": "讨论", "G006": "想法"})  # 每个想法先立案，终回「想法」页有两件
+        i3 = next(i for i in self.views[8]["议题"] if i["编号"] == "I003")
+        self.assertIn("工部", [x["成员"] for x in i3["与会"]])  # I003 陛下中途加人
         self.assertEqual(self.views[8]["称谓"]["总裁"], "陛下")
         self.assertTrue(all(v["零散"] is None for v in self.views.values()))  # 演示里每件差事都属于国事
 
