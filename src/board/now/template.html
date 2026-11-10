@@ -144,14 +144,12 @@ h2 { font-size: 17px; margin: 0; font-weight: 650; }
 .pane[hidden] { display: none; }
 
 /* 方向泳道 */
-.attn { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--amber); background: var(--amber-soft); border-radius: 10px; padding: 8px 12px; margin-bottom: 14px; }
 .lane { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 0 20px; padding: 14px 0; border-top: 1px solid var(--line); }
 .lane:first-of-type { border-top: 0; padding-top: 4px; }
 .lane-head { border-left: 3px solid var(--c, var(--other)); padding-left: 12px; }
 .lane-head .ln { font-weight: 650; font-size: 15px; }
 .lane-head .ln small { font-weight: 400; color: var(--ink-3); margin-left: 8px; font-size: 12.5px; }
-.lane-head .lg { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.lane-head .lm { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.lane-head .lg { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .lane-empty { font-size: 13px; color: var(--amber); align-self: center; }
 .lane-empty.quiet { color: var(--ink-3); }
 .trow { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; gap: 4px 16px; align-items: center; padding: 8px 12px; border-left: 4px solid var(--c, var(--other)); border-radius: 0; background: color-mix(in srgb, var(--c, var(--other)) 6%, transparent); }
@@ -316,21 +314,13 @@ function render() {
   const rest = N.tasks.filter(t => !used.has(t));
   if (rest.length) lanes.push({ name: "其他", cat: "other", share: "", goal: "", milestones: "", ts: rest });
 
-  const attn = [];
-  lanes.forEach(l => { if (l.cat !== "other" && !l.ts.some(t => t.state !== "暂停")) attn.push(`${l.name}：没有进行中的任务`); });
-  N.tasks.forEach(t => {
-    const ago = daysAgo(t.last);
-    if (t.missing) attn.push(`${t.name}：找不到 PROGRESS.md`);
-    else if (t.state !== "暂停" && ago !== null && ago >= 4) attn.push(`${t.name}：${ago} 天没有日志`);
-    if (t.blockers) attn.push(`${t.name}：卡点 ${t.blockers} 条`);
-  });
-
+  const plain = h => (h || "").replace(/<[^>]+>/g, "").replace(/"/g, "&quot;");
+  const laneTip = l => [l.goal ? plain(l.goal) : "", l.milestones ? `关键节点：${plain(l.milestones)}` : ""].filter(Boolean).join("\n");
   const active = N.tasks.filter(t => t.state !== "暂停").length;
   let th = `<div class="card-head"><h2>${N.dirTitle || "方向与任务"} <span style="font-weight:400;color:var(--ink-3);font-size:14px">${active} 个进行中</span></h2><span class="meta"><a href="${DATA.sources.now}">NOW.md</a> · 详情以各 PROGRESS.md 为准</span></div>`;
-  if (attn.length) th += `<div class="attn">${attn.map(a => `<span>${a}</span>`).join("")}</div>`;
   th += lanes.map(l => `<div class="lane" style="--c:var(--${l.cat})">
-    <div class="lane-head"><div class="ln">${l.name}${l.share ? `<small>${l.share}</small>` : ""}</div>
-      ${l.goal ? `<div class="lg">${l.goal}</div>` : ""}${l.milestones ? `<div class="lm">关键节点：${l.milestones}</div>` : ""}</div>
+    <div class="lane-head" title="${laneTip(l)}"><div class="ln">${l.name}${l.share ? `<small>${l.share}</small>` : ""}</div>
+      ${l.goal ? `<div class="lg">${l.goal}</div>` : ""}</div>
     <div>${l.ts.length ? l.ts.map((t, i) => trow(t, i + 1)).join("") : `<div class="lane-empty ${l.cat === "other" ? "quiet" : ""}">${l.cat === "other" ? "不挂任务" : "没有进行中的任务"}</div>`}</div>
   </div>`).join("");
 

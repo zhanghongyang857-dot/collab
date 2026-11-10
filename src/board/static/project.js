@@ -2,7 +2,17 @@
 // /p/<id>/archive 是归档页：只看归档的目标、任务、议题，打开时加载一次，不轮询。
 // 服务端给的 *Html 字段（来自 Markdown，已转义）用 innerHTML，其余一律转义。
 (function () {
-  const [, id, archiveSeg] = location.pathname.match(/^\/p\/([0-9a-f]+)(\/archive)?/) || [];
+  // 静态演示（board/export_static.py 导出、放到 GitHub Pages 等处）：window.BOARD_STATIC 给出项目、页面和到导出根的相对路径；
+  // 这时数据读导出好的 JSON，链接改成相对路径，只读、不轮询。本机服务下没有它，行为不变。
+  const SITE = window.BOARD_STATIC || null;
+  const U = (p) => { if (!SITE) return p; const [a, h] = p.split("#"); return SITE.base + a + "/" + (h ? "#" + h : ""); };
+  const getJSON = async (p) => {
+    if (!SITE) return (await fetch(p, {cache: "no-store"})).json();
+    const t = await (await fetch(SITE.base + p + ".json")).text();
+    return JSON.parse(t.split("{{FILES}}").join(SITE.base + "/files"));
+  };
+  const fileHref = (abs) => (SITE ? SITE.base + "/files" + encodeURI(abs) + ".html" : "file://" + encodeURI(abs));
+  const [, id, archiveSeg] = SITE ? [null, SITE.project, SITE.archive ? "/archive" : ""] : location.pathname.match(/^\/p\/([0-9a-f]+)(\/archive)?/) || [];
   const ARCHIVE = !!archiveSeg;
   const app = document.getElementById("app");
   const COLS = [
@@ -348,13 +358,13 @@
   function goalIssues(d, gid) {
     const list = d.issues.filter((i) => i.flow && i.goal === gid);
     if (!list.length) return "";
-    return `<div class="gissues"><span class="meta">议题</span>${list.map((i) => `<a class="girow" href="/p/${esc(id)}/meet/${esc(i.id)}"><span class="tid">${esc(i.id)}</span> ${esc(i.title)} ${issuePill(i.thinking.length ? "讨论中" : i.stage)}<span class="meta">${esc(i.type)}${i.summary ? " · " + esc(i.summary.说明) : ""}</span></a>`).join("")}</div>`;
+    return `<div class="gissues"><span class="meta">议题</span>${list.map((i) => `<a class="girow" href="${U(`/p/${esc(id)}/meet/${esc(i.id)}`)}"><span class="tid">${esc(i.id)}</span> ${esc(i.title)} ${issuePill(i.thinking.length ? "讨论中" : i.stage)}<span class="meta">${esc(i.type)}${i.summary ? " · " + esc(i.summary.说明) : ""}</span></a>`).join("")}</div>`;
   }
   // 目标目录里的文档：点开用本机程序打开；归档后文件在 归档/目标/ 下，路径由视图模型给
   function goalFiles(d, g) {
     const f = g.files || {};
     const paths = ["方案", "问题", "讨论"].filter((k) => f[k]).map((k) => f[k]).concat(f["其他"] || []);
-    const links = paths.map((p) => `<a href="file://${esc(encodeURI(`${d.root}/${p}`))}">${esc(p.split("/").pop())}</a>`);
+    const links = paths.map((p) => `<a href="${esc(fileHref(`${d.root}/${p}`))}">${esc(p.split("/").pop())}</a>`);
     return links.length ? `<span class="gfiles">${links.join(" · ")}</span>` : "";
   }
   function renderIdeasPane(d) {
@@ -649,7 +659,7 @@
       }
       if (r.issue) {
         const i = r.issue, who = i.与会.map((a) => a.成员).join("、");
-        s += `<a href="/p/${esc(id)}/meet/${esc(i.编号)}" class="iss"><rect x="${TIMEW}" y="${r.y - FH / 2 + 3}" width="${W - TIMEW - 8}" height="${FH - 6}" rx="6"/><text x="${TIMEW + 10}" y="${r.y}">${i.类型 === "会审" ? "框架会审" : "朝会"} ${esc(i.编号)} ${esc(i.标题)} · ${esc(who)} · ${i.发言数} 条 · ${esc(i.状态)}（点开看对话）</text></a>`;
+        s += `<a href="${U(`/p/${esc(id)}/meet/${esc(i.编号)}`)}" class="iss"><rect x="${TIMEW}" y="${r.y - FH / 2 + 3}" width="${W - TIMEW - 8}" height="${FH - 6}" rx="6"/><text x="${TIMEW + 10}" y="${r.y}">${i.类型 === "会审" ? "框架会审" : "朝会"} ${esc(i.编号)} ${esc(i.标题)} · ${esc(who)} · ${i.发言数} 条 · ${esc(i.状态)}（点开看对话）</text></a>`;
         return;
       }
       if (r.fold) {
@@ -732,7 +742,7 @@
   // 证据路径 → 点开就用本机程序打开的链接；相对路径按项目根算
   function fileLink(p, root) {
     const abs = /^(\/|~)/.test(p) ? p : `${root}/${p.replace(/^\.\//, "")}`;
-    return `<a href="file://${esc(encodeURI(abs))}">${esc(p)}</a>`;
+    return `<a href="${esc(fileHref(abs))}">${esc(p)}</a>`;
   }
   // ---------- 关系图（新结构项目）：时序图的当前切面，只画视图模型 ----------
   // 每个未结束的对象一条边：交过来的人 → 现在的持有人，取自视图模型的「交接」切面；人的位置固定，只变边和颜色。
@@ -893,7 +903,7 @@
     if (fields.length) b += `<div class="fields">${fields.map((f) => `<span class="k">${esc(f.k)}</span><span>${f.v}</span>`).join("")}</div>`;
     b += `<h4>流程</h4><div class="scroll"><table><thead><tr><th>阶段</th><th>席位</th><th>人选</th><th>产出</th><th>通过条件</th><th>子任务</th><th>状态</th></tr></thead><tbody>${g.stages.map((s) => `<tr>
       <td>${circ(s.no)}</td><td>${esc(s.seat)}</td><td>${esc(s.who)}</td><td>${s.output}</td><td>${s.cond}</td>
-      <td>${s.taskInfo.map((t) => t.archived && !ARCHIVE ? `<a class="tlink" href="/p/${esc(id)}/archive#${esc(t.id)}">${esc(t.id)} ${statusPill(t.state || "—")}</a>`
+      <td>${s.taskInfo.map((t) => t.archived && !ARCHIVE ? `<a class="tlink" href="${U(`/p/${esc(id)}/archive#${esc(t.id)}`)}">${esc(t.id)} ${statusPill(t.state || "—")}</a>`
         : `<span class="tlink" data-task="${esc(t.id)}">${esc(t.id)} ${statusPill(t.state || "—")}</span>`).join(" ") || "—"}${s.missing.length ? ` <span class="pill bad">找不到 ${esc(s.missing.join("、"))}</span>` : ""}</td>
       <td>${statusPill(s.status)}</td></tr>`).join("")}</tbody></table></div>`;
     if (devs.length) b += `<h4>偏离记录</h4><ul class="plain">${devs.map((r) => `<li><b>${esc(r.run)}</b> ${esc(r.member)} 坐「${esc(r.seat)}」：${esc(r.override)}<div class="note">${(r.deviations || []).map(esc).join("；")}</div></li>`).join("")}</ul>`;
@@ -939,7 +949,7 @@
     return `<div class="goal fissue">
       <div class="ghead"><span class="tid">${esc(i.id)}</span><span class="tt">${esc(i.title)}</span> ${issuePill(i.stage)}
         <span class="pill">${esc(i.type)}</span>${i.goal ? ` <span class="tlink" data-goal="${esc(i.goal)}">${esc(i.goal)}</span>` : ' <span class="meta">项目级</span>'}
-        ${i.stage === "待裁决" ? '<span class="meta">等你裁决</span>' : ""}<a class="tlink golink" href="/p/${esc(id)}/meet/${esc(i.id)}">进入朝会 →</a></div>
+        ${i.stage === "待裁决" ? '<span class="meta">等你裁决</span>' : ""}<a class="tlink golink" href="${U(`/p/${esc(id)}/meet/${esc(i.id)}`)}">进入朝会 →</a></div>
       <div class="note">与会：${who || "—"} · 发言 ${i.count}${last}${think}</div>${concl}</div>`;
   }
 
@@ -1132,7 +1142,7 @@
     const m = d.meta;
     const ac = d.archivedCount || {};
     const an = (ac.goals || 0) + (ac.tasks || 0) + (ac.issues || 0);
-    const alink = !ARCHIVE && an ? `<a href="/p/${esc(id)}/archive">已归档 ${[ac.goals && ac.goals + " 个目标", ac.tasks && ac.tasks + " 张任务", ac.issues && ac.issues + " 个议题"].filter(Boolean).join("、")} →</a>` : "";
+    const alink = !ARCHIVE && an ? `<a href="${U(`/p/${esc(id)}/archive`)}">已归档 ${[ac.goals && ac.goals + " 个目标", ac.tasks && ac.tasks + " 张任务", ac.issues && ac.issues + " 个议题"].filter(Boolean).join("、")} →</a>` : "";
     document.getElementById("meta").innerHTML = [m["状态"], m["截止"] && "截止 " + m["截止"], `<a href="${esc(d.progressHref)}">PROGRESS.md</a>`, alink]
       .filter(Boolean).map((x) => (x.startsWith("<a") ? x : esc(x))).join(" · ");
     if (ARCHIVE) { app.classList.add("archive"); app.innerHTML = renderArchive(d); return; }
@@ -1160,8 +1170,7 @@
 
   async function load() {
     try {
-      const r = await fetch("/api/p/" + id + (ARCHIVE ? "/archive" : ""), {cache: "no-store"});
-      const j = await r.json();
+      const j = await getJSON("/api/p/" + id + (ARCHIVE ? "/archive" : ""));
       if (j.error) throw new Error(j.error);
       const sig = JSON.stringify({...j, generated: 0});
       const live = j.runs.some((x) => x.status === "运行中");
@@ -1169,7 +1178,7 @@
       if (sig !== lastSig || live) render();
       lastSig = sig;
       const now = new Date().toLocaleTimeString("zh-CN", {hour12: false});
-      document.getElementById("tick").textContent = ARCHIVE ? "打开时加载 · " + now + " · 刷新页面重新读取" : "每 5 秒刷新 · " + now;
+      document.getElementById("tick").textContent = SITE ? "静态演示 · 只读" : ARCHIVE ? "打开时加载 · " + now + " · 刷新页面重新读取" : "每 5 秒刷新 · " + now;
     } catch (e) {
       document.getElementById("tick").textContent = "刷新失败：" + e.message;
     }
@@ -1213,6 +1222,7 @@
     const body = {action: act, text: key ? (drafts[key] || "").trim() : (drafts["goal:" + btn.dataset.goalid] || "").trim()};
     if (btn.dataset.version != null) body.version = +btn.dataset.version;
     if (btn.dataset.tid) body.task = btn.dataset.tid;
+    if (SITE) { apprMsg = "静态演示只读：批红要在本机看板上做"; render(); return; }
     if (act !== "批准" && !body.text) { apprMsg = "先写意见"; render(); return; }
     btn.disabled = true;
     try {
@@ -1347,9 +1357,9 @@
 
   if (ARCHIVE) {
     const back = document.querySelector(".back");
-    back.href = "/p/" + id;
+    back.href = U("/p/" + id);
     back.textContent = "← 项目看板";
   }
   load().then(() => { if (ARCHIVE && openTask) document.querySelector(".task.open")?.scrollIntoView({block: "center"}); });
-  if (!ARCHIVE) setInterval(() => { if (document.visibilityState === "visible") load(); }, 5000);
+  if (!ARCHIVE && !SITE) setInterval(() => { if (document.visibilityState === "visible") load(); }, 5000);
 })();

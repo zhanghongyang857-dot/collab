@@ -6,6 +6,7 @@ __pycache__/
 
 # 演示案例生成的项目（随时用 demo/build.py 重建）
 demo/万历新政/
+demo/站点/
 
 # 成员工位
 .scratch/

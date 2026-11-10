@@ -49,6 +49,16 @@ python3 board/server.py
 | `--now-dir` | NOW 数据目录（Markdown 和 `config.json`），默认环境变量 `COLLAB_NOW_DIR`，没有时：工具包发布在 NOW 目录下（`NOW/系统/`）就用它的上一级，否则 `~/Collab/NOW`；生成代码在 `board/now/` |
 | `--project <目录>` | 额外显示一个不在 NOW 里的项目，可重复 |
 
+## 静态导出
+
+不起服务也能看一个项目的看板（只读），比如放到 GitHub Pages：
+
+```sh
+python3 board/export_static.py --project <项目目录> --out <输出目录> [--id 15730301] [--team <班子目录>]
+```
+
+导出项目页、归档页、每个议题的朝会页、班子页，以及它们要的数据（`api/…json`，和本机服务 `/api` 是同一套函数现算的同一份）；`collab/`、`work/` 下的文本文件转成只读网页放在 `files/`，看板里的文件链接指向它们。页面里写 `window.BOARD_STATIC`（项目、到导出根的相对路径），前端据此读 JSON、把链接改成相对路径、隐藏批红和发言这些写入口、不轮询；本机服务下没有它，行为不变。数据里的项目根和班子目录换掉，导出后再扫一遍，还有本机路径就报错。演示案例的八回网站由 `demo/site.py` 调它生成。
+
 ## 常驻运行
 
 常驻由两部分组成：一个「御前看板」小应用，和 launchd 用户代理。小应用只负责反复启动 `server.py`（服务退出 3 秒后重启），并持有 macOS 的「文稿」访问权；launchd 负责登录后自动启动它、它退出后拉起。
