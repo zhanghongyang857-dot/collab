@@ -14,111 +14,149 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import i18n  # noqa: E402
+import paths as P  # noqa: E402
+
 HERE = Path(__file__).resolve().parent
-EXAMPLE = HERE / "team-example" / "班子.json"
+EXAMPLE = HERE / "team-example" / P.TEAM_JSON
 MARK = "<!-- collab-team:"
-EXTRA = "## 本项目补充"
+
+
+# 班子配置（team.json、talent.json）和项目花名册（roster.json）的键：英文为准；旧文件的中文键读的时候换掉，init.sh migrate-now 改写文件
+TEAM_KEYS = {
+    "成员": "members", "派活名": "dispatch_name", "名称": "name", "应用": "app", "常坐席位": "usual_seat", "型号": "model",
+    "能力档": "tier", "相对成本": "cost", "擅长": "strengths", "不适合": "weaknesses", "可用": "available", "职能": "duty",
+    "唤醒": "wake", "续接": "resume", "权限": "permissions", "回看": "history", "备注": "notes", "别名": "aliases",
+    "事件解析": "parser", "新会话命令": "start_command", "续接命令": "resume_command", "运行上限": "limits",
+    "朝会运行上限": "meet_limits", "步数": "steps", "分钟": "minutes", "秒数": "seconds", "总裁": "owner", "总管": "lead",
+    "派活脚本": "dispatcher", "_说明": "_note", "说明": "note", "人才": "talent", "身份": "identity", "技能": "skills",
+    "可由": "played_by", "状态": "status",
+}
+
+
+def english(obj):
+    """键换成英文（值不动）；已经是英文的原样。"""
+    if isinstance(obj, dict):
+        return {TEAM_KEYS.get(k, k): english(v) if isinstance(v, (dict, list)) and k not in ("新会话命令", "续接命令", "start_command", "resume_command") else v
+                for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [english(x) for x in obj]
+    return obj
+
+
+def read(path: Path) -> dict:
+    """读班子配置、人才库或花名册，键换成英文。"""
+    return english(json.loads(path.read_text(encoding="utf-8")))
 
 
 def load(path: Path) -> dict:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    data.setdefault("成员", [])
+    data = read(path)
+    data.setdefault("members", [])
     return data
 
 
-def cell(v) -> str:
-    return str(v or "待填").replace("|", "／").replace("\n", " ")
+def render(team: dict, src: Path, lang: str = i18n.DEFAULT) -> str:
+    L = i18n.pack(lang)
+    T = L.t
+    tbd = T("team.tbd")
 
+    def cell(v) -> str:
+        return str(v or tbd).replace("|", "／").replace("\n", " ")
 
-def render(team: dict, src: Path) -> str:
-    p = team.get("总裁", {})
-    m = team.get("总管", {})
-    members = team["成员"]
-    disp = team.get("派活脚本", "")
+    def kv(k: str, v) -> str:
+        return "- " + L.kv(T("team.field." + k), v)
+
+    p = team.get("owner", {})
+    m = team.get("lead", {})
+    members = team["members"]
+    disp = team.get("dispatcher", "")
     if disp.startswith("<"):
         disp = ""
+    extra = T("team.extra_heading")
     lines = [
-        f"{MARK} 由班子配置 {src} 生成，{dt.date.today().isoformat()}。改成员、档位或唤醒方式请改 班子.json 后运行 init.sh team-sync；"
-        f"除「{EXTRA[3:]}」一节外不要直接改本文件 -->",
-        "# 成员", "",
-        "由总裁维护。总裁即用户本人。席位（总管、执行、测试、验收等）随任务或目标流程指定，本表只写常坐的席位。派活前先读接手人那一节的「唤醒」。",
-        "",
+        f"{MARK} " + T("team.mark", src=src, date=dt.date.today().isoformat(), team=P.TEAM_JSON, extra=extra) + " -->",
+        "# " + T("team.title"), "", T("team.intro"), "",
     ]
     if disp:
-        lines += [f"命令行成员用派活脚本派活和续接：`python3 {disp}`（下称 dispatch）。会话 ID 自动记在 `内部/运行记录/`，"
-                  "派活前按任务卡和目标流程检查，朝会用 `dispatch meet`。", ""]
-    lines += ["| 成员 | 应用 | 常坐席位 |", "|---|---|---|", "| 总裁 | — | 战略、裁决、授权 |"]
+        lines += [T("team.dispatcher", path=disp, runs=P.INTERNAL_RUNS + "/"), ""]
+    lines += [T("team.head_members"), "|---|---|---|", T("team.owner_row")]
     if m:
-        lines.append(f"| {cell(m.get('名称'))} | {cell(m.get('应用'))} | 总管 |")
+        lines.append(f"| {cell(m.get('name'))} | {cell(m.get('app'))} | {L.name('seat', 'lead')} |")
     for x in members:
-        lines.append(f"| {cell(x.get('名称'))} | {cell(x.get('应用'))} | {cell(x.get('常坐席位'))} |")
-    lines += ["", "## 能力表", "",
-              "由总裁定档，总管按「选人」规则使用。同一应用的不同型号各占一行。档位：A 难或关键的事（架构、疑难、对外交付、关键验收）；"
-              "B 中等；C 简单（整理、格式、批量、查资料）。成本写相对高低即可。", "",
-              "| 成员 | 派活名 | 型号 | 能力档 | 相对成本 | 擅长 | 不适合 | 可用 |", "|---|---|---|---|---|---|---|---|"]
+        lines.append(f"| {cell(x.get('name'))} | {cell(x.get('app'))} | {cell(x.get('usual_seat'))} |")
+    lines += ["", "## " + T("team.capability"), "", T("team.capability_intro"), "",
+              T("team.head_capability"), "|---|---|---|---|---|---|---|---|"]
     for x in members:
-        lines.append("| " + " | ".join([cell(x.get("名称")), f"`{x['派活名']}`" if x.get("派活名") else "—",
-                                         cell(x.get("型号")), cell(x.get("能力档")), cell(x.get("相对成本")),
-                                         cell(x.get("擅长")), cell(x.get("不适合")), cell(x.get("可用"))]) + " |")
-    lines += ["", "## 总裁",
-              f"- 职能：{p.get('职能', '定方向，确认决议，裁决议题，授权超出任务卡范围的事。')}",
-              f"- 唤醒：{p.get('唤醒', '在对话里直接问；需要决定的事写进 PROGRESS「卡点 / 待你决定」。')}"]
+        lines.append("| " + " | ".join([cell(x.get("name")), f"`{x['dispatch_name']}`" if x.get("dispatch_name") else "—",
+                                         cell(x.get("model")), cell(x.get("tier")), cell(x.get("cost")),
+                                         cell(x.get("strengths")), cell(x.get("weaknesses")), cell(x.get("available"))]) + " |")
+    lines += ["", "## " + L.name("seat", "owner"),
+              kv("duty", p.get("duty") or T("team.owner_duty")),
+              kv("wake", p.get("wake") or T("team.owner_wake"))]
     if m:
-        lines += ["", f"## {m.get('名称', '总管')}"]
-        for k in ("职能", "唤醒", "续接", "权限", "回看"):
+        lines += ["", f"## {m.get('name') or L.name('seat', 'lead')}"]
+        for k in ("duty", "wake", "resume", "permissions", "history"):
             if m.get(k):
-                lines.append(f"- {k}：{m[k]}")
+                lines.append(kv(k, m[k]))
     for x in members:
-        name, did = x.get("名称", "?"), x.get("派活名", "")
-        lines += ["", f"## {name}", f"- 职能：{x.get('职能', '待填')}"]
+        name, did = x.get("name", "?"), x.get("dispatch_name", "")
+        lines += ["", f"## {name}", kv("duty", x.get("duty") or tbd)]
         if did and disp:
-            lines += [f"- 唤醒：`dispatch start G00x-Tn <席位> {did} \"<启动语>\"`，总管以后台命令运行。",
-                      "- 续接：`dispatch continue G00x-Tn <席位> \"<追问或返工要求>\"`；中途插话先 `dispatch stop <编号>` 再续接。"]
+            lines += [kv("wake", T("team.wake_dispatch", did=did)), kv("resume", T("team.resume_dispatch"))]
         else:
-            lines += [f"- 唤醒：{x.get('唤醒', '待填')}", f"- 续接：{x.get('续接', '待填')}"]
-        for k in ("权限", "回看", "备注"):
+            lines += [kv("wake", x.get("wake") or tbd), kv("resume", x.get("resume") or tbd)]
+        for k in ("permissions", "history", "notes"):
             if x.get(k):
-                lines.append(f"- {k}：{x[k]}")
-        if x.get("可用") and not str(x["可用"]).startswith("✓"):
-            lines.append(f"- 状态：{x['可用']}")
+                lines.append(kv(k, x[k]))
+        if x.get("available") and not str(x["available"]).startswith("✓"):
+            lines.append(kv("status", x["available"]))
     return "\n".join(lines) + "\n"
 
 
 def cmd_render(team_file: Path, out: Path, force: bool) -> int:
     team = load(team_file)
+    lang = i18n.project_lang(out.parent.parent)  # out 是 <项目>/collab/members.md
+    T = i18n.pack(lang).t
     extra = ""
     if out.exists():
         old = out.read_text(encoding="utf-8")
         if MARK not in old and not force:
-            print(f"{out} 不是由班子配置生成的（可能有手写内容），未覆盖。"
-                  f"确认后加 --force：原文件备份为 成员.md.bak；要保留的项目专属内容可写进「{EXTRA[3:]}」一节。", file=sys.stderr)
+            print(T("team.not_generated", out=out, extra=T("team.extra_heading")), file=sys.stderr)
             return 3
         if MARK not in old:
             shutil.copy2(out, out.with_name(out.name + ".bak"))
-        i = old.find("\n" + EXTRA)
+        i = -1
+        for lg in i18n.LANGS:  # 「本项目补充」一节：两种语言的标题都认
+            i = old.find("\n## " + i18n.pack(lg).t("team.extra_heading"))
+            if i >= 0:
+                break
         if i >= 0:
             extra = old[i:].rstrip() + "\n"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render(team, team_file) + extra, encoding="utf-8")
-    print(f"已生成 {out}")
-    roster = out.parent / "内部" / "流程" / "花名册.json"  # flow.py 唯一的成员来源：项目自带，不依赖全局班子配置
+    out.write_text(render(team, team_file, lang) + extra, encoding="utf-8")
+    print(T("team.generated", path=out))
+    roster = out.parent / P.INTERNAL_PLANS / P.ROSTER  # flow.py 唯一的成员来源：项目自带，不依赖全局班子配置
     roster.parent.mkdir(parents=True, exist_ok=True)
-    keep = ("派活名", "名称", "别名", "应用", "常坐席位", "能力档")
-    data = {"说明": f"由班子配置 {team_file} 生成，不手改；改成员请改 班子.json 后运行 init.sh team-sync",
-            "成员": [{k: x[k] for k in keep if x.get(k)} for x in team["成员"] if x.get("派活名")]}
+    keep = ("dispatch_name", "name", "aliases", "app", "usual_seat", "tier")
+    data = {"note": T("team.roster_note", src=team_file, team=P.TEAM_JSON),
+            "members": [{k: x[k] for k in keep if x.get(k)} for x in team["members"] if x.get("dispatch_name")]}
     roster.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print(f"已生成 {roster}")
+    print(T("team.generated", path=roster))
     return 0
 
 
-def cmd_init(team_dir: Path) -> int:
-    f = team_dir / "班子.json"
+def cmd_init(team_dir: Path, lang: str = "") -> int:
+    lang = lang if lang in i18n.LANGS else i18n.pack().lang
+    T = i18n.pack(lang).t
+    f = team_dir / P.TEAM_JSON
     if f.exists():
-        print(f"已存在 {f}，未改动")
+        print(T("team.exists", path=f))
         return 0
     team_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(EXAMPLE, f)
-    print(f"已从示例建立 {f}，按你的成员改写后运行 init.sh team-sync")
+    src = HERE / "team-example" / lang / P.TEAM_JSON
+    shutil.copy2(src if src.exists() else EXAMPLE, f)
+    print(T("team.created", path=f))
     return 0
 
 
@@ -127,7 +165,7 @@ def cmd_projects(now_md: Path) -> int:
         print(f"找不到 {now_md}", file=sys.stderr)
         return 1
     text = now_md.read_text(encoding="utf-8")
-    sec = re.search(r"(?ms)^## 任务\s*\n(.*?)(?=^## |\Z)", text)
+    sec = re.search(r"(?ms)^## (?:%s)\s*\n(.*?)(?=^## |\Z)" % "|".join(map(re.escape, i18n.headings("now_projects"))), text)
     for m in re.finditer(r"\]\(<?([^)>]+?collab/PROGRESS\.md)>?\)", sec.group(1) if sec else ""):
         p = (now_md.parent / m.group(1)).resolve()
         if p.exists():
@@ -137,7 +175,7 @@ def cmd_projects(now_md: Path) -> int:
 
 def main(argv) -> int:
     if len(argv) >= 2 and argv[0] == "init":
-        return cmd_init(Path(argv[1]).expanduser())
+        return cmd_init(Path(argv[1]).expanduser(), argv[3] if argv[2:3] == ["--lang"] and len(argv) > 3 else "")
     if len(argv) >= 3 and argv[0] == "render":
         return cmd_render(Path(argv[1]).expanduser(), Path(argv[2]).expanduser(), "--force" in argv[3:])
     if len(argv) >= 2 and argv[0] == "projects":

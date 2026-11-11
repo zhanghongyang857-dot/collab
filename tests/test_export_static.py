@@ -35,11 +35,11 @@ class TestExportStatic(unittest.TestCase):
         self.assertEqual(self.r["issues"], ["I001", "I002", "I003"])
         for i in self.r["issues"]:
             d = json.loads((o / f"api/p/15730301/meet/{i}.json").read_text(encoding="utf-8"))
-            self.assertEqual(d["issue"]["编号"], i)
+            self.assertEqual(d["issue"]["id"], i)
             self.assertEqual(d["project"]["name"], "万历新政")  # 不用临时目录名
         d = json.loads((o / "api/p/15730301.json").read_text(encoding="utf-8"))
         self.assertEqual(d["id"], "15730301")
-        self.assertTrue(d["view"]["目标"])
+        self.assertTrue(d["view"]["goals"])
 
     def test_pages_are_relative_and_static(self):
         page = (self.out / "p/15730301/meet/I003/index.html").read_text(encoding="utf-8")

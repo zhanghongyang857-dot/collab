@@ -1,5 +1,7 @@
 # 演示案例：万历新政
 
+[English](README.en.md)
+
 一个固定的演示案例，后续测试改造、对外展示都用它。剧中你是皇帝，内阁（总管）票拟、调度六部和都察院（成员），四件国事并行推进；你只在「待批红」里朱批。
 
 **全部是虚拟数据**：不真实派活、不调用任何模型。事件按剧情在固定的模拟时间里生成，但走的是 `core/flow.py` 的真实写入路径和派活脚本的同一套钩子，所以流转规则、检查、生成块、视图模型和看板，都和真实使用时一模一样。
@@ -11,6 +13,7 @@
 ```bash
 python3 demo/build.py                 # 生成到 demo/万历新政（演到终回）
 python3 demo/build.py --到 3          # 只演到第三回：停在「待批内帑」，待批红里有一道奏本
+python3 demo/build.py --lang en       # 英文版，生成到 demo/wanli-reforms（事件、时间、状态和中文版一样，只换文字）
 python3 src/board/server.py --port 3101 --project demo/万历新政
 ```
 
@@ -32,22 +35,23 @@ python3 src/board/server.py --port 3101 --project demo/万历新政
 ## 静态网站
 
 ```bash
-python3 demo/site.py                  # 八回各生成一次、各导出一份只读看板，加回目录首页，到 demo/站点/
+python3 demo/site.py                  # 八回各生成一次、各导出一份只读看板，加回目录首页，到 demo/站点/；英文版在 demo/站点/en/，首页和回目条可切换
 python3 -m http.server -d demo/站点 8000
 ```
 
 线上版在产品站 https://collab.hongyangz.top/demo/ ；公开仓库原来的 GitHub Pages 演示站已改为跳转到这里。每页顶上有回目条（`demo-bar.js`），换回时停在同一个国事或议题。
 
-生成的 `demo/万历新政/`、`demo/站点/` 不进版本库，随时重建；目录里有 `.演示案例` 标记，重建时整个删掉。
+生成的 `demo/万历新政/`、`demo/wanli-reforms/`、`demo/站点/` 不进版本库，随时重建；目录里有 `.演示案例` 标记，重建时整个删掉。
 
 ## 文件
 
 | 文件 | 内容 |
 |---|---|
-| `build.py` | 生成脚本：剧情在 `ch1`–`ch8`，明朝称谓在 `TITLES` |
+| `build.py` | 生成脚本：剧情在 `ch1`–`ch8`；明朝叫法在 `MING`，写进演示项目 `collab/config.json` 的 `names`（只换看板上的显示） |
+| `story_en.py` | 英文版的剧情文字（同一行剧情的英文写法）、回目和英文明朝叫法 |
 | `site.py`、`demo-bar.js` | 静态网站：八回导出、首页和回目条 |
-| `班子.json` | 演示用的班子：工部、户部、兵部、都察院、翰林院 |
-| `剧本.md` | 按回目写的剧情和演示要点 |
+| `team.json`、`team-en/team.json` | 演示用的班子：工部、户部、兵部、都察院、翰林院（英文版 Works、Revenue、War、Censorate、Hanlin） |
+| `剧本.md`、`script.en.md` | 按回目写的剧情和演示要点（中、英） |
 | `../tests/test_demo.py` | 回归测试：每一回的视图模型和期望文件比对，且不能有检查错误 |
-| `../tests/样例/演示/` | 每一回的期望视图模型 |
+| `../tests/样例/演示/`、`演示-en/` | 每一回的期望视图模型（中、英各一套） |
 | `../tests/test_export_static.py` | 静态导出的测试（用第五回） |

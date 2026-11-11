@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """把演示案例「万历新政」做成静态网站：八回各生成一次、各导出一份只读看板，加一个回目录首页。
 
-用法：python3 demo/site.py [--输出 目录]（默认 demo/站点，不进版本库）
+用法：python3 demo/site.py [--输出 目录]（默认 demo/站点，不进版本库）；中文在根目录，英文版（build.py --lang en）在 en/，首页和回目条可以互相切换
 线上版部署在产品站 https://collab.hongyangz.top/demo/ ；本机看：python3 -m http.server -d demo/站点 8000
 目录：index.html（首页：故事和回目）、chN/（第 N 回，chN/ 自己跳到项目页）、chN/p/15730301/（项目看板）……
 只用 Python 标准库。
@@ -33,9 +33,55 @@ GUIDE = [
 ]
 
 
-def chapters_meta(issues_by_ch):
+GUIDE_EN = [
+    ("The Grand Secretariat opens the case and memorializes; the Throne approves in vermilion; the relief edict is redrafted four times; court debate settles the river strategy", "#G001"),
+    ("Plan review: the Censorate insists on independent verification and changes the plan", "meet/I002/"),
+    ("Works runs out of silver, and the first memorial appears under \"Awaiting the vermilion brush\"", "#G001"),
+    ("The Throne grants Privy Purse silver and the memorial disappears; Jiangnan's great families block the survey, and another memorial arrives", "#G002"),
+    ("The sea opening is sent back; War goes ahead with special permission; mid-debate the Throne adds a minister, and a private word is offered", "meet/I003/"),
+    ("The Censorate inspects the river works and the case closes; the sea opening resumes", "#G001"),
+    ("Forged registers: the survey reopens and later stages fall away; Revenue hits the rework limit and Works is brought in", "#G002"),
+    ("Three affairs closed and five sea-opening tasks in parallel; two new ideas are opened and wait on the \"Ideas\" page", "#G004"),
+]
+
+
+def chapters_meta(issues_by_ch, lang="zh"):
+    if lang == "en":
+        return [{"title": build.story_en.CHAPTERS[i], "see": GUIDE_EN[i][0], "issues": issues_by_ch[i]} for i in range(len(build.CHAPTERS))]
     return [{"title": build.CHAPTERS[i].replace("　", " ").replace("终 回", "终回"), "see": GUIDE[i][0], "issues": issues_by_ch[i]}
             for i in range(len(build.CHAPTERS))]
+
+
+def landing_en(meta) -> str:
+    rows = "".join(
+        f'<li><a href="ch{i + 1}/p/{PID}/{GUIDE_EN[i][1]}"><span class="no">{html.escape(m["title"].split(" · ")[0])}</span>'
+        f'<span class="tt">{html.escape(" · ".join(m["title"].split(" · ")[1:]))}</span>'
+        f'<span class="see">{html.escape(m["see"])}</span></a></li>' for i, m in enumerate(meta))
+    page = landing([{"title": "x y", "see": ""}] * 0)
+    head = page[:page.index("<body>")].replace('<html lang="zh-CN">', '<html lang="en">').replace("<title>万历新政 · 批红演示</title>", "<title>The Wanli Reforms · Vermilion demo</title>")
+    head = head.replace(".no {{", ".no {{").replace("grid-template-columns:5.5em 1fr", "grid-template-columns:7.5em 1fr")
+    return head + f"""<body>
+<main>
+<p class="langs"><a href="../">中文</a> / <b>English</b></p>
+<span class="seal">Vermilion · demo</span>
+<h1>The Wanli Reforms</h1>
+<p class="lead">1573, the first year of the Wanli Emperor. The Yellow River breaks its banks at Xuzhou, and a land survey, a frontier crisis and a proposal to open the sea follow close behind. You are the Emperor: all you do is decide, in vermilion ink. The Grand Secretariat drafts and coordinates; the ministries and the Censorate do the work and check each other.<br>
+In Ming China, the Grand Secretariat drafted a response to every memorial and the Emperor approved it with a vermilion brush; Vermilion applies the same split to AI assistants. Each chapter below is the same project stopped at a moment in the story, and the board is exactly what you'd see in real use.</p>
+<div class="cast">
+<div><b>the Throne (you)</b><span>Owner: sets goals, approves, rules</span></div>
+<div><b>Grand Secretariat</b><span>Lead: drafts, plans, dispatches, reviews</span></div>
+<div><b>Ministries of Works · War</b><span>Members played by Codex</span></div>
+<div><b>Ministry of Revenue</b><span>Member played by DeepSeek</span></div>
+<div><b>Censorate · Hanlin Academy</b><span>Members played by Claude CLI</span></div>
+</div>
+<h2>CHAPTERS</h2>
+<ol>{rows}</ol>
+<p class="note">All of it is fictional: nothing was really dispatched and no model was called. The events are scripted, but they go through the toolkit's real flow rules and checks. The pages are read-only; approving and posting happen on your local board.<br>
+On the board, the Ming titles are only display names, set in the demo project's <code>collab/config.json</code>: the Owner shows as the Throne, the Lead as the Grand Secretariat, approval as the vermilion rescript.</p>
+</main>
+</body>
+</html>
+"""
 
 
 def landing(meta) -> str:
@@ -71,10 +117,13 @@ ol a:hover {{ background:var(--red-soft); }}
 .see {{ color:var(--ink2); font-size:14px; }}
 .note {{ font-size:14px; color:var(--ink2); margin-top:36px; }}
 .note a {{ color:var(--red); }}
+.langs {{ float:right; font-size:14px; color:var(--ink2); margin:0; }}
+.langs a {{ color:var(--red); }}
 </style>
 </head>
 <body>
 <main>
+<p class="langs"><b>中文</b> / <a href="en/">English</a></p>
 <span class="seal">批红 · 演示</span>
 <h1>万历新政</h1>
 <p class="lead">万历元年，黄河在徐州决口，清丈、北边、开海三件大事接踵而来。你是皇帝，只管朱笔批红；内阁票拟统筹，六部和都察院分头办差、互相核验。<br>这是批红的演示项目：每一回都是同一个项目停在剧情里的某一刻，看板和真实使用时一模一样。</p>
@@ -88,39 +137,44 @@ ol a:hover {{ background:var(--red-soft); }}
 <h2>回目</h2>
 <ol>{rows}</ol>
 <p class="note">全部是虚拟数据：没有真的派活，也没有调用模型。事件按剧情写进去，走的是工具包真实的流转规则和检查。网页只读，批红、发言要在本机看板上做。<br>
-看板上的明朝叫法只是换了显示：待你决定 → 待批红，目标 → 国事，任务 → 差事，阶段 → 节次。</p>
+看板上的明朝叫法只是换了显示（写在演示项目的 <code>collab/config.json</code>）：待你决定 → 待批红，目标 → 国事，任务 → 差事，阶段 → 节次。</p>
 </main>
 </body>
 </html>
 """
 
 
-def make(out: Path) -> Path:
+def make(out: Path, lang: str = "zh") -> Path:
+    """lang 是 zh 时连英文版一起生成，放在 out/en/。"""
     out = out.resolve()
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
     issues_by_ch, dirs = [], []
+    team = HERE if lang == "zh" else HERE / "team-en"
     with tempfile.TemporaryDirectory() as tmp:
         for n in range(1, len(build.STORY) + 1):
-            proj = build.build(Path(tmp) / f"第{n}回", n)
+            proj = build.build(Path(tmp) / f"c{n}", n, lang)
             dirs.append(proj)
         # 先导出一遍拿到每回有哪些议题，回目条要用；再按完整的回目信息重写页面
         for rnd in (1, 2):
-            meta = chapters_meta(issues_by_ch) if rnd == 2 else None
+            meta = chapters_meta(issues_by_ch, lang) if rnd == 2 else None
             for n, proj in enumerate(dirs, 1):
                 ch = out / f"ch{n}"
                 if ch.exists():
                     shutil.rmtree(ch)
-                extra = {"chapter": n, "chapters": meta, "home": "../"} if meta else {"home": "../"}
-                r = export_static.export(proj, ch, PID, team=HERE, extra=extra, extra_js=["demo-bar.js"] if meta else [])
+                extra = {"chapter": n, "chapters": meta, "home": "../", "lang": lang} if meta else {"home": "../", "lang": lang}
+                r = export_static.export(proj, ch, PID, team=team, extra=extra, extra_js=["demo-bar.js"] if meta else [], lang=lang)
                 shutil.copy2(HERE / "demo-bar.js", ch / "static" / "demo-bar.js")
                 (ch / "index.html").write_text(f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=p/{PID}/">'
-                                               f'<a href="p/{PID}/">进入看板</a>\n', encoding="utf-8")
+                                               f'<a href="p/{PID}/">{"进入看板" if lang == "zh" else "Open the board"}</a>\n', encoding="utf-8")
                 if rnd == 1:
                     issues_by_ch.append(r["issues"])
-    (out / "index.html").write_text(landing(chapters_meta(issues_by_ch)), encoding="utf-8")
-    (out / ".nojekyll").write_text("", encoding="utf-8")
+    page = landing(chapters_meta(issues_by_ch)) if lang == "zh" else landing_en(chapters_meta(issues_by_ch, lang))
+    (out / "index.html").write_text(page, encoding="utf-8")
+    if lang == "zh":
+        (out / ".nojekyll").write_text("", encoding="utf-8")
+        make(out / "en", "en")
     return out
 
 
@@ -129,7 +183,7 @@ def main() -> int:
     ap.add_argument("--输出", dest="out", default=str(HERE / "站点"))
     a = ap.parse_args()
     out = make(Path(a.out))
-    print(f"已生成：{out}（八回）。本机看：python3 -m http.server -d {out} 8000")
+    print(f"已生成：{out}（八回，英文版在 en/）。本机看：python3 -m http.server -d {out} 8000")
     return 0
 
 

@@ -1,0 +1,62 @@
+{
+  "_note": "班子配置示例。复制到 ~/.collab-team/team.json（或用 init.sh team 建立）后按你的成员改写；init.sh 新建项目和 team-sync 会据此生成 collab/members.md，派活脚本也读这里的命令。命令里 {prompt} 是启动语，{session} 是会话 ID，{last} 是最终回复文件。",
+  "dispatcher": "<派活脚本 dispatch.py 的路径；没有就删掉这一项>",
+  "owner": {
+    "duty": "定方向，确认决议，裁决议题，授权超出任务卡范围的事。",
+    "wake": "在对话里直接问；需要决定的事写进 PROGRESS「卡点 / 待你决定」。"
+  },
+  "lead": {
+    "name": "Claude",
+    "app": "Claude Code 桌面版",
+    "duty": "总管。拆任务、写任务卡、按能力表选人派活、主持朝会、整合、汇总看板；不验收自己统筹的活。",
+    "wake": "在项目目录开会话；总裁的唯一对话入口。",
+    "resume": "回到同一会话；换会话时先读 PROGRESS。",
+    "permissions": "按会话权限模式。",
+    "history": "Claude Code 会话记录。"
+  },
+  "members": [
+    {
+      "name": "Codex",
+      "dispatch_name": "codex",
+      "app": "Codex 命令行",
+      "usual_seat": "执行、验收",
+      "model": "<型号>",
+      "tier": "待填",
+      "cost": "待填",
+      "strengths": "待填",
+      "weaknesses": "待填",
+      "available": "✓",
+      "duty": "执行或验收。",
+      "permissions": "只写工作目录；不使用 --dangerously-bypass-approvals-and-sandbox。",
+      "history": "Codex 桌面版或会话记录。",
+      "aliases": [
+        "codex"
+      ],
+      "parser": "codex",
+      "start_command": [
+        "codex",
+        "exec",
+        "--json",
+        "--skip-git-repo-check",
+        "-s",
+        "workspace-write",
+        "-o",
+        "{last}",
+        "{prompt}"
+      ],
+      "resume_command": [
+        "codex",
+        "exec",
+        "resume",
+        "--json",
+        "--skip-git-repo-check",
+        "-c",
+        "sandbox_mode=\"workspace-write\"",
+        "-o",
+        "{last}",
+        "{session}",
+        "{prompt}"
+      ]
+    }
+  ]
+}

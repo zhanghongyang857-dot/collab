@@ -35,7 +35,7 @@ class Base(unittest.TestCase):
         self.home.mkdir()
         self.port = free_port()
         self.env = {k: v for k, v in os.environ.items() if k not in CLEAR}
-        self.env.update(HOME=str(self.home), BOARD_PORT=str(self.port))
+        self.env.update(HOME=str(self.home), BOARD_PORT=str(self.port), COLLAB_LANG="zh")
         self.srv = None
 
     def tearDown(self):
@@ -137,13 +137,13 @@ class TestRegistry(Base):
         os.environ.pop("COLLAB_PROJECTS", None)
         self.assertIsNone(registry.path(kit))
         self.assertEqual(registry.add(kit, self.tmp, "x"), "off")
-        (kit / "版本.txt").write_text("提交：x\n", encoding="utf-8")
+        (kit / "VERSION.txt").write_text("提交：x\n", encoding="utf-8")
         self.assertEqual(registry.path(kit), self.tmp / "projects.json")
 
     def test_add_remove_dedupe(self):
         kit = self.tmp / "系统"
         kit.mkdir()
-        (kit / "版本.txt").write_text("提交：x\n", encoding="utf-8")
+        (kit / "VERSION.txt").write_text("提交：x\n", encoding="utf-8")
         proj = self.tmp / "p"
         self.assertEqual(registry.add(kit, proj, "甲"), "added")
         self.assertEqual(registry.add(kit, proj / ".." / "p", "乙"), "exists")
@@ -192,12 +192,12 @@ class TestWithNow(Base):
         self.assertIn("/static/now-inject.js", self.get("/now"))
         self.assertIn("/static/projects.js", self.get("/projects"))
         listed = self.get("/api/projects")
-        self.assertEqual([(p["name"], p["source"], p["state"]) for p in listed], [("甲", "now", "进行中")])
+        self.assertEqual([(p["name"], p["source"], p["state"]) for p in listed], [("甲", "now", "active")])
         self.assertEqual(self.get("/api/p/" + listed[0]["id"])["root"], str(proj))
         # unregister 照旧移到「已完成」，项目仍能从已完成表找到
         r = self.run_("bash", init, "unregister", proj, "-m", "做完了", env=env)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        self.assertIn("已完成", (desk / "NOW" / "已完成.md").read_text(encoding="utf-8"))
+        self.assertIn("已完成", (desk / "NOW" / "done.md").read_text(encoding="utf-8"))
         self.assertEqual([p["source"] for p in self.get("/api/projects")], ["done"])
 
     def test_kit_beside_now(self):

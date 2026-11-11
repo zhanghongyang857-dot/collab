@@ -9,7 +9,7 @@ import re
 def parse(ctx, path):
     cfg = ctx.config
     groups = cfg.get("groups") or []  # 只显示这些分组（标题第一个词）；为空则全部显示
-    final_kw = cfg.get("final_keyword", "期末")
+    final_kws = [cfg["final_keyword"]] if cfg.get("final_keyword") else ["期末", "final"]
     items, course = [], None
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.startswith("## "):
@@ -17,16 +17,17 @@ def parse(ctx, path):
             continue
         if not course or (groups and course not in groups) or not line.startswith("- **"):
             continue
-        d = re.search(r"\*\*(\d{4}-\d{2}-\d{2})（(周.)）([^*]*)\*\*", line)
+        d = re.search(r"\*\*(\d{4}-\d{2}-\d{2})\s*[（(](周.|[A-Za-z]{3,9})[）)]([^*]*)\*\*", line)
         name = re.match(r"- \*\*(.+?)\*\*", line).group(1)
         if not d:
             continue
-        w = re.search(r"（(\d+%)）", name)
-        title = re.sub(r"（\d+%）", "", name)
+        w = re.search(r"[（(](\d+%)[）)]", name)
+        title = re.sub(r"\s*[（(]\d+%[）)]", "", name)
         items.append({"date": d.group(1), "weekday": d.group(2), "time": d.group(3).strip(),
                       "course": course, "title": title, "weight": w.group(1) if w else "",
-                      "final": final_kw in title,
-                      "tentative": "暂定" in line, "pending": "待公告" in line})
+                      "final": any(k.lower() in title.lower() for k in final_kws),
+                      "tentative": "暂定" in line or "tentative" in line.lower(),
+                      "pending": "待公告" in line or "to be announced" in line.lower()})
     items.sort(key=lambda x: x["date"])
     return items
 

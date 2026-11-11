@@ -1,0 +1,38 @@
+{
+  "_note": "Example team config. Copy it to ~/.collab-team/team.json (or create it with init.sh team) and rewrite it for your own members. init.sh uses it to generate collab/members.md for new projects and on team-sync, and the dispatch script reads its commands. In commands, {prompt} is the brief, {session} is the session ID and {last} is the file for the final reply.",
+  "dispatcher": "<path to the dispatch script dispatch.py; delete this entry if you don't have one>",
+  "owner": {
+    "duty": "Sets direction, confirms decisions, rules on issues, and authorizes anything beyond a task card.",
+    "wake": "Ask directly in the conversation; anything that needs a decision goes into PROGRESS under \"Needs your decision\"."
+  },
+  "lead": {
+    "name": "Claude",
+    "app": "Claude Code desktop",
+    "duty": "Lead. Breaks work into tasks, writes task cards, picks people from the capability table and dispatches them, chairs meetings, integrates results, keeps the board up to date; never reviews work it coordinated itself.",
+    "wake": "Open a session in the project directory; this is the Owner's only conversation entry point.",
+    "resume": "Return to the same session; in a new session, read PROGRESS first.",
+    "permissions": "Per the session's permission mode.",
+    "history": "Claude Code session history."
+  },
+  "members": [
+    {
+      "name": "Codex",
+      "dispatch_name": "codex",
+      "app": "Codex CLI",
+      "usual_seat": "Executor, Reviewer",
+      "model": "<model>",
+      "tier": "TBD",
+      "cost": "TBD",
+      "strengths": "TBD",
+      "weaknesses": "TBD",
+      "available": "✓",
+      "duty": "Executes or reviews.",
+      "permissions": "Writes only to the working directory; never uses --dangerously-bypass-approvals-and-sandbox.",
+      "history": "Codex desktop or its session logs.",
+      "aliases": ["codex"],
+      "parser": "codex",
+      "start_command": ["codex", "exec", "--json", "--skip-git-repo-check", "-s", "workspace-write", "-o", "{last}", "{prompt}"],
+      "resume_command": ["codex", "exec", "resume", "--json", "--skip-git-repo-check", "-c", "sandbox_mode=\"workspace-write\"", "-o", "{last}", "{session}", "{prompt}"]
+    }
+  ]
+}

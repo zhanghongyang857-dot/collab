@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""NOW 看板 = 核心 + 模块。核心读 NOW.md（任务、大方向）、各任务 PROGRESS.md 和 已完成.md，生成「任务」页；
+"""NOW 看板 = 核心 + 模块。核心读 NOW.md（任务、大方向）、各任务 PROGRESS.md 和 done.md，生成「任务」页；
 其余标签页和小卡片由模块提供（工具包 modules/<id>/，或 NOW 数据目录下的 模块/<id>/），在 config.json 的
 `modules` 里打开。没写 `modules` 时启用 schedule（今天、短期）和 deadlines（近期截止），和拆分前一样。
 
@@ -22,6 +22,10 @@ from types import SimpleNamespace
 from urllib.parse import quote, urlsplit
 
 CODE = Path(__file__).resolve().parent  # 本脚本和 template.html 所在目录
+sys.path.insert(0, str(CODE.parent.parent / "core"))
+import paths as P  # noqa: E402
+from vocab import Section  # noqa: E402
+import i18n  # noqa: E402
 CONTRACT = 1  # 模块约定版本；module.json 的 contract 不同就不加载
 DEFAULT_MODULES = ["schedule", "deadlines"]  # config.json 没写 modules 时启用
 
@@ -42,7 +46,7 @@ def _load_config():
     """个人设置都在 config.json：分类与配色、启用的模块、各模块自己的一节。缺省时用通用分类。"""
     cfg = json.loads(CONFIG.read_text(encoding="utf-8")) if CONFIG.exists() else {}
     cfg.setdefault("categories", [])
-    cfg.setdefault("rest_keywords", ["不计时"])
+    cfg.setdefault("rest_keywords", ["不计时", "untracked"])
     return cfg
 
 
@@ -55,18 +59,20 @@ def _path(p, default=None):
 
 CFG = _load_config()
 NOW_MD = _path(CFG.get("now_md"), HERE.parent / "NOW.md")
-DONE_MD = HERE / "已完成.md"
+DONE_MD = HERE / P.DONE
 DONE_SHOW = CFG.get("done_show", 5)  # 看板上显示最近几条已完成
 TEMPLATE = CODE / "template.html"
-OUT = _path(CFG.get("output"), HERE / "看板.html")  # 可在 config.json 用 output 指定生成位置
+OUT = _path(CFG.get("output"), HERE / "board.html")  # 可在 config.json 用 output 指定生成位置
 # 模块目录：工具包自带的，和 NOW 数据目录下 模块/ 里另装的（同 id 时后者优先）
-MODULE_DIRS = [CODE.parent.parent / "modules", HERE / "模块"]
+MODULE_DIRS = [CODE.parent.parent / "modules", HERE / P.NOW_MODULES]
 
 # 关键词 → 分类配色键（顺序即优先级）：先「不计时」，再按 config 中分类的顺序
 CATEGORIES = [(k, "rest") for k in CFG["rest_keywords"]] + [
     (k, "cat-" + c["color"]) for c in CFG["categories"] for k in c.get("keywords", [c["name"]])
 ]
-CAT_NAMES = {"other": "其他", "rest": "不计时", **{"cat-" + c["color"]: c["name"] for c in reversed(CFG["categories"])}}
+LANG = CFG.get("lang") if CFG.get("lang") in i18n.LANGS else ("zh" if CONFIG.exists() and "lang" not in CFG else "en")  # 没写 lang 的旧 NOW 是中文
+L = i18n.pack(LANG)
+CAT_NAMES = {"other": L.t("now.cat.other"), "rest": L.t("now.cat.rest"), **{"cat-" + c["color"]: c["name"] for c in reversed(CFG["categories"])}}
 
 
 def inline(text, base):
@@ -118,8 +124,10 @@ def sections(text):
 
 
 def find_section(secs, prefix):
+    """按标题开头找一节；prefix 是小节代码（next、status…）时中英两种标题都认。"""
+    prefixes = tuple(i18n.headings(prefix)) if i18n.code_of("section", prefix) == prefix else (prefix,)
     for title, lines in secs:
-        if title.startswith(prefix):
+        if title.startswith(prefixes):
             return title, lines
     return "", []
 
@@ -155,15 +163,15 @@ def parse_progress(path):
     text = path.read_text(encoding="utf-8")
     base = path.parent
     info = {"missing": False, "href": "file://" + quote(str(path))}
-    for key in ("目标", "截止", "状态"):
-        m = re.search(key + r"：([^｜\n]*)", text)
+    for code, keys in (("goal", ("目标：", "Goal:")), ("due", ("截止：", "Due:")), ("status", ("状态：", "Status:"))):  # PROGRESS 标题下那行，中英两种写法
+        m = re.search("(?:" + "|".join(map(re.escape, keys)) + r")\s*([^｜\n]*)", text)
         v = m.group(1).strip() if m else ""
-        info[key] = "" if placeholder(v) else v
+        info[code] = "" if placeholder(v) else v
     secs = sections(text)
-    _, nl = find_section(secs, "▶ 下一步")
+    _, nl = find_section(secs, Section.NEXT)
     nxt = " ".join(l.strip() for l in nl if l.strip() and not placeholder(l))
     info["next"] = inline(nxt, base) if nxt else ""
-    _, bl = find_section(secs, "卡点")
+    _, bl = find_section(secs, Section.BLOCKERS)
     info["blockers"] = sum(1 for l in bl if l.strip().startswith("- ") and not placeholder(l.strip()[2:]))
     log = log_lines(path, secs)
     m = next((re.match(r"^### (\d{4}-\d{2}-\d{2})", l) for l in log if l.startswith("### ")), None)
@@ -174,7 +182,7 @@ def parse_progress(path):
 
 def log_lines(path, secs):
     """日志行：优先同目录的 日志.md（v3），否则 PROGRESS.md 的「日志」一节（v1/v2）。"""
-    f = path.parent / "日志.md"
+    f = path.parent / P.LOG
     if f.exists():
         return f.read_text(encoding="utf-8").splitlines()
     return find_section(secs, "日志")[1]
@@ -199,15 +207,16 @@ def parse_now():
     secs = sections(NOW_MD.read_text(encoding="utf-8"))
     base = NOW_MD.parent
     tasks = []
-    for r in table_dicts(find_section(secs, "任务")[1]):
-        name, path = link_parts(r.get("任务", ""), base)
-        cat = r.get("分类", "")
-        tasks.append({"name": name, "cat": category(cat), "catName": cat, "level": r.get("等级", ""),
-                      "state": r.get("状态", ""), **parse_progress(path)})
-    dt_title, dl = find_section(secs, "大方向")
-    dirs = [{"name": r.get("方向", ""), "goal": inline(r.get("半年后想要的结果", ""), base),
-             "milestones": inline(r.get("关键节点", ""), base), "share": r.get("占比", ""),
-             "cat": category(r.get("方向", ""))} for r in table_dicts(dl)]
+    for r in map(i18n.cols, table_dicts(find_section(secs, "now_projects")[1])):  # 表头按代码认列
+        name, path = link_parts(r.get("task", ""), base)
+        cat = r.get("category", "")
+        st = r.get("state", "")
+        tasks.append({"name": name, "cat": category(cat), "catName": cat, "level": r.get("level", ""),
+                      "state": i18n.code_of("state", st) or st, **parse_progress(path)})
+    dt_title, dl = find_section(secs, "directions")
+    dirs = [{"name": r.get("direction", ""), "goal": inline(r.get("six_month", ""), base),
+             "milestones": inline(r.get("milestones", ""), base), "share": r.get("share", ""),
+             "cat": category(r.get("direction", ""))} for r in map(i18n.cols, table_dicts(dl))]
     return {"tasks": tasks, "dirTitle": dt_title, "dirs": dirs}
 
 
@@ -216,11 +225,11 @@ def parse_done():
         return {"total": 0, "items": []}
     lines = DONE_MD.read_text(encoding="utf-8").splitlines()
     items = []
-    for r in table_dicts(lines):
-        name, path = link_parts(r.get("任务", ""), DONE_MD.parent)
+    for r in map(i18n.cols, table_dicts(lines)):
+        name, path = link_parts(r.get("task", ""), DONE_MD.parent)
         items.append({"name": name, "href": "file://" + quote(str(path)) if path else "",
-                      "cat": category(r.get("分类", "")), "date": r.get("完成于", ""),
-                      "result": inline(r.get("结果", ""), DONE_MD.parent)})
+                      "cat": category(r.get("category", "")), "date": r.get("done_on", ""),
+                      "result": inline(r.get("result", ""), DONE_MD.parent)})
     return {"total": len(items), "items": items[:DONE_SHOW]}
 
 
@@ -269,15 +278,15 @@ def load_modules():
     for mid in wanted:
         d = avail.get(mid)
         if not d:
-            notes.append(f"模块 {mid} 没找到（应在 modules/{mid}/ 或 模块/{mid}/）")
+            notes.append(L.t("now.note.no_module", mid=mid))
             continue
         try:
             meta = json.loads((d / "module.json").read_text(encoding="utf-8"))
         except (OSError, ValueError) as e:
-            notes.append(f"模块 {mid} 的 module.json 读不了：{e}")
+            notes.append(L.t("now.note.bad_meta", mid=mid, e=e))
             continue
         if meta.get("contract") != CONTRACT:
-            notes.append(f"模块 {mid} 按约定版本 {meta.get('contract')} 写成，本看板是 {CONTRACT}，未加载")
+            notes.append(L.t("now.note.contract", mid=mid, v=meta.get('contract'), want=CONTRACT))
             continue
         metas[mid] = (d, meta)
     # 硬依赖：缺了就不加载（反复剔除，直到稳定）
@@ -287,7 +296,7 @@ def load_modules():
         for mid, (_, meta) in list(metas.items()):
             miss = [r for r in meta.get("requires", []) if r not in metas]
             if miss:
-                notes.append(f"模块 {mid} 需要 {'、'.join(miss)}，未加载")
+                notes.append(L.t("now.note.needs", mid=mid, deps=L.join(miss)))
                 del metas[mid]
                 changed = True
     # 加载顺序：依赖（requires、uses）在前；同层保持 config 里的顺序
@@ -319,7 +328,7 @@ def load_modules():
         tabs = []
         for tab in meta.get("tabs", []):
             if "url" in tab and not valid_tab_url(tab["url"]):
-                notes.append(f"模块 {meta.get('name', mid)} 的标签「{tab.get('title', tab.get('id'))}」地址无效，只支持 http、https，未显示")
+                notes.append(L.t("now.note.bad_url", mid=meta.get('name', mid), tab=tab.get('title', tab.get('id'))))
                 continue
             tabs.append(tab)
         entry = {"id": mid, "name": meta.get("name", mid), "tabs": tabs,
@@ -330,7 +339,7 @@ def load_modules():
         except Exception as e:  # noqa: BLE001 — 模块出错只影响它自己
             tb = traceback.extract_tb(e.__traceback__)[-1]
             entry["error"] = f"{type(e).__name__}: {e}（{Path(tb.filename).name} 第 {tb.lineno} 行）"
-            notes.append(f"模块 {entry['name']} 出错：{entry['error']}")
+            notes.append(L.t("now.note.error", mid=entry['name'], e=entry['error']))
         for kind in ("css", "js"):
             f = d / f"view.{kind}"
             entry[kind] = f.read_text(encoding="utf-8") if f.exists() else ""
@@ -345,9 +354,9 @@ def sources(watch=()):
     for md, base in ((NOW_MD, NOW_MD.parent), (DONE_MD, DONE_MD.parent)):
         if md.exists():
             for r in table_dicts(md.read_text(encoding="utf-8").splitlines()):
-                _, path = link_parts(r.get("任务", ""), base)
+                _, path = link_parts(i18n.cols(r).get("task", ""), base)
                 if path:
-                    files += [path, path.parent / "日志.md"]
+                    files += [path, path.parent / P.LOG]
     return [f for f in files if f and f.exists()]
 
 
@@ -374,13 +383,14 @@ def collect():
     """生成页面所需的全部数据；模块的 css、js 单独返回，由 render() 内联进模板。"""
     modules, notes, _ = load_modules()
     if "tab_order" in CFG and not isinstance(CFG["tab_order"], list):
-        notes.append("config.json 的 tab_order 应是标签 id 的列表，已忽略")
+        notes.append(L.t("now.note.tab_order"))
     return {
         "tabOrder": tab_sequence(modules, CFG.get("tab_order")),
         "built": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "now": parse_now(),
         "done": parse_done(),
         "catNames": CAT_NAMES,
+        "lang": LANG,
         "buildCmd": ("python3 " + str(Path(__file__).resolve())
                      + ("" if HERE == CODE else f" --now-dir {HERE}")).replace(str(Path.home()), "~"),
         "sources": {"now": file_url(NOW_MD), "done": file_url(DONE_MD)},
@@ -396,7 +406,11 @@ def render(data):
                    for m in mods if m["js"])
     page_data = {**data, "modules": [{k: v for k, v in m.items() if k not in ("css", "js")} for m in mods]}
     blob = json.dumps(page_data, ensure_ascii=False).replace("</", "<\\/")
+    packs = {x: i18n.pack(x).text_dict() for x in i18n.LANGS}  # 页面自带两种语言包和 i18n.js：直接打开文件也能切换
+    i18n_js = ("window.I18N_PACKS = " + json.dumps(packs, ensure_ascii=False) + ";\nwindow.BOARD_LANG = " + json.dumps(LANG) + ";\n"
+               + (CODE.parent / "static" / "i18n.js").read_text(encoding="utf-8")).replace("</", "<\\/")
     return (TEMPLATE.read_text(encoding="utf-8")
+            .replace("/*I18N_JS*/", i18n_js)
             .replace("/*MODULE_CSS*/", css.replace("</style", "<\\/style"))
             .replace("/*MODULE_JS*/", js.replace("</script", "<\\/script"))
             .replace("/*DATA*/null", blob))
@@ -406,7 +420,7 @@ def main():
     if "--if-changed" in sys.argv and up_to_date():
         return
     OUT.write_text(render(collect()), encoding="utf-8")
-    print(f"已生成 {OUT}")
+    print(L.t("team.generated", path=OUT))
 
 
 if __name__ == "__main__":

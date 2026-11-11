@@ -12,8 +12,9 @@
 set -euo pipefail
 
 LABEL="com.local.ai-company-board"
-APP_NAME="御前看板.app"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(python3 "$HERE/../core/paths.py" sh)"  # 文件名：P_BOARD_APP…（core/paths.py）
+APP_NAME="${P_BOARD_APP}"
 ROOT="$(cd "$HERE/.." && pwd)"  # 工具包根：开发时是 src/，本机发布后是 NOW/系统/
 SERVER="$HERE/server.py"
 PYTHON="/usr/bin/python3"
@@ -175,7 +176,7 @@ bootout() {
   launchctl bootout "$JOB" 2>/dev/null || launchctl bootout "$DOMAIN" "$PLIST" 2>/dev/null || true
 }
 
-LAUNCHER_MATCH="御前看板.app/Contents/MacOS/launcher"
+LAUNCHER_MATCH="${P_BOARD_APP}/Contents/MacOS/launcher"
 launcher_running() { pgrep -f "$LAUNCHER_MATCH" >/dev/null 2>&1; }
 
 # bootout 后等启动器退出；超时就发信号，避免旧的 LSUIElement 实例让 open 探针空等

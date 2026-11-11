@@ -7,6 +7,9 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import paths as P
+import i18n  # 字段名中英两种写法都认
+
 PLACEHOLDER = re.compile(r"^<.*>$")
 # 编号：目标 G001；任务按目标编 G001-T1（目标内从 1 起），不属于目标的零散任务和旧任务用 T001
 ID_RE = {"G": r"G\d+(?![\d-])", "T": r"(?:G\d+-)?T\d+"}
@@ -19,11 +22,11 @@ def strip_comments(text: str) -> str:
 
 
 def kv_line(line: str) -> Dict[str, str]:
-    """`状态：x ｜ 执行：y` → {状态: x, 执行: y}"""
+    """`状态：x ｜ 执行：y`（英文 `Status: x | Executor: y`）→ {状态: x, 执行: y}"""
     out = {}
-    for part in line.split("｜"):
-        if "：" in part:
-            k, v = part.split("：", 1)
+    for part in re.split(r"[｜|]", line):  # 中文卡头用全角｜，英文用半角 |，两种都认
+        k, sep, v = part.replace("：", ":", 1).partition(":")
+        if sep:
             out[k.strip()] = v.strip()
     return out
 
@@ -46,6 +49,9 @@ def fields(lines: List[str]) -> List[Dict[str, str]]:
     out = []
     for l in lines:
         m = re.match(r"- ([^：]{1,12})：(.*)", l)
+        if not m:  # 英文卡片「- Purpose: …」：英文冒号只在字段名认得出时才认，免得把正文当字段
+            m = re.match(r"- ([^:：]{1,24}?):\s*(.*)", l)
+            m = m if m and i18n.code_of("field", m.group(1)) else None
         if m and m.group(2).strip() and not PLACEHOLDER.match(m.group(2).strip()):
             out.append({"k": m.group(1), "v": m.group(2).strip()})
     return out
@@ -72,7 +78,7 @@ def _card(kind: str, title: str, lines: List[str], file: Path, archived: bool) -
     m = re.match(r"#+\s*(%s)\s*(.*)" % ID_RE[kind], title)
     if not m:
         return None
-    head = next((kv_line(l) for l in lines if l.startswith("状态：")), {})
+    head = next((kv_line(l) for l in lines if l.startswith(("状态：", "Status:"))), {})
     card = {"id": m.group(1), "title": m.group(2).strip(), "head": head, "fields": fields(lines),
             "file": str(file), "archived": archived, "tables": tables(lines)}
     return card
@@ -100,8 +106,8 @@ def _collect(collab: Path, kind: str, single: str, folder: str, dedup: bool = Tr
     if d.is_dir():
         for f in sorted({f for g in FILE_GLOBS[kind] for f in d.glob(g)}):
             cards += _cards_in(f, kind, False)
-    cards += [c for c in _cards_in(collab / "归档.md", kind, True)]
-    ad = collab / "归档" / folder
+    cards += [c for c in _cards_in(collab / P.ARCHIVE_MD, kind, True)]
+    ad = collab / P.ARCHIVE / folder
     if ad.is_dir():
         for f in sorted({f for g in FILE_GLOBS[kind] for f in ad.glob(g)}):
             cards += _cards_in(f, kind, True)
@@ -117,7 +123,7 @@ def _collect(collab: Path, kind: str, single: str, folder: str, dedup: bool = Tr
 
 def raw_cards(collab: Path, kind: str) -> List[Dict[str, Any]]:
     """不去重的全部卡（含归档），校验重复编号用。kind 为 "G" 或 "T"。"""
-    single, folder = ("目标.md", "目标") if kind == "G" else ("任务.md", "任务")
+    single, folder = (P.GOALS_MD, P.GOALS) if kind == "G" else (P.TASKS_MD, P.TASKS)
     return _collect(collab, kind, single, folder, dedup=False)
 
 
@@ -133,7 +139,7 @@ def approved(card: Dict[str, Any]) -> bool:
 
 
 def load_tasks(collab: Path) -> List[Dict[str, Any]]:
-    tasks = _collect(collab, "T", "任务.md", "任务")
+    tasks = _collect(collab, "T", P.TASKS_MD, P.TASKS)
     for t in tasks:
         flow = next((tb for tb in t.pop("tables") if tb and "经办人" in tb[0]), [])
         t["flow"] = flow
@@ -152,7 +158,7 @@ def load_tasks(collab: Path) -> List[Dict[str, Any]]:
 
 def load_goals(collab: Path, tasks: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     tasks = load_tasks(collab) if tasks is None else tasks
-    goals = _collect(collab, "G", "目标.md", "目标")
+    goals = _collect(collab, "G", P.GOALS_MD, P.GOALS)
     by_id = {t["id"]: t for t in tasks}
     for g in goals:
         tbs = g.pop("tables")
@@ -289,7 +295,7 @@ ROUND_RE = re.compile(r"第\s*(\d+)\s*轮")
 
 def issue_files(collab: Path) -> List[Path]:
     out = []
-    for d, archived in ((collab / "议题", False), (collab / "归档" / "议题", True)):
+    for d, archived in ((collab / P.ISSUES, False), (collab / P.ARCHIVE / P.ISSUES, True)):
         if d.is_dir():
             out += [f for f in sorted(d.glob("I*.md"))]
     return out
@@ -324,9 +330,10 @@ def parse_issue(path: Path) -> Optional[Dict[str, Any]]:
     if not m:
         return None
     secs = h2_sections(text)
-    head = next((kv_line(l) for l in secs[0]["lines"] if l.startswith("状态：")), {})
+    head = next((kv_line(l) for l in secs[0]["lines"] if l.startswith(("状态：", "Status:"))), {})
     issue = {"id": m.group(1), "title": m.group(2).strip(), "head": head, "file": str(path),
-             "archived": "归档" in path.parts, "question": [], "attendees": [], "rounds": [],
+             "archived": P.ARCHIVE in path.parts,
+ "question": [], "attendees": [], "rounds": [],
              "summary": [], "ruling": []}
     for s in secs[1:]:
         t = s["title"]

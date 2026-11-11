@@ -1,10 +1,10 @@
 {
-  "规约": "视图",
-  "版本": 1,
-  "说明": "视图模型的布局规则：参与者顺序、主干槽位。呈现端只画视图模型，不读事件、不自行排序。",
-  "固定参与者": ["总裁", "总管"],
-  "主干": ["建立", "派发", "接手", "交付", "确认"],
-  "称谓": {},
-  "称谓说明": "可选的显示名，只换看板上的叫法，不改数据。键是系统里的名字（总裁、总管、待你决定、上报、确认、越过等），值是显示名；演示案例用它换成明朝叫法。",
-  "主干取法": {"建立": "首次", "派发": "首次", "接手": "首次", "交付": "最后一次（最终通过之前）", "确认": "最后一次且结果为通过"}
+  "spec": "view",
+  "version": 1,
+  "description": "Layout rules of the view model: participant order and trunk slots. Renderers only draw the view model; they do not read events or sort on their own.",
+  "fixed_participants": ["owner", "lead"],
+  "trunk": ["create", "dispatch", "pick_up", "deliver", "review"],
+  "titles": {},
+  "titles_note": "Optional display names: only changes the labels on the board, not the data. Keys are display texts (owner, lead, needs your decision, escalate, review, override…), values are what to show instead; the demo uses it for Ming-dynasty titles.",
+  "trunk_rule": {"create": "first", "dispatch": "first", "pick_up": "first", "deliver": "last (before the final pass)", "review": "last, with result pass"}
 }

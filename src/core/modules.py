@@ -8,19 +8,23 @@
 
 enable 把模块加进 config.json 的 modules，缺的数据文件从 sample/ 生成（只生成 module.json 的 files 列出的），再合并口令；
 disable 只从 modules 去掉、再合并口令，数据文件不动。
-口令：core/口令.md 和已启用模块的 口令.md 合并成 NOW 数据目录下的 口令.md；同名口令（## 标题）按核心、模块顺序拼起来。
+口令：core/commands.md 和已启用模块的 commands.md 合并成 NOW 数据目录下的 commands.md；同名口令（## 标题）按核心、模块顺序拼起来。
 """
 import datetime as dt
 import json
+import os
 import re
 import shutil
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import i18n  # noqa: E402
+import paths as P  # noqa: E402
 import registry  # noqa: E402  NOW 位置和 init.sh、看板服务同一套规则
 
 CONTRACT = 1  # 和 board/now/build.py 的 CONTRACT 一致
+L = i18n.current  # 提示跟着 NOW 的语言（read_config 里设）
 DEFAULT_MODULES = ["schedule", "deadlines"]  # 和 board/now/build.py 一致：config.json 没写 modules 时启用
 
 
@@ -29,15 +33,17 @@ def data_dir(kit, explicit):
         return Path(explicit).expanduser().resolve()
     found = registry.now_data_dir(kit)
     if not found:
-        sys.exit("没启用 NOW：用 --now-dir 指明 NOW 数据目录，或先运行 init.sh now <目录>")
+        sys.exit(L.t("mod.no_now"))
     return found
 
 
 def read_config(data):
     f = data / "config.json"
     if not f.exists():
-        sys.exit(f"没有找到 {f}：用 --now-dir 指明 NOW 数据目录，或先运行 init.sh now")
-    return json.loads(f.read_text(encoding="utf-8"))
+        sys.exit(L.t("mod.no_config", path=f))
+    cfg = json.loads(f.read_text(encoding="utf-8"))
+    i18n.set_current(now_lang(cfg))
+    return cfg
 
 
 def write_config(data, cfg):
@@ -47,7 +53,7 @@ def write_config(data, cfg):
 def find_modules(kit, data):
     """所有可用模块 {id: (目录, module.json)}；同 id 时 NOW 数据目录下 模块/ 里的优先。"""
     found = {}
-    for base in (kit / "modules", data / "模块"):
+    for base in (kit / "modules", data / P.NOW_MODULES):
         if base.is_dir():
             for d in sorted(base.iterdir()):
                 f = d / "module.json"
@@ -67,11 +73,11 @@ def enabled(cfg, avail):
 def problem(meta, on):
     """这个模块为什么加载不了；能加载时返回空串。on 是已启用的模块 id。"""
     if meta.get("broken"):
-        return f"module.json 读不了：{meta['broken']}"
+        return L.t("mod.broken", e=meta['broken'])
     if meta.get("contract") != CONTRACT:
-        return f"约定版本 {meta.get('contract')} 不对，本看板是 {CONTRACT}"
+        return L.t("mod.contract", v=meta.get('contract'), want=CONTRACT)
     miss = [r for r in meta.get("requires", []) if r not in on]
-    return f"缺依赖 {'、'.join(miss)}" if miss else ""
+    return L.t("mod.missing_deps", deps=L.join(miss)) if miss else ""
 
 
 def cmd_list(kit, data):
@@ -79,12 +85,12 @@ def cmd_list(kit, data):
     avail = find_modules(kit, data)
     on = enabled(cfg, avail)
     for mid, (_, meta) in sorted(avail.items(), key=lambda x: (x[0] not in on, on.index(x[0]) if x[0] in on else 0, x[0])):
-        state = "已启用" if mid in on else "未启用"
+        state = L.t("mod.on") if mid in on else L.t("mod.off")
         why = problem(meta, on)
-        print(f"{mid}\t{meta.get('name', mid)}\tv{meta.get('version', '?')}\t{state}{'（' + why + '）' if why else ''}")
+        print(f"{mid}\t{meta.get('name', mid)}\tv{meta.get('version', '?')}\t{state}{L.t('sep.paren_open') + why + L.t('sep.paren_close') if why else ''}")
     for mid in on:
         if mid not in avail:
-            print(f"{mid}\t?\t?\t已启用（没找到模块目录）")
+            print(f"{mid}\t?\t?\t{L.t('mod.on_missing')}")
 
 
 def start_files(kit, data, mid, avail):
@@ -102,7 +108,7 @@ def start_files(kit, data, mid, avail):
 
 def need(mid, avail):
     if mid not in avail:
-        sys.exit(f"没有模块 {mid}（可用：{'、'.join(sorted(avail)) or '无'}）")
+        sys.exit(L.t("mod.unknown", mid=mid, avail=L.join(sorted(avail)) or L.t("block.none_inline")))
 
 
 def cmd_enable(kit, data, mid):
@@ -112,16 +118,16 @@ def cmd_enable(kit, data, mid):
     on = enabled(cfg, avail)
     why = problem(avail[mid][1], on)
     if why:
-        sys.exit(f"不能启用 {mid}：{why}")
+        sys.exit(L.t("mod.cant_enable", mid=mid, why=why))
     made = start_files(kit, data, mid, avail)
     if mid in on:
-        print(f"{mid} 已经启用")
+        print(L.t("mod.already_on", mid=mid))
     else:
         cfg["modules"] = on + [mid]
         write_config(data, cfg)
-        print(f"已启用 {mid}，刷新看板就出现")
+        print(L.t("mod.enabled", mid=mid))
     for rel in made:
-        print(f"  新建 {rel}（样例，改成自己的）")
+        print("  " + L.t("mod.sample", path=rel))
     rules(kit, data)
 
 
@@ -130,14 +136,14 @@ def cmd_disable(kit, data, mid):
     avail = find_modules(kit, data)
     on = enabled(cfg, avail)
     if mid not in on:
-        print(f"{mid} 没有启用")
+        print(L.t("mod.not_on", mid=mid))
         return
     cfg["modules"] = [m for m in on if m != mid]
     write_config(data, cfg)
-    print(f"已停用 {mid}，数据文件没动")
+    print(L.t("mod.disabled", mid=mid))
     for other in cfg["modules"]:
         if other in avail and mid in avail[other][1].get("requires", []):
-            print(f"  注意：{other} 依赖 {mid}，之后不会加载")
+            print("  " + L.t("mod.dependent", other=other, mid=mid))
     rules(kit, data)
 
 
@@ -145,7 +151,7 @@ def cmd_init(kit, data, mid):
     avail = find_modules(kit, data)
     need(mid, avail)
     made = start_files(kit, data, mid, avail)
-    print("\n".join(f"新建 {r}（样例，改成自己的）" for r in made) or f"{mid} 不需要新建数据文件")
+    print("\n".join(L.t("mod.sample", path=r) for r in made) or L.t("mod.no_files", mid=mid))
 
 
 def short(p):
@@ -168,13 +174,28 @@ def split_rules(text):
     return out
 
 
+def now_lang(cfg) -> str:
+    """NOW 的语言：环境变量 COLLAB_LANG，再 NOW config.json 的 lang，都没有用 en（同 registry.kit_lang）。"""
+    v = os.environ.get("COLLAB_LANG") or cfg.get("lang") or "en"
+    return v if v in i18n.LANGS else "en"
+
+
 def merged_rules(kit, data, cfg):
     avail = find_modules(kit, data)
     on = enabled(cfg, avail)
     now_md = Path(cfg.get("now_md") or "../NOW.md").expanduser()
     now_md = now_md if now_md.is_absolute() else (data / now_md).resolve()
-    sources = [("核心", kit / "core", kit / "core" / "口令.md")]
-    sources += [(avail[m][1].get("name", m), avail[m][0], avail[m][0] / "口令.md") for m in on
+    lang = now_lang(cfg)
+    L = i18n.pack(lang)
+
+    def rules_file(base: Path) -> Path:
+        """口令按语言放：commands.<lang>.md，没有这种语言时用另一种，再用 commands.md；工具包外的旧模块还叫 口令.md。"""
+        for name in (f"commands.{lang}.md", *(f"commands.{x}.md" for x in i18n.LANGS if x != lang), P.COMMANDS, "口令.md"):
+            if (base / name).exists():
+                return base / name
+        return base / P.COMMANDS
+    sources = [(L.t("rules.core"), kit / "core", rules_file(kit / "core"))]
+    sources += [(avail[m][1].get("name", m), avail[m][0], rules_file(avail[m][0])) for m in on
                 if m in avail and not problem(avail[m][1], on)]
     order, bodies, used = [], {}, []
     for label, base, f in sources:
@@ -182,23 +203,22 @@ def merged_rules(kit, data, cfg):
             continue
         used.append(label)
         text = f.read_text(encoding="utf-8")
-        for k, v in {"NOW目录": data, "NOW文件": now_md, "工具包": kit, "模块目录": base}.items():
+        for k, v in {"NOW目录": data, "NOW文件": now_md, "工具包": kit, "模块目录": base,
+                     "now_dir": data, "now_file": now_md, "toolkit": kit, "module_dir": base}.items():
             text = text.replace("{{" + k + "}}", short(v))
         for name, body in split_rules(text):
             if name not in bodies:
                 order.append(name)
                 bodies[name] = []
             bodies[name].append(body)
-    head = ("# 口令\n\n"
-            f"由 `init.sh rules` 按已启用的模块合并生成（{'、'.join(used)}），不要手改；"
-            "要改就改工具包里的 `core/口令.md` 或模块的 `口令.md`，发布后重新运行 `init.sh rules`。\n\n")
+    head = L.t("rules.head", used=L.join(used), lang=lang) + "\n\n"
     return head + "\n\n".join(f"## {n}\n\n" + "\n".join(bodies[n]) for n in order) + "\n"
 
 
 def rules(kit, data):
     cfg = read_config(data)
-    (data / "口令.md").write_text(merged_rules(kit, data, cfg), encoding="utf-8")
-    print(f"已合并口令：{short(data / '口令.md')}")
+    (data / P.COMMANDS).write_text(merged_rules(kit, data, cfg), encoding="utf-8")
+    print(L.t("mod.rules_merged", path=short(data / P.COMMANDS)))
 
 
 def main(argv):
@@ -206,7 +226,7 @@ def main(argv):
     if "--now-dir" in argv:
         i = argv.index("--now-dir")
         if i + 1 >= len(argv):
-            sys.exit("--now-dir 需要目录")
+            sys.exit("--now-dir needs a directory")
         explicit = argv[i + 1]
         del argv[i:i + 2]
     if len(argv) < 2:
@@ -220,7 +240,7 @@ def main(argv):
     elif mode == "module" and len(rest) == 2 and rest[0] in ("enable", "disable", "init"):
         {"enable": cmd_enable, "disable": cmd_disable, "init": cmd_init}[rest[0]](kit, data, rest[1])
     else:
-        sys.exit("用法：init.sh module list | enable <id> | disable <id> | init <id>；init.sh rules")
+        sys.exit(L.t("mod.usage"))
 
 
 if __name__ == "__main__":

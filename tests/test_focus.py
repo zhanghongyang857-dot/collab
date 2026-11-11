@@ -92,7 +92,7 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(s["unplannedMin"], 20)
 
     def test_rest_notes_and_unquantified_lines(self):
-        s = run([item("03-04", "备注", "—"), item("03-04", "10:00–10:10", "不计时"), item("03-04", "下午", "学习（论文）"),
+        s = run([item("03-04", "note", "—"), item("03-04", "10:00–10:10", "不计时"), item("03-04", "下午", "学习（论文）"),
                  item("03-04", "19:00", "工作（会议）"), item("03-04", "", "工作（全天）"), item("03-04", "09:00–10:00", "工作（周报）")], [])["today"]
         self.assertEqual(s["planMin"], 60)
         self.assertEqual(s["unquant"], 2)
@@ -313,7 +313,7 @@ class TestScheduleProvidesArchive(unittest.TestCase):
             data = Path(tmp) / "NOW"
             shutil.copytree(SAMPLE, data)
             # 归档里也有一行还留在 安排.md 里的：不重复
-            with open(data / "归档" / "2026-03.md", "a", encoding="utf-8") as f:
+            with open(data / "archive" / "2026-03.md", "a", encoding="utf-8") as f:
                 f.write("| 03-04 | 09:00–10:00 | 写周报 | 工作（周报） |\n")
             (data / "config.json").write_text('{"modules": ["schedule"]}', encoding="utf-8")
             os.environ["NOW_DATA_DIR"] = str(data)

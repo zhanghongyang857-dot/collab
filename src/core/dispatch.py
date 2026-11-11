@@ -45,13 +45,17 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import collab_parse  # noqa: E402  与看板共用的任务卡、目标卡解析
 import check as collab_check  # noqa: E402  collab/ 校验，与 Stop hook、看板共用
+import team as team_mod  # noqa: E402
 import flow  # noqa: E402  新结构项目（有 collab/内部/流转/）：派发、接手、进展由本脚本经 flow.py 代写
-TEAM_FILE = flow.team_dir() / "班子.json"
-RUNS_DIR = "内部/运行记录"
+import paths as P  # noqa: E402
+from vocab import Edge as E, IssueType, Kind, RunMode, RunPhase, RunStatus, Seat, Section, State as S, Writer  # noqa: E402
+TEAM_FILE = flow.team_file()
+RUNS_DIR = P.INTERNAL_RUNS
 HEARTBEAT_SECONDS = 5  # 事件密集时，最多每隔几秒写一次记录
 ACTION_LIMIT = 100
 
-RUNNING, DONE, FAILED, STOPPED, LOST = "运行中", "完成", "失败", "已中断", "异常结束"
+L = flow.i18n.current  # 输出文字（派活脚本的提示）：跟着项目语言，main 里按项目设
+RUNNING, DONE, FAILED, STOPPED, LOST = RunStatus.RUNNING, RunStatus.DONE, RunStatus.FAILED, RunStatus.STOPPED, RunStatus.LOST
 
 
 # ---------- 启动环境：成员在什么 PATH、什么认证变量下启动 ----------
@@ -124,13 +128,13 @@ def clip(text: Any, limit: int = ACTION_LIMIT) -> str:
 
 def find_project(start: Path) -> Path:
     for p in [start, *start.parents]:
-        if (p / "collab" / "PROGRESS.md").exists():
+        if (p / P.COLLAB / P.PROGRESS).exists():
             return p
-    sys.exit(f"找不到 collab/PROGRESS.md：{start} 及其上级目录都不是协作项目，用 --project 指定")
+    sys.exit(L.t("flow.no_project", start=start))
 
 
 def runs_dir(project: Path) -> Path:
-    d = project / "collab" / RUNS_DIR
+    d = project / P.COLLAB / RUNS_DIR
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -155,7 +159,7 @@ def pid_alive(pid: Optional[int]) -> bool:
 
 def load_runs(project: Path) -> List[Dict[str, Any]]:
     """读出全部派活记录，按开始时间排序；标为运行中但进程已不在的，视为异常结束（只在返回值里改，不写回）。"""
-    d = project / "collab" / RUNS_DIR
+    d = project / P.COLLAB / RUNS_DIR
     runs = []
     if d.exists():
         for f in d.glob("*.json"):
@@ -177,16 +181,16 @@ def members_source() -> Path:
 def load_members() -> Dict[str, Any]:
     """成员来自班子配置（班子目录见 flow.team_dir()）；没有班子配置时报错，先运行 init.sh team。"""
     if not TEAM_FILE.exists():
-        sys.exit(f"没有班子配置：{TEAM_FILE}（先运行 init.sh team 建立）")
-    team = json.loads(TEAM_FILE.read_text(encoding="utf-8"))
+        sys.exit(L.t("disp.no_team", path=TEAM_FILE))
+    team = team_mod.read(TEAM_FILE)
     out = {}
-    for x in team.get("成员", []):
-        did = x.get("派活名")
-        if not did or not x.get("新会话命令"):
+    for x in team.get("members", []):
+        did = x.get("dispatch_name")
+        if not did or not x.get("start_command"):
             continue
-        out[did] = {"aliases": x.get("别名") or [did], "parser": x.get("事件解析", did),
-                    "start": x["新会话命令"], "resume": x.get("续接命令", []),
-                    "available": str(x.get("可用", "✓"))}
+        out[did] = {"aliases": x.get("aliases") or [did], "parser": x.get("parser", did),
+                    "start": x["start_command"], "resume": x.get("resume_command", []),
+                    "available": str(x.get("available", "✓"))}
     return out
 
 
@@ -203,7 +207,7 @@ def new_run_id(rdir: Path, task: str, member: str = "", seat: str = "") -> str:
         try:
             fd = os.open(rdir / f"{rid}.json", os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             os.write(fd, (json.dumps({"run": rid, "task": task, "member": member, "seat": seat, "status": RUNNING,
-                                      "pid": os.getpid(), "started": now_iso(), "phase": "启动中"}, ensure_ascii=False) + "\n").encode("utf-8"))
+                                      "pid": os.getpid(), "started": now_iso(), "phase": RunPhase.STARTING}, ensure_ascii=False) + "\n").encode("utf-8"))
             os.close(fd)
             return rid
         except FileExistsError:
@@ -225,7 +229,7 @@ def parse_dsh(ev: Dict[str, Any], out: Dict[str, Any]) -> None:
     if t == "session" and ev.get("sessionId"):
         out["session"] = ev["sessionId"]
     elif t == "tool_call":
-        out["action"] = _tool_brief(ev.get("tool", "工具"), ev.get("input"))
+        out["action"] = _tool_brief(ev.get("tool", L.t("disp.tool")), ev.get("input"))
         out["step"] = True
     elif t == "final":
         out["final"] = ev.get("text", "")
@@ -242,11 +246,11 @@ def parse_codex(ev: Dict[str, Any], out: Dict[str, Any]) -> None:
     if t == "thread.started" and ev.get("thread_id"):
         out["session"] = ev["thread_id"]
     elif t == "item.started" and it == "command_execution":
-        out["action"] = "运行：" + str(item.get("command", ""))
+        out["action"] = L.t("disp.action.run") + str(item.get("command", ""))
         out["step"] = True
     elif t == "item.completed" and it == "file_change":
         paths = [c.get("path", "") for c in item.get("changes") or []]
-        out["action"] = "改文件：" + "、".join(Path(p).name for p in paths if p)
+        out["action"] = L.t("disp.action.edit") + L.join(Path(p).name for p in paths if p)
         out["step"] = True
     elif t == "item.started" and it in ("mcp_tool_call", "web_search"):
         out["action"] = _tool_brief(item.get("tool") or it, item.get("arguments") or {"query": item.get("query")})
@@ -271,28 +275,28 @@ def parse_claude(ev: Dict[str, Any], out: Dict[str, Any]) -> None:
         e = ev.get("event") or {}
         et = e.get("type")
         if et == "message_start":
-            out["phase"] = "思考"
+            out["phase"] = RunPhase.THINKING
             out["draft_reset"] = True
         elif et == "content_block_start":
             cb = e.get("content_block") or {}
             if cb.get("type") == "text":
-                out["phase"] = "正在写回复"
+                out["phase"] = RunPhase.WRITING
             elif cb.get("type") in ("tool_use", "server_tool_use"):
-                out["phase"] = "调用工具"
-                out["action"] = cb.get("name", "工具")
+                out["phase"] = RunPhase.TOOL
+                out["action"] = cb.get("name", L.t("disp.tool"))
             else:
-                out["phase"] = "思考"
+                out["phase"] = RunPhase.THINKING
         elif et == "content_block_delta":
             d = e.get("delta") or {}
             if d.get("type") == "text_delta" and d.get("text"):
                 out["draft_add"] = d["text"]
         return
     if t == "user":
-        out["phase"] = "思考"
+        out["phase"] = RunPhase.THINKING
     if t == "assistant":
         for c in (ev.get("message") or {}).get("content") or []:
             if c.get("type") == "tool_use":
-                out["action"] = _tool_brief(c.get("name", "工具"), c.get("input"))
+                out["action"] = _tool_brief(c.get("name", L.t("disp.tool")), c.get("input"))
                 out["step"] = True
     elif t == "result":
         out["final"] = ev.get("result", "")
@@ -377,13 +381,17 @@ def fmt_tokens(t: Optional[Dict[str, Any]]) -> str:
     if not t or not t.get("total"):
         return "—"
     n = t["total"]
-    s = f"{n / 10000:.1f}万".replace(".0万", "万") if n >= 10000 else str(n)
-    return f"{s} · 缓存{round(100 * t.get('cached', 0) / n)}%" if t.get("cached") else s
+    if L.lang == "zh":
+        s = f"{n / 10000:.1f}万".replace(".0万", "万") if n >= 10000 else str(n)
+    else:
+        s = f"{n / 1000:.1f}k".replace(".0k", "k") if n >= 1000 else str(n)
+    return s + L.t("disp.tokens_cached", pct=round(100 * t.get('cached', 0) / n)) if t.get("cached") else s
 
 
 # ---------- 启动检查：用一次真实的最小调用确认成员能启动、已登录 ----------
 
-CHECK_PROMPT = "这是启动检查。只回复两个字：就绪。不要调用任何工具，不要读写文件。"
+def check_prompt() -> str:
+    return L.t("disp.check_prompt")
 CHECK_SECONDS = 120
 
 
@@ -402,18 +410,18 @@ def check_member(key: str, cfg: Dict[str, Any], timeout: int = CHECK_SECONDS) ->
     t0 = time.time()
     res: Dict[str, Any] = {"member": key, "ok": False, "error": "", "time": now_iso(), "seconds": 0}
     if not cfg.get("available", "✓").startswith("✓"):
-        res["error"] = f"班子配置里状态是「{cfg['available']}」，没有检查"
+        res["error"] = L.t("disp.check_skipped", status=cfg['available'])
         res["skipped"] = True
         return res
     env = member_env()
     with tempfile.TemporaryDirectory() as tmp:
-        argv = isolate(build_argv(cfg, "start", CHECK_PROMPT, "", Path(tmp) / "last.txt"))
+        argv = isolate(build_argv(cfg, "start", check_prompt(), "", Path(tmp) / "last.txt"))
         if Path(_exe_of(argv)).name == "claude" and "--no-session-persistence" not in argv:
             i = argv.index(_exe_of(argv))
             argv = argv[:i + 1] + ["--no-session-persistence"] + argv[i + 1:]
         exe = _exe_of(argv)
         if exe and not which(exe, env):
-            res["error"] = f"找不到命令 {exe}（启动环境的 PATH 里没有）"
+            res["error"] = L.t("disp.no_command", exe=exe)
             return res
         out: Dict[str, Any] = {}
         tokens: Dict[str, Any] = {}
@@ -422,10 +430,10 @@ def check_member(key: str, cfg: Dict[str, Any], timeout: int = CHECK_SECONDS) ->
             r = subprocess.run(argv, cwd=tmp, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True,
                                encoding="utf-8", errors="replace", timeout=timeout)
         except subprocess.TimeoutExpired:
-            res.update(error=f"{timeout} 秒内没有回复", seconds=round(time.time() - t0, 1))
+            res.update(error=L.t("disp.check_timeout", n=timeout), seconds=round(time.time() - t0, 1))
             return res
         except OSError as e:
-            res.update(error=f"无法启动：{e}", seconds=round(time.time() - t0, 1))
+            res.update(error=L.t("disp.cant_start", e=e), seconds=round(time.time() - t0, 1))
             return res
         for line in r.stdout.splitlines():
             try:
@@ -450,7 +458,7 @@ def check_member(key: str, cfg: Dict[str, Any], timeout: int = CHECK_SECONDS) ->
         res["ok"] = True
     else:
         res["error"] = clip(out.get("error") or (r.stderr.strip().splitlines() or [""])[-1] or out.get("final")
-                            or f"退出码 {r.returncode}，没有回复", 200)
+                            or L.t("disp.exit_no_reply", code=r.returncode), 200)
     return res
 
 
@@ -461,7 +469,7 @@ def check_members(project: Path, keys: List[str]) -> List[Dict[str, Any]]:
 
     def one(k: str) -> None:
         if k not in members:
-            results[k] = {"member": k, "ok": False, "error": "不在班子配置里", "time": now_iso(), "seconds": 0}
+            results[k] = {"member": k, "ok": False, "error": L.t("disp.not_in_team"), "time": now_iso(), "seconds": 0}
         else:
             results[k] = check_member(k, members[k])
     threads = [threading.Thread(target=one, args=(k,)) for k in keys]
@@ -477,8 +485,8 @@ def cmd_check(a, project: Path) -> int:
     keys = [resolve_member(x, members) or x for x in a.members] or list(members)
     ok = True
     for r in check_members(project, keys):
-        mark = "就绪" if r["ok"] else ("跳过" if r.get("skipped") else "未就绪")
-        print(f"{r['member']:<14} {mark}  {r['seconds']}秒{'  ' + str(r['tokens']) + ' token' if r.get('tokens') else ''}"
+        mark = L.t("disp.ready") if r["ok"] else (L.t("disp.skipped") if r.get("skipped") else L.t("disp.not_ready"))
+        print(f"{r['member']:<14} {mark}  {L.t('disp.seconds', n=r['seconds'])}{'  ' + str(r['tokens']) + ' token' if r.get('tokens') else ''}"
               f"{'  ' + r['error'] if r['error'] else ''}")
         ok = ok and (r["ok"] or bool(r.get("skipped")))
     return 0 if ok else 1
@@ -508,7 +516,7 @@ class Runner:
         self.dirty = False
         self.lock = threading.Lock()
         self.done = threading.Event()
-        self.limits = limits or {}  # {"步数": n, "秒数": n}；到了就停掉这次运行，rec["stop_reason"] 写明原因
+        self.limits = limits or {}  # {"steps": n, "seconds": n}；到了就停掉这次运行，rec["stop_reason"] 写明原因
         self.draft = ""
         self.draft_at = 0.0
         self.draft_file = self.rdir / f"{rec['run']}.draft.txt"
@@ -517,7 +525,8 @@ class Runner:
         """到运行上限：记下原因，停掉命令行进程（状态为已中断，调用方决定是否让它收尾）。"""
         if self.stopping:
             return
-        self.rec["stop_reason"] = "上限：" + reason
+        self.rec["stop_reason"] = L.t("disp.limit_prefix") + reason
+        self.rec["stop_limit"] = reason  # 到上限停的：收尾时用这里的原因，不解析文字
         self.stopping = True
         self.save(force=True)
         if self.child and self.child.poll() is None:
@@ -527,11 +536,11 @@ class Runner:
                 pass
 
     def watchdog(self) -> None:
-        secs = self.limits.get("秒数")
+        secs = self.limits.get("seconds")
         t0 = time.time()
         while not self.done.wait(2):
             if secs and time.time() - t0 > secs:
-                self.trip(f"时间 {secs // 60 if secs % 60 == 0 else secs} {'分钟' if secs % 60 == 0 else '秒'}")
+                self.trip(L.t("disp.limit_minutes", n=secs // 60) if secs % 60 == 0 else L.t("disp.limit_seconds", n=secs))
                 return
 
     def write_draft(self, force: bool = False) -> None:
@@ -569,10 +578,10 @@ class Runner:
         signal.signal(signal.SIGTERM, self.on_signal)
         signal.signal(signal.SIGINT, self.on_signal)
         signal.signal(signal.SIGHUP, self.on_signal)
-        self.rec.update(status=RUNNING, pid=os.getpid(), started=now_iso(), phase="启动中", phase_at=now_iso())
+        self.rec.update(status=RUNNING, pid=os.getpid(), started=now_iso(), phase=RunPhase.STARTING, phase_at=now_iso())
         self.save(force=True)
-        print(f"派活 {self.rec['run']}：{self.rec['member']} 坐「{self.rec['seat']}」，任务 {self.rec['task']}"
-              f"{'，续接 ' + self.rec['session'] if self.rec.get('session') else ''}", flush=True)
+        print(L.t("disp.run_head", run=self.rec['run'], member=self.rec['member'], seat=L.name('seat', self.rec['seat']), task=self.rec['task'])
+              + (L.t("disp.run_resume", session=self.rec['session']) if self.rec.get('session') else ""), flush=True)
         try:
             err = self.errfile.open("w", encoding="utf-8")
             self.child = subprocess.Popen(self.argv, cwd=self.project, stdin=subprocess.DEVNULL,
@@ -580,7 +589,7 @@ class Runner:
                                           start_new_session=True, text=True, encoding="utf-8",
                                           errors="replace", bufsize=1)
         except OSError as e:
-            self.rec.update(status=FAILED, ended=now_iso(), error=f"无法启动：{e}")
+            self.rec.update(status=FAILED, ended=now_iso(), error=L.t("disp.cant_start", e=e))
             self.save(force=True)
             print(self.rec["error"], file=sys.stderr)
             return 127
@@ -603,12 +612,12 @@ class Runner:
                 self.parse(ev, out)
                 if not out.get("heartbeat"):  # 心跳不算动静，否则工具卡住时静默时间超不过心跳间隔，永远不显示疑似卡住
                     self.rec["last_at"] = now_iso()
-                if self.rec.get("phase") == "启动中" and not out.get("phase") and set(out) != {"session"}:
-                    out["phase"] = "思考"  # 只报了会话 ID 的初始化事件还算启动中；有的成员不报阶段，有别的输出就算思考
+                if self.rec.get("phase") == RunPhase.STARTING and not out.get("phase") and set(out) != {"session"}:
+                    out["phase"] = RunPhase.THINKING  # 只报了会话 ID 的初始化事件还算启动中；有的成员不报阶段，有别的输出就算思考
                 if out.get("session") and not self.rec.get("session"):
                     self.rec["session"] = out["session"]
                     self.save(force=True)
-                    print(f"会话 {out['session']}", flush=True)
+                    print(L.t("disp.session", session=out['session']), flush=True)
                 if out.get("draft_reset"):
                     self.draft = ""
                 if out.get("draft_add"):
@@ -621,8 +630,8 @@ class Runner:
                     self.save(force=True)
                 if out.get("step"):
                     self.rec["steps"] = self.rec.get("steps", 0) + 1
-                    if self.limits.get("步数") and self.rec["steps"] >= self.limits["步数"]:
-                        self.trip(f"步数 {self.limits['步数']}")
+                    if self.limits.get("steps") and self.rec["steps"] >= self.limits["steps"]:
+                        self.trip(L.t("disp.limit_steps", n=self.limits['steps']))
                 if "final" in out:
                     self.rec["final"] = out["final"]
                 if out.get("error"):
@@ -658,28 +667,28 @@ class Runner:
         else:
             status = FAILED
             if not self.rec.get("error"):
-                self.rec["error"] = clip(stderr.strip().splitlines()[-1] if stderr.strip() else f"退出码 {code}", 300)
+                self.rec["error"] = clip(stderr.strip().splitlines()[-1] if stderr.strip() else L.t("disp.exit_code", code=code), 300)
             elif self.rec["error"] in ("is_error", "error_during_execution") and stderr.strip():
                 self.rec["error"] = clip(stderr.strip().splitlines()[-1], 300)
         self.rec.update(status=status, ended=now_iso(), exit_code=code, last_at=now_iso())
         self.rec.pop("child_pid", None)
-        self.rec["phase"] = {DONE: "完成", FAILED: "失败", STOPPED: "已停止"}.get(status, status)
+        self.rec["phase"] = {DONE: RunPhase.DONE, FAILED: RunPhase.FAILED, STOPPED: RunPhase.STOPPED}.get(status, status)
         self.save(force=True)
         if self.flow_actor:
             try:
                 done = flow.dispatch_end(flow.Project(self.project), self.rec["task"], self.flow_actor, self.rec["run"],
                                          self.rec.get("session", ""), self.rec.get("final", ""), status)
-                print("流转：" + "；".join(done))
+                print(L.t("disp.flow_done") + L.join(done, "sep.clause"))
             except flow.FlowError as e:
-                print(f"流转没写成（{e.kind}）：{e.msg}", file=sys.stderr)
+                print(L.t("disp.flow_failed", kind=e.kind, msg=e.msg), file=sys.stderr)
 
-        print(f"\n{self.rec['run']} {status}（退出码 {code}，{self.rec.get('steps', 0)} 步）")
+        print("\n" + L.t("disp.run_end", run=self.rec['run'], status=status, code=code, steps=self.rec.get('steps', 0)))
         if self.rec.get("session"):
-            print(f"会话 {self.rec['session']}")
+            print(L.t("disp.session", session=self.rec['session']))
         if self.rec.get("error") and status != DONE:
-            print(f"错误：{self.rec['error']}")
+            print(L.t("disp.error") + self.rec['error'])
         if self.rec.get("final"):
-            print("\n--- 最终回复 ---\n" + self.rec["final"])
+            print("\n" + L.t("disp.final_head") + "\n" + self.rec["final"])
         return 0 if status == DONE else (130 if status == STOPPED else 1)
 
 
@@ -691,7 +700,7 @@ def build_argv(member_cfg: Dict[str, Any], mode: str, prompt: str, session: str,
 def read_prompt(p: str) -> str:
     text = sys.stdin.read() if p == "-" else p
     if not text.strip():
-        sys.exit("启动语为空")
+        sys.exit(L.t("disp.empty_prompt"))
     return text
 
 
@@ -701,12 +710,12 @@ def check_gate(project: Path, skip: str) -> Optional[str]:
     if not errs:
         return None
     if not skip:
-        print("未派活：collab/ 校验没通过，先按协议改好：", file=sys.stderr)
+        print(L.t("disp.check_failed"), file=sys.stderr)
         print(collab_check.fmt(errs), file=sys.stderr)
-        print('确定是校验器误报才加 --skip-check "理由"（记入运行记录，看板标为偏离）。', file=sys.stderr)
+        print(L.t("disp.skip_check_hint"), file=sys.stderr)
         sys.exit(2)
-    print(f"按 --skip-check 跳过校验（{len(errs)} 个错误）：{skip}")
-    return f"跳过校验（{len(errs)} 个错误）"
+    print(L.t("disp.skipping_check", n=len(errs), why=skip))
+    return L.t("disp.skipped_check", n=len(errs))
 
 
 def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
@@ -714,17 +723,17 @@ def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
               adhoc: str = "", skip_check: str = "") -> int:
     members = load_members()
     if member not in members:
-        sys.exit(f"未知成员 {member}，可用：{'、'.join(members)}（在 {members_source()} 配置）")
+        sys.exit(L.t("disp.unknown_member", member=member, members=L.join(members), src=members_source()))
     cfg = members[member]
     if not cfg.get("available", "✓").startswith("✓"):
-        print(f"提醒：班子配置里 {member} 的状态是「{cfg['available']}」，可能会失败", file=sys.stderr)
+        print(L.t("disp.member_unavailable", member=member, status=cfg['available']), file=sys.stderr)
     if cfg.get("parser") not in PARSERS:
-        sys.exit(f"{member} 的事件解析「{cfg.get('parser')}」不认识，可用：{'、'.join(PARSERS)}")
+        sys.exit(L.t("disp.bad_parser", member=member, parser=cfg.get('parser'), parsers=L.join(PARSERS)))
     skipped = check_gate(project, skip_check)
-    collab = project / "collab"
-    if (collab / "内部" / "流转").is_dir():
+    collab = project / P.COLLAB
+    if (collab / P.INTERNAL_FLOW).is_dir():
         if adhoc:
-            print("未派活：不再有临时派活，任务必须归属目标并经总裁批准。", file=sys.stderr)
+            print(L.t("disp.no_adhoc"), file=sys.stderr)
             return 2
         return start_flow_run(project, task, seat, member, cfg, prompt, session, parent, override, skipped)
     has_card = any(t["id"] == task for t in collab_parse.load_tasks(collab))
@@ -739,9 +748,9 @@ def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
             print(f"  - {b}", file=sys.stderr)
         print("这一关不能用 --override 跳过。", file=sys.stderr)
         return 2
-    deviations = collab_parse.check_dispatch(collab, task, seat, member, cfg.get("aliases", [member]))
+    deviations = collab_parse.check_dispatch(collab, task, flow.i18n.pack("zh").name("seat", seat), member, cfg.get("aliases", [member]))  # 旧结构的卡片写中文席位
     if deviations and not override:
-        print(f"未派活：{task}「{seat}」{member} 与任务卡或目标流程不符：", file=sys.stderr)
+        print(f"未派活：{task}「{L.name('seat', seat)}」{member} 与任务卡或目标流程不符：", file=sys.stderr)
         for d in deviations:
             print(f"  - {d}", file=sys.stderr)
         print('确需偏离就加 --override "理由"，理由会记入运行记录并在看板标为偏离；'
@@ -759,7 +768,7 @@ def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
     rid = new_run_id(rdir, task, member, seat)
     mode = "resume" if session else "start"
     argv = isolate(build_argv(cfg, mode, prompt, session or "", rdir / f"{rid}.last.txt"))
-    rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": "续接" if session else "新会话",
+    rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": RunMode.RESUME if session else RunMode.NEW,
            "session": session or "", "continues": parent or "", "prompt": prompt, "steps": 0,
            "last_action": "", "final": "", "error": "",
            "deviations": deviations, "override": "；".join(reasons),
@@ -790,13 +799,13 @@ def start_flow_run(project: Path, task: str, seat: str, member: str, cfg: Dict[s
                    session: Optional[str], parent: Optional[str], override: str, skipped: Optional[str]) -> int:
     """新结构项目（有 collab/内部/流转/）：顺序、人选等由 flow.py 校验；派发、接手由本脚本代写；
     启动语拼上 flow.py 的上下文包；成员用环境变量里的身份自己写交付或上报，结束后补一条进展。"""
-    if flow.kind_of(task) == "议题":
-        print(f"未派活：{task} 是议题，用 dispatch.py meet {task} [--wake 成员]", file=sys.stderr)
+    if flow.kind_of(task) == Kind.ISSUE:
+        print(L.t("disp.is_issue", task=task), file=sys.stderr)
         return 2
     proj = flow.Project(project)
     actor = proj.actor(member) or next((proj.actor(a) for a in cfg.get("aliases", []) if proj.actor(a)), None)
     if not actor:
-        print(f"未派活：{member} 不在 collab/内部/流程/花名册.json 里（运行 init.sh team-sync 重新生成）", file=sys.stderr)
+        print(L.t("disp.not_in_roster", member=member, roster=f"{P.COLLAB}/{P.INTERNAL_PLANS}/{P.ROSTER}"), file=sys.stderr)
         return 2
     rdir = runs_dir(project)
     rid = new_run_id(rdir, task, member, seat)
@@ -804,23 +813,23 @@ def start_flow_run(project: Path, task: str, seat: str, member: str, cfg: Dict[s
         done = flow.dispatch_begin(proj, task, seat, actor, rid, override)
     except flow.FlowError as e:
         (rdir / f"{rid}.json").unlink(missing_ok=True)  # 没派出去：收回占位记录
-        print(f"未派活：{task}（{e.kind}）{e.msg}", file=sys.stderr)
-        if e.kind == "规则错误":
-            print('确需偏离就加 --override "理由"，记入事件和运行记录，看板标为偏离。', file=sys.stderr)
+        print(L.t("disp.refused", task=task, kind=proj.L.t('cli.' + e.kind), msg=e.msg), file=sys.stderr)
+        if e.kind == "rule":
+            print(L.t("disp.override_hint"), file=sys.stderr)
         return 2
-    print("流转：" + "；".join(done))
+    print(L.t("disp.flow_done") + L.join(done, "sep.clause"))
     full_prompt = flow.dispatch_prompt(proj, task, actor, prompt)
     # 工位：<工作目录>/.scratch/<成员>/<任务>/，上下文包「现状」里写了这个路径；会话 cwd 仍是项目根
     st = flow.replay_all(proj)[0][task]
-    (project / flow.workspace(proj, st, actor)["工位"]).mkdir(parents=True, exist_ok=True)
+    (project / flow.workspace(proj, st, actor)["scratch"]).mkdir(parents=True, exist_ok=True)
     mode = "resume" if session else "start"
     argv = isolate(build_argv(cfg, mode, full_prompt, session or "", rdir / f"{rid}.last.txt"))
     deviations = [skipped] if skipped else []
-    rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": "续接" if session else "新会话",
+    rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": RunMode.RESUME if session else RunMode.NEW,
            "session": session or "", "continues": parent or "", "prompt": full_prompt, "steps": 0,
            "last_action": "", "final": "", "error": "", "deviations": deviations,
-           "override": "；".join(r for r in (override, f"跳过校验：{skipped}" if skipped else "") if r), "adhoc": ""}
-    env = member_env({"COLLAB_ACTOR": actor, "COLLAB_RUN": rid, "COLLAB_WRITER": "成员", "COLLAB_FLOW": str(flow.FLOW_PY)})
+           "override": L.join((r for r in (override, skipped) if r), "sep.clause"), "adhoc": ""}
+    env = member_env({"COLLAB_ACTOR": actor, "COLLAB_RUN": rid, "COLLAB_WRITER": Writer.MEMBER, "COLLAB_FLOW": str(flow.FLOW_PY)})
     base = None
     if parent:
         prev = next((r for r in load_runs(project) if r.get("run") == parent), None)
@@ -841,41 +850,41 @@ def issue_session(project: Path, proj: "flow.Project", issue: str, member: str) 
     """会话复用（方案 03 第 10.5 节）：挂目标的议题续接该成员在本目标里最近一个正常结束或被停止的会话（失败的不接）；
     项目级议题只续接本议题的；第三方验收的会话不续接；那个会话还在跑或已经丢失就开新的。"""
     states, _, _ = flow.replay_all(proj)
-    goal = states[issue]["目标"]
+    goal = states[issue]["goal"]
 
     def goal_of(task: str) -> Optional[str]:
         st = states.get(task)
-        return st["目标"] if st else (task.split("-T")[0] if "-T" in task else None)
+        return st["goal"] if st else (task.split("-T")[0] if "-T" in task else None)
     runs = [r for r in load_runs(project) if r.get("member") == member and r.get("session")]
     busy = {r["session"] for r in runs if r.get("status") == RUNNING}
-    lost = {r["session"] for r in runs if r.get("会话丢失")}
-    cands = [r for r in runs if r.get("status") in (DONE, STOPPED) and r.get("seat") != "验收" and r["session"] not in busy | lost
+    lost = {r["session"] for r in runs if r.get("session_lost")}
+    cands = [r for r in runs if r.get("status") in (DONE, STOPPED) and r.get("seat") != Seat.ACCEPTANCE and r["session"] not in busy | lost
              and (r.get("task") == issue or (goal and goal_of(r.get("task", "")) == goal))]
     return cands[-1] if cands else None
 
 
-DEFAULT_LIMITS = {"步数": 40, "分钟": 10}
-WRAP_LIMITS = {"步数": 3, "秒数": 240}  # 收尾那一次：只许写回复，跑超了也停
+DEFAULT_LIMITS = {"steps": 40, "minutes": 10}
+WRAP_LIMITS = {"steps": 3, "seconds": 240}  # 收尾那一次：只许写回复，跑超了也停
 
 
 def run_limits(key: str) -> Dict[str, int]:
     """每次运行的上限：班子.json 顶层「朝会运行上限」{步数, 分钟}，成员自己的「运行上限」覆盖它；缺省 40 步 10 分钟。写 0 表示不限。"""
     conf: Dict[str, Any] = dict(DEFAULT_LIMITS)
     try:
-        team = json.loads(TEAM_FILE.read_text(encoding="utf-8"))
+        team = team_mod.read(TEAM_FILE)
     except (OSError, ValueError):
         team = {}
-    conf.update(team.get("朝会运行上限") or {})
-    for x in team.get("成员", []):
-        if key in (x.get("派活名"), *(x.get("别名") or [])):
-            conf.update(x.get("运行上限") or {})
+    conf.update(team.get("meet_limits") or {})
+    for x in team.get("members", []):
+        if key in (x.get("dispatch_name"), *(x.get("aliases") or [])):
+            conf.update(x.get("limits") or {})
     out = {}
-    if conf.get("步数"):
-        out["步数"] = int(conf["步数"])
-    if conf.get("分钟"):
-        out["秒数"] = int(float(conf["分钟"]) * 60)
-    if conf.get("秒数"):
-        out["秒数"] = int(conf["秒数"])
+    if conf.get("steps"):
+        out["steps"] = int(conf["steps"])
+    if conf.get("minutes"):
+        out["seconds"] = int(float(conf["minutes"]) * 60)
+    if conf.get("seconds"):
+        out["seconds"] = int(conf["seconds"])
     return out
 
 
@@ -885,13 +894,12 @@ SESSION_LOST = re.compile(r"no conversation found|no (such )?session|session\b.*
 
 def wrap_prompt(reason: str, text: str = "") -> str:
     """text：总裁要求收尾时给的上下文包。被停的那次可能还没把启动语存进会话，运行中又可能有追问，所以从上次成功的「读到」补起，重复没关系。"""
-    head = (f"你这次运行被停下来了（{reason}）。现在请不要再调用任何工具、不要再查资料，立刻用你已经查到和想到的内容给出发言："
-            f"先给结论，再说依据；哪些没来得及查就直说。直接写发言，作为最后的回复。")
-    return f"{head}\n总裁在下面「新发言」里的问题都要回答，有前后不同的以最新的为准。\n\n{text}" if text else head
+    head = L.t("disp.wrap_head", reason=reason)
+    return f"{head}\n{L.t('disp.wrap_answer')}\n\n{text}" if text else head
 
 
 def _lock_issue(rdir: Path, issue: str, actor: str, wait: float):
-    lock = open(rdir / f".朝会-{issue}-{actor}.lock", "a+")
+    lock = open(rdir / f".meet-{issue}-{actor}.lock", "a+")
     end = time.time() + wait
     while True:
         try:
@@ -914,42 +922,41 @@ def run_issue_member(project: Path, issue: str, member: str, wrap: str = "") -> 
     actor = proj.actor(member) or member
     key = member_key(proj, actor, members)
     if not key:
-        print(f"未叫醒：{member} 不在班子配置里", file=sys.stderr)
+        print(L.t("disp.not_woken_team", member=member), file=sys.stderr)
         return 2
     cfg = members[key]
     rdir = runs_dir(project)
     lock = _lock_issue(rdir, issue, actor, 60 if wrap else 0)
     if lock is None:
-        print(f"{actor} 正在 {issue} 上跑，跑完会接着看新消息")
+        print(L.t("disp.busy", who=L.who(actor), issue=issue))
         return 0
     try:
         try:
             st = flow.issue_begin(proj, issue, actor)
         except flow.FlowError as e:
-            print(f"未叫醒：{e.msg}", file=sys.stderr)
+            print(L.t("disp.not_woken") + e.msg, file=sys.stderr)
             return 2
         mine = [r for r in load_runs(project) if r.get("task") == issue and r.get("member") == key]
         # 只有成功写进黑板的运行才推进「读到」；失败、被停止的不算（I001：失败也推进，补叫不动）
-        prev = [r for r in mine if "读到" in r and r.get("status") == DONE]
-        since = prev[-1]["读到"] if prev else None
-        seen = prev[-1].get("补到") or [] if prev else []
+        prev = [r for r in mine if "read_upto" in r and r.get("status") == DONE]
+        since = prev[-1]["read_upto"] if prev else None
+        seen = prev[-1].get("caught_up") or [] if prev else []
         last = mine[-1] if mine else None
-        retry = bool(last and last.get("status") in (FAILED, LOST, STOPPED) and last.get("seat") == "与会")
+        retry = bool(last and last.get("status") in (FAILED, LOST, STOPPED) and last.get("seat") == Seat.ATTENDEE)
         if not wrap and not flow.issue_needs(st, actor, since) and not retry:
-            print(f"{actor} 在 {issue} 上没有新的点名，不叫醒")
+            print(L.t("disp.no_mention", who=L.who(actor), issue=issue))
             return 0
         base = issue_session(project, proj, issue, key)
         session = (base or {}).get("session") or ""
         fresh = bool(prev) and prev[-1].get("session") != session  # 接的不是上次成功发言的会话（丢了）：它不记得这场会
         text, manifest = flow.context(proj, issue, actor, since=since, catch_up=retry or bool(wrap), fresh=fresh, seen=seen)
-        upto, extra = manifest[-1]["读到"], manifest[-1]["补到"]
-        head = f"你受邀参加朝会 {issue}。下面是 flow.py 给你的上下文包，按它发言；当前工作目录是项目根目录。"
+        upto, extra = manifest[-1]["read_upto"], manifest[-1]["caught_up"]
+        head = L.t("disp.meet_head", issue=issue)
         if retry:
             why = (last.get("error") or last.get("status") or "").strip()
-            head = (f"上次叫你（{last['run']}）没有成功{'：' + clip(why, 100) if why else ''}，所以你错过了一些内容，下面「新发言」里已经补上。"
-                    f"现在重新叫你，请按上下文包发言。当前工作目录是项目根目录。")
+            head = L.t("disp.meet_retry", run=last['run'], why=(L.t("sep.colon") + clip(why, 100)) if why else "")
         if fresh:
-            head += "这是一个新会话，你之前在这场会说过什么这里没有记录；下面「新发言」是到现在的全部公开发言，包括你自己说过的。"
+            head += L.t("disp.meet_fresh")
         prompt = f"{head}\n\n{text}"
         limits = run_limits(key)
         rec = None
@@ -957,22 +964,23 @@ def run_issue_member(project: Path, issue: str, member: str, wrap: str = "") -> 
         if wrap:  # 总裁要求收尾：有会话就续接被停止的，要它发言，运行中的追问一起给
             prompt, limits = wrap_prompt(wrap, text), WRAP_LIMITS
         for attempt in (0, 1):  # 第 2 次只在第 1 次到上限被停掉时：自动收尾
-            rid = new_run_id(rdir, issue, key, "与会")
+            rid = new_run_id(rdir, issue, key, Seat.ATTENDEE)
             mode = "resume" if session else "start"
             argv = isolate(build_argv(cfg, mode, prompt, session, rdir / f"{rid}.last.txt"))
-            rec = {"run": rid, "task": issue, "seat": "与会", "member": key, "mode": "续接" if session else "新会话",
+            rec = {"run": rid, "task": issue, "seat": Seat.ATTENDEE, "member": key, "mode": RunMode.RESUME if session else RunMode.NEW,
                    "session": session, "continues": (base or {}).get("run", ""), "prompt": prompt, "steps": 0,
                    "last_action": "", "final": "", "error": "", "deviations": [], "override": "", "adhoc": ""}
             if note:
-                rec["收尾"] = note
+                rec["wrap"] = note
             tbase = ((base or {}).get("tokens") or {}).get("session_cum") if base else None
             code = Runner(project, rec, argv, cfg["parser"], token_base=tbase, limits=limits).run()
             reason = rec.get("stop_reason", "")
-            if attempt == 0 and reason.startswith("上限") and not wrap:
-                msg = f"{actor} 的运行到了上限（{reason[3:]}），已停下，自动让它用已有内容收尾"
+            limit = rec.get("stop_limit", "")
+            if attempt == 0 and limit and not wrap:
+                msg = L.t("disp.limit_wrap", who=L.who(actor), limit=limit)
                 print(msg)
                 try:
-                    flow.record(proj, issue, "进展", {"发起": flow.LEAD, "写入者": "派活脚本", "派活": rid, "说明": msg})
+                    flow.record(proj, issue, E.PROGRESS, {"from": flow.LEAD, "writer": Writer.DISPATCHER, "run": rid, "note": msg})
                 except flow.FlowError:
                     pass
                 session = rec.get("session") or session
@@ -981,14 +989,14 @@ def run_issue_member(project: Path, issue: str, member: str, wrap: str = "") -> 
                 if session:
                     prompt = wrap_prompt(reason)
                 else:
-                    prompt = f"你的上一次运行到了上限（{reason[3:]}）被停下，请不要再调用工具，用下面的材料直接发言。\n\n{text}"
+                    prompt = L.t("disp.limit_fresh", limit=limit) + f"\n\n{text}"
                 limits = WRAP_LIMITS
                 continue
             break
-        if rec.get("status") == FAILED and rec.get("mode") == "续接" and SESSION_LOST.search(rec.get("error") or ""):
+        if rec.get("status") == FAILED and rec.get("mode") == RunMode.RESUME and SESSION_LOST.search(rec.get("error") or ""):
             # 再续接也不会好：记下来，下次开新会话（issue_session 跳过），带上全部公开发言
-            rec["会话丢失"] = True
-            rec["error"] = clip(rec["error"] + "（这个会话已经找不到了；补叫会开新会话，带上全部公开发言）", 300)
+            rec["session_lost"] = True
+            rec["error"] = clip(rec["error"] + L.t("disp.session_lost"), 300)
             write_json(rdir / f"{rid}.json", rec)
     finally:
         fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
@@ -996,18 +1004,18 @@ def run_issue_member(project: Path, issue: str, member: str, wrap: str = "") -> 
     try:
         done, wake = flow.issue_end(proj, issue, actor, rid, rec.get("session", ""), rec.get("final", ""),
                                     rec.get("status") == DONE, upto)
-        print("黑板：" + "；".join(done))
+        print(L.t("disp.board_done") + L.join(done, "sep.clause"))
         if rec.get("status") == DONE and rec.get("final", "").strip():
-            rec["读到"] = upto
+            rec["read_upto"] = upto
             if extra:
-                rec["补到"] = extra
+                rec["caught_up"] = extra
             write_json(rdir / f"{rid}.json", rec)
     except flow.FlowError as e:
-        print(f"发言没写进黑板（{e.kind}）：{e.msg}；原文留在运行记录 {rid}", file=sys.stderr)
+        print(L.t("disp.board_failed", kind=e.kind, msg=e.msg, run=rid), file=sys.stderr)
         return 1
     if wake:
         spawn_meet(project, issue, wake)
-        print("接着叫醒：" + "、".join(wake))
+        print(L.t("disp.wake_next") + L.join(wake))
     return code
 
 
@@ -1026,7 +1034,7 @@ def stop_member(project: Path, issue: str, member: str) -> List[str]:
 
 def cmd_stop_member(a, project: Path) -> int:
     stopped = stop_member(project, a.issue, a.member)
-    print(f"已停止：{'、'.join(stopped)}" if stopped else f"{a.member} 在 {a.issue} 上没有正在跑的运行")
+    print(L.t("disp.stopped_list", runs=L.join(stopped)) if stopped else L.t("disp.nothing_running", member=a.member, issue=a.issue))
     return 0
 
 
@@ -1036,24 +1044,24 @@ def cmd_wrap(a, project: Path) -> int:
     proj = flow.Project(project)
     actor = proj.actor(a.member) or a.member
     key = member_key(proj, actor, load_members()) or a.member
-    guard = _lock_issue(runs_dir(project), f"{a.issue}-收尾", actor, 0)
+    guard = _lock_issue(runs_dir(project), f"{a.issue}-wrap", actor, 0)
     if guard is None:
-        print(f"{a.member} 已经在收尾了")
+        print(L.t("disp.already_wrapping", member=a.member))
         return 0
     try:
         mine = [r for r in load_runs(project) if r.get("task") == a.issue and r.get("member") == key]
         running = [r for r in mine if r.get("status") == RUNNING]
-        if any(r.get("收尾") for r in running):
-            print(f"{a.member} 已经在收尾了")
+        if any(r.get("wrap") for r in running):
+            print(L.t("disp.already_wrapping", member=a.member))
             return 0
         if mine and not running and mine[-1].get("status") == DONE:
-            print(f"{a.member} 没有正在跑的运行，不用收尾")
+            print(L.t("disp.no_wrap_needed", member=a.member))
             return 0
         if a.page:
-            flow.record(proj, a.issue, "进展", {"发起": flow.BOSS, "写入者": "看板", "说明": f"总裁在朝会页让 {actor} 用已有内容收尾：先停止当前运行再续接发言"})
+            flow.record(proj, a.issue, E.PROGRESS, {"from": flow.BOSS, "writer": Writer.BOARD, "note": L.t("disp.wrap_note", who=L.who(actor))})
         stopped = stop_member(project, a.issue, a.member)
-        print(f"已停止：{'、'.join(stopped) or '（当前没有在跑的）'}；让 {a.member} 收尾", flush=True)
-        return run_issue_member(project, a.issue, a.member, wrap=a.reason or "总裁要求收尾")
+        print(L.t("disp.stopped_wrap", runs=L.join(stopped) or L.t("disp.none_running"), member=a.member), flush=True)
+        return run_issue_member(project, a.issue, a.member, wrap=a.reason or L.t("disp.owner_wrap"))
     finally:
         fcntl.flock(guard.fileno(), fcntl.LOCK_UN)
         guard.close()
@@ -1072,31 +1080,31 @@ def cmd_meet_flow(a, project: Path) -> int:
     proj = flow.Project(project)
     states, _, _ = flow.replay_all(proj)
     st = states.get(a.issue)
-    if not st or st["种类"] != "议题":
-        sys.exit(f"{a.issue} 不是已建立的议题（flow.py 建立 议题）")
-    if st["状态"] != "讨论中":
-        sys.exit(f"{a.issue} 现在是「{st['状态']}」；总裁开始讨论后才能叫醒与会者")
-    names = [x["成员"] for x in st["与会"]]
+    if not st or st["kind"] != Kind.ISSUE:
+        sys.exit(L.t("disp.not_issue", issue=a.issue))
+    if st["state"] != S.DISCUSSING:
+        sys.exit(L.t("disp.not_started", issue=a.issue, state=L.st(st['state'])))
+    names = [x["member"] for x in st["attendees"]]
     if a.wake:
         who = []
         for w in a.wake:
             x = proj.actor(w)
             if x not in names:
-                sys.exit(f"「{w}」不在 {a.issue} 的与会名单里（{'、'.join(names)}）")
+                sys.exit(L.t("disp.not_attendee", who=w, issue=a.issue, names=L.join(names)))
             who.append(x)
     else:
-        spoke = {r.get("发起") for r in st["事件"] if r.get("边") in flow.MESSAGES}
+        spoke = {r.get("from") for r in st["events"] if r.get("edge") in flow.MESSAGES}
         who = [n for n in names if n not in spoke]
         if not who:
-            sys.exit(f"{a.issue} 的与会者都开过口了；要叫谁用 --wake 写，或在发言里 @ 他")
+            sys.exit(L.t("disp.all_spoken", issue=a.issue))
     if a.detach:
         spawn_meet(project, a.issue, who)
-        print(f"已在后台叫醒：{'、'.join(who)}（进度看 dispatch.py list 或看板）")
+        print(L.t("disp.woken_bg", who=L.join(who)))
         return 0
     procs = [(w, subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "--project", str(project), "meet-run", a.issue, w],
                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                                   encoding="utf-8", errors="replace")) for w in who]
-    print(f"朝会 {a.issue}：叫醒 {'、'.join(who)}，并行进行", flush=True)
+    print(L.t("disp.waking", issue=a.issue, who=L.join(who)), flush=True)
     for w, p in procs:
         out = p.communicate()[0]
         print(f"\n=== {w} ===\n{out.strip()}")
@@ -1115,7 +1123,7 @@ def meet_url(project: Path, issue: str, port: Optional[int] = None) -> str:
 
 
 def ready_file(project: Path, issue: str) -> Path:
-    return runs_dir(project) / f"{issue}.到场.txt"  # 不用 .json：避免被当成派活记录读
+    return runs_dir(project) / f"{issue}{P.READY_SUFFIX}"  # 不用 .json：避免被当成派活记录读
 
 
 def fill_card(path: Path, question: str, opening: str) -> None:
@@ -1123,16 +1131,16 @@ def fill_card(path: Path, question: str, opening: str) -> None:
     命令行里写的字面 \\n 算换行（shell 的双引号不转义，总管常这样写）。"""
     question, opening = question.replace("\\n", "\n"), opening.replace("\\n", "\n")
     text = path.read_text(encoding="utf-8")
-    m = re.search(r"^## 问题\s*\n", text, re.M)
+    m = re.search(r"^## " + flow.heading_re(Section.QUESTION) + r"\s*\n", text, re.M)
     if not m:
-        sys.exit(f"{path.name} 里没有「问题」一节")
+        sys.exit(L.t("disp.no_section", file=path.name, section=L.heading(Section.QUESTION)))
     nxt = re.search(r"^## ", text[m.end():], re.M)
     end = m.end() + (nxt.start() if nxt else len(text) - m.end())
     body = text[m.end():end]
     if question.strip():
         body = question.strip() + "\n\n"
     if opening.strip():
-        body = body.rstrip("\n") + "\n\n## 开场约定\n" + opening.strip() + "\n\n"
+        body = body.rstrip("\n") + "\n\n## " + L.heading(Section.OPENING) + "\n" + opening.strip() + "\n\n"
     path.write_text(text[:m.end()] + body + text[end:], encoding="utf-8")
 
 
@@ -1140,48 +1148,48 @@ def open_room(project: Path, issue: str, port: Optional[int] = None) -> int:
     """对议题的全部与会者做启动检查，结果写进 到场 记录和一条进展；全部就绪且议题还在「起草」就记总裁的「开始」（总管代记）。"""
     proj = flow.Project(project)
     st = flow.replay_all(proj)[0].get(issue)
-    if not st or st["种类"] != "议题":
-        sys.exit(f"{issue} 不是已建立的议题")
-    if st["状态"] not in ("起草", "讨论中"):
-        sys.exit(f"{issue} 现在是「{st['状态']}」，不能搭会议室")
+    if not st or st["kind"] != Kind.ISSUE:
+        sys.exit(L.t("issue.not_issue", obj=issue))
+    if st["state"] not in (S.DRAFT, S.DISCUSSING):
+        sys.exit(L.t("disp.room_state", issue=issue, state=L.st(st['state'])))
     members = load_members()
     keys = []
-    for x in st["与会"]:
-        k = member_key(proj, x["成员"], members)
-        keys.append(k or x["成员"])
-    print(f"启动检查：{'、'.join(keys)}（每人一次最小的真实调用）", flush=True)
+    for x in st["attendees"]:
+        k = member_key(proj, x["member"], members)
+        keys.append(k or x["member"])
+    print(L.t("disp.checking", who=L.join(keys)), flush=True)
     results = check_members(project, keys)
     ready = {"checked": now_iso(), "members": {r["member"]: r for r in results}}
     write_json(ready_file(project, issue), ready)
     bad = [r for r in results if not r["ok"]]
     for r in results:
-        print(f"  {r['member']:<14} {'就绪' if r['ok'] else '未就绪'}  {r['seconds']}秒{'  ' + r['error'] if r['error'] else ''}")
-    summary = "；".join(f"{r['member']}{'就绪' if r['ok'] else '未就绪（' + clip(r['error'], 60) + '）'}" for r in results)
-    flow.record(proj, issue, "进展", {"发起": flow.LEAD, "写入者": "总管", "说明": "到场检查：" + summary})
+        print(f"  {r['member']:<14} {L.t('disp.ready') if r['ok'] else L.t('disp.not_ready')}  {L.t('disp.seconds', n=r['seconds'])}{'  ' + r['error'] if r['error'] else ''}")
+    summary = L.join([L.t("disp.member_ready", member=r['member']) if r['ok'] else L.t("disp.member_not_ready", member=r['member'], why=clip(r['error'], 60)) for r in results], "sep.clause")
+    flow.record(proj, issue, E.PROGRESS, {"from": flow.LEAD, "writer": Writer.LEAD, "note": L.t("disp.roll_call") + summary})
     if bad:
-        print(f"\n没有开会：{len(bad)} 位没就绪，{issue} 仍是「{st['状态']}」。处理后运行 dispatch.py ready {issue} 重新检查。")
+        print("\n" + L.t("disp.room_not_ready", n=len(bad), issue=issue, state=L.st(st['state'])))
         return 1
-    if st["状态"] == "起草":
-        flow.record(proj, issue, "开始", {"发起": flow.BOSS, "写入者": "总管", "依据": "总裁：开会（总管搭好会议室，成员已就绪）"})
-    print(f"\n会议室已就绪，{issue} 在「讨论中」，成员等总裁 @ 再开口。\n地址：{meet_url(project, issue, port)}")
+    if st["state"] == S.DRAFT:
+        flow.record(proj, issue, E.START, {"from": flow.BOSS, "writer": Writer.LEAD, "basis": L.t("disp.room_basis")})
+    print("\n" + L.t("disp.room_ready", issue=issue, state=L.st("discussing"), url=meet_url(project, issue, port)))
     return 0
 
 
 def cmd_room(a, project: Path) -> int:
     check_gate(project, a.skip_check or "")
     proj = flow.Project(project)
-    args: Dict[str, Any] = {"发起": flow.LEAD, "写入者": "总管", "标题": a.标题, "与会": a.与会, "依据": a.依据}
-    if a.目标:
-        args["目标"] = a.目标
-    if a.类型:
-        args["类型"] = a.类型
+    args: Dict[str, Any] = {"from": flow.LEAD, "writer": Writer.LEAD, "title": a.title, "attendees": a.attendees, "basis": a.basis}
+    if a.goal:
+        args["goal"] = a.goal
+    if a.type:
+        args["type"] = a.type
     try:
-        issue, path = flow.create(proj, "议题", args)
+        issue, path = flow.create(proj, Kind.ISSUE, args)
     except flow.FlowError as e:
-        print(f"没能建议题（{e.kind}）：{e.msg}", file=sys.stderr)
+        print(L.t("disp.issue_failed", kind=e.kind, msg=e.msg), file=sys.stderr)
         return 2
-    fill_card(path, a.问题 or "", a.开场 or "")
-    print(f"已建立 {issue}：{path.relative_to(project)}")
+    fill_card(path, a.question or "", a.opening or "")
+    print(L.t("cli.created", obj=issue, path=path.relative_to(project)))
     return open_room(project, issue, a.port)
 
 
@@ -1192,7 +1200,7 @@ def cmd_ready(a, project: Path) -> int:
 # ---------- 子命令 ----------
 
 def cmd_start(a, project: Path) -> int:
-    return start_run(project, a.task, a.seat, a.member, read_prompt(a.prompt), override=a.override or "",
+    return start_run(project, a.task, flow.value_code("seat", a.seat), a.member, read_prompt(a.prompt), override=a.override or "",
                      adhoc=a.adhoc or "", skip_check=a.skip_check or "")
 
 
@@ -1201,23 +1209,23 @@ def cmd_continue(a, project: Path) -> int:
     if a.run:
         base = next((r for r in runs if r.get("run") == a.run), None)
         if not base:
-            sys.exit(f"找不到派活 {a.run}")
+            sys.exit(L.t("disp.no_run", run=a.run))
     else:
-        cands = [r for r in runs if r.get("task") == a.task and r.get("seat") == a.seat and r.get("session")]
+        cands = [r for r in runs if r.get("task") == a.task and r.get("seat") == flow.value_code("seat", a.seat) and r.get("session")]
         if not cands:
-            sys.exit(f"{a.task} 的「{a.seat}」席位还没有可续接的会话，先用 start 派活")
+            sys.exit(L.t("disp.no_session_seat", task=a.task, seat=L.name("seat", a.seat)))
         base = cands[-1]
     if base.get("status") == RUNNING:
-        sys.exit(f"{base['run']} 还在运行，先等它结束或 stop 它")
+        sys.exit(L.t("disp.still_running", run=base['run']))
     if not base.get("session"):
-        sys.exit(f"{base['run']} 没有记录会话 ID，无法续接")
+        sys.exit(L.t("disp.no_session_id", run=base['run']))
     return start_run(project, base["task"], base["seat"], base["member"], read_prompt(a.prompt),
                      session=base["session"], parent=base["run"], override=a.override or "",
                      adhoc=base.get("adhoc") or "", skip_check=a.skip_check or "")
 
 
 def _stop_one(project: Path, r: Dict[str, Any]) -> str:
-    meta = project / "collab" / RUNS_DIR / f"{r['run']}.json"
+    meta = project / P.COLLAB / RUNS_DIR / f"{r['run']}.json"
     pid, child = r.get("pid"), r.get("child_pid")
     if pid_alive(pid):
         os.kill(pid, signal.SIGTERM)
@@ -1235,7 +1243,7 @@ def _stop_one(project: Path, r: Dict[str, Any]) -> str:
         cur.update(status=STOPPED, ended=now_iso())
         cur.pop("child_pid", None)
         write_json(meta, cur)
-    return f"{r['run']} 已停止（{r['member']}，会话 {cur.get('session') or '无'}，可用 continue 续接）"
+    return L.t("disp.stopped_one", run=r['run'], member=r['member'], session=cur.get('session') or L.t("block.none_inline"))
 
 
 def cmd_stop(a, project: Path) -> int:
@@ -1243,15 +1251,15 @@ def cmd_stop(a, project: Path) -> int:
     if a.all:
         targets = [r for r in runs if r.get("status") == RUNNING]
         if not targets:
-            print("没有正在运行的派活")
+            print(L.t("disp.none_running_runs"))
     else:
         if not a.run:
-            sys.exit("指定要停的派活编号，或用 --all")
+            sys.exit(L.t("disp.stop_which"))
         targets = [r for r in runs if r.get("run") == a.run]
         if not targets:
-            sys.exit(f"找不到派活 {a.run}")
+            sys.exit(L.t("disp.no_run", run=a.run))
         if targets[0].get("status") != RUNNING:
-            print(f"{a.run} 当前状态是 {targets[0].get('status')}，不需要停")
+            print(L.t("disp.not_running", run=a.run, status=L.name("run_status", targets[0].get('status'))))
             return 0
     for r in targets:
         print(_stop_one(project, r))
@@ -1263,7 +1271,7 @@ def _ago(iso: str) -> str:
         s = int((dt.datetime.now().astimezone() - dt.datetime.fromisoformat(iso)).total_seconds())
     except (TypeError, ValueError):
         return ""
-    return f"{s}秒前" if s < 120 else f"{s // 60}分钟前" if s < 7200 else f"{s // 3600}小时前"
+    return L.t("disp.ago_s", n=s) if s < 120 else L.t("disp.ago_m", n=s // 60) if s < 7200 else L.t("disp.ago_h", n=s // 3600)
 
 
 def cmd_list(a, project: Path) -> int:
@@ -1273,13 +1281,13 @@ def cmd_list(a, project: Path) -> int:
         rest = [r for r in runs if r.get("status") != RUNNING][-10:]
         runs = rest + running
     if not runs:
-        print("还没有派活记录")
+        print(L.t("disp.no_runs"))
         return 0
     for r in runs:
-        tail = f"最近：{r.get('last_action') or '—'}（{_ago(r.get('last_at'))}）" if r.get("status") == RUNNING \
-            else (f"错误：{clip(r.get('error'), 60)}" if r.get("status") in (FAILED, LOST) and r.get("error") else "")
-        print(f"{r['run']:<10} {r.get('status', ''):<5} {r.get('seat', ''):<3} {r.get('member', ''):<8} "
-              f"{(r.get('started') or '')[5:16].replace('T', ' ')}  {r.get('steps', 0)}步  "
+        tail = L.t("disp.latest", action=r.get('last_action') or '—', ago=_ago(r.get('last_at'))) if r.get("status") == RUNNING \
+            else (L.t("disp.error") + clip(r.get('error'), 60) if r.get("status") in (FAILED, LOST) and r.get("error") else "")
+        print(f"{r['run']:<10} {L.name('run_status', r.get('status', '')):<5} {L.name('seat', r.get('seat', '')):<3} {r.get('member', ''):<8} "
+              f"{(r.get('started') or '')[5:16].replace('T', ' ')}  {L.t('disp.steps', n=r.get('steps', 0))}  "
               f"{fmt_tokens(r.get('tokens')):<14} {tail}")
     return 0
 
@@ -1287,20 +1295,21 @@ def cmd_list(a, project: Path) -> int:
 def cmd_show(a, project: Path) -> int:
     r = next((x for x in load_runs(project) if x.get("run") == a.run), None)
     if not r:
-        sys.exit(f"找不到派活 {a.run}")
+        sys.exit(L.t("disp.no_run", run=a.run))
     for k in ("run", "task", "seat", "member", "mode", "session", "continues", "status", "started", "ended",
               "steps", "last_action", "error", "override", "deviations"):
         if r.get(k) not in (None, ""):
-            print(f"{k}: {r[k]}")
+            kind = {"seat": "seat", "mode": "run_mode", "status": "run_status"}.get(k)
+            print(f"{k}: {L.name(kind, r[k]) if kind else r[k]}")
     tk = r.get("tokens")
     if tk:
-        print(f"tokens: {fmt_tokens(tk)}（输入 {tk.get('input', 0)}，缓存 {tk.get('cached', 0)}，输出 {tk.get('output', 0)}"
-              + (f"，调用 {tk['calls']} 次" if tk.get("calls") else "")
-              + (f"，最后上下文 {tk['context']}" if tk.get("context") else "")
-              + (f"，约 {tk['cost_usd']} 美元" if tk.get("cost_usd") else "") + "）")
-    print("\n--- 启动语 ---\n" + r.get("prompt", ""))
+        print(f"tokens: {fmt_tokens(tk)}" + L.t("disp.tokens_detail", input=tk.get('input', 0), cached=tk.get('cached', 0), output=tk.get('output', 0))
+              + (L.t("disp.tokens_calls", n=tk['calls']) if tk.get("calls") else "")
+              + (L.t("disp.tokens_context", n=tk['context']) if tk.get("context") else "")
+              + (L.t("disp.tokens_cost", n=tk['cost_usd']) if tk.get("cost_usd") else "") + L.t("sep.paren_close"))
+    print("\n" + L.t("disp.prompt_label") + "\n" + r.get("prompt", ""))
     if r.get("final"):
-        print("\n--- 最终回复 ---\n" + r["final"])
+        print("\n" + L.t("disp.final_head") + "\n" + r["final"])
     return 0
 
 
@@ -1331,7 +1340,7 @@ def cmd_tokens(a, project: Path) -> int:
                     USAGE[parser](ev, acc)
             t = finish_tokens(acc)
         except Exception as e:
-            print(f"{r['run']}：算不出（{e}），跳过", file=sys.stderr)
+            print(L.t("disp.tokens_failed", run=r['run'], e=e), file=sys.stderr)
             continue
         if not t:
             continue
@@ -1341,7 +1350,7 @@ def cmd_tokens(a, project: Path) -> int:
         write_json(meta, rec)
         n += 1
         print(f"{r['run']:<10} {r.get('member', ''):<8} {fmt_tokens(t)}")
-    print(f"补算 {n} 条")
+    print(L.t("disp.tokens_done", n=n))
     return 0
 
 
@@ -1409,17 +1418,17 @@ def _write_round(path: Path, rnd: int, blocks: List[str], state: str) -> None:
         body += ["", *b.splitlines()]
     lines[end:end] = body + [""]
     text = "\n".join(lines) + "\n"
-    text = re.sub(r"(?m)^(状态：)[^｜\n]*", lambda m: m.group(1) + state + " ", text, count=1)
+    text = re.sub(r"(?m)^(状态：)[^｜|\n]*", lambda m: m.group(1) + state + " ", text, count=1)
     path.write_text(text, encoding="utf-8")
 
 
 def cmd_meet(a, project: Path) -> int:
-    if (project / "collab" / "内部" / "流转" / f"{a.issue}.jsonl").exists():
+    if (project / P.COLLAB / P.INTERNAL_FLOW / f"{a.issue}.jsonl").exists():
         return cmd_meet_flow(a, project)
     if a.wake or a.detach:
         sys.exit("--wake、--detach 只用于新结构项目（有 collab/内部/流转/）的议题")
     check_gate(project, a.skip_check or "")
-    collab = project / "collab"
+    collab = project / P.COLLAB
     path = collab_parse.find_issue(collab, a.issue)
     if not path:
         sys.exit(f"找不到议题 {a.issue}（collab/议题/{a.issue}-*.md）")
@@ -1499,56 +1508,72 @@ def cmd_meet(a, project: Path) -> int:
     return 0
 
 
+FLAG_ALIASES = {**flow.FLAG_ALIASES, "--问题": "--question", "--开场": "--opening"}
+
+
+def english_flags(argv: List[str]) -> List[str]:
+    """中文参数名（--标题、--与会…）换成英文写法，`--名=值` 的写法也认。"""
+    out = []
+    for x in argv:
+        head, eq, rest = x.partition("=")
+        out.append(FLAG_ALIASES[head] + eq + rest if head in FLAG_ALIASES else x)
+    return out
+
+
 def main(argv: Optional[List[str]] = None) -> int:
-    ap = argparse.ArgumentParser(prog="dispatch.py", description="向命令行成员派活并记录")
-    ap.add_argument("--project", help="项目目录（默认从当前目录向上找 collab/PROGRESS.md）")
+    flow.i18n.set_current(flow.cli_lang(list(sys.argv[1:] if argv is None else argv)))
+    H = lambda k: L.t("disp.help." + k)  # noqa: E731
+    ap = argparse.ArgumentParser(prog="dispatch.py", description=H("dispatch"))
+    ap.add_argument("--project", help=H("h01"))
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("start", help="新会话派活")
+    p = sub.add_parser("start", help=H("h02"))
     p.add_argument("task"); p.add_argument("seat"); p.add_argument("member"); p.add_argument("prompt")
-    p.add_argument("--override", help="与任务卡或目标流程不符时仍要派，写明理由")
-    p.add_argument("--adhoc", help="只用于旧结构项目；新结构不再有临时派活")
-    p.add_argument("--skip-check", help="collab/ 校验有错仍要派（只用于校验器误报），写明理由")
-    p = sub.add_parser("continue", help="续接最近的会话")
+    p.add_argument("--override", help=H("h03"))
+    p.add_argument("--adhoc", help=H("h04"))
+    p.add_argument("--skip-check", help=H("h05"))
+    p = sub.add_parser("continue", help=H("h06"))
     p.add_argument("task"); p.add_argument("seat"); p.add_argument("prompt")
-    p.add_argument("--run", help="续接指定派活的会话，而不是该席位最近的一次")
-    p.add_argument("--override", help="与任务卡或目标流程不符时仍要续接，写明理由")
-    p.add_argument("--skip-check", help="collab/ 校验有错仍要续接（只用于校验器误报），写明理由")
-    p = sub.add_parser("stop", help="停止派活")
+    p.add_argument("--run", help=H("h07"))
+    p.add_argument("--override", help=H("h08"))
+    p.add_argument("--skip-check", help=H("h09"))
+    p = sub.add_parser("stop", help=H("h10"))
     p.add_argument("run", nargs="?"); p.add_argument("--all", action="store_true")
-    p = sub.add_parser("list", help="列出派活")
+    p = sub.add_parser("list", help=H("h11"))
     p.add_argument("--all", action="store_true")
-    p = sub.add_parser("show", help="显示一次派活")
+    p = sub.add_parser("show", help=H("h12"))
     p.add_argument("run")
-    p = sub.add_parser("tokens", help="从原始事件补算各次派活的 token")
-    p.add_argument("--force", action="store_true", help="已有的也重算")
-    p = sub.add_parser("meet", help="朝会：叫醒与会者（旧结构：开下一轮）")
-    p.add_argument("issue"); p.add_argument("--round", type=int, help="旧结构：指定轮次（只能是下一轮）")
-    p.add_argument("--wake", nargs="*", help="新结构：叫醒这几位与会者；不写时叫醒还没开过口的")
-    p.add_argument("--detach", action="store_true", help="新结构：后台叫醒，不等结果（看板用）")
-    p.add_argument("--skip-check", help="collab/ 校验有错仍要开会（只用于校验器误报），写明理由")
-    p = sub.add_parser("check", help="启动检查：用一次最小的真实调用确认成员能启动、已登录（不写运行记录）")
-    p.add_argument("members", nargs="*", help="成员；不写时检查班子里全部")
-    p = sub.add_parser("room", help="搭会议室：建议题、写开场约定、启动检查，就绪就进讨论中并给出地址")
-    p.add_argument("--标题", required=True); p.add_argument("--依据", required=True, help="总裁的原话")
-    p.add_argument("--与会", nargs="+", required=True, help="成员:视角，如 claude-sonnet:从实现看")
-    p.add_argument("--问题", help="写进议题卡「问题」一节的内容（不写就保留模板）")
-    p.add_argument("--开场", help="开场约定：这场会要什么、已知情况、资料位置（软约定，成员可以看、不是必须看）")
-    p.add_argument("--目标"); p.add_argument("--类型", choices=["朝会", "会审"])
-    p.add_argument("--port", type=int, help="看板端口（默认 3100 或环境变量 COLLAB_BOARD_PORT）")
-    p.add_argument("--skip-check", help="collab/ 校验有错仍要建（只用于校验器误报），写明理由")
-    p = sub.add_parser("ready", help="对起草中的议题重做启动检查，就绪就进讨论中")
+    p = sub.add_parser("tokens", help=H("h13"))
+    p.add_argument("--force", action="store_true", help=H("h14"))
+    p = sub.add_parser("meet", help=H("h15"))
+    p.add_argument("issue"); p.add_argument("--round", type=int, help=H("h16"))
+    p.add_argument("--wake", nargs="*", help=H("h17"))
+    p.add_argument("--detach", action="store_true", help=H("h18"))
+    p.add_argument("--skip-check", help=H("h19"))
+    p = sub.add_parser("check", help=H("h20"))
+    p.add_argument("members", nargs="*", help=H("h21"))
+    p = sub.add_parser("room", help=H("h22"))
+    p.add_argument("--title", dest="title", required=True); p.add_argument("--basis", dest="basis", required=True, help=H("h23"))
+    p.add_argument("--attendees", dest="attendees", nargs="+", required=True, help=H("h24"))
+    p.add_argument("--question", dest="question", help=H("h25"))
+    p.add_argument("--opening", dest="opening", help=H("h26"))
+    p.add_argument("--goal", dest="goal"); p.add_argument("--type", dest="type", choices=[IssueType.COUNCIL, IssueType.REVIEW_MEETING])
+
+    p.add_argument("--port", type=int, help=H("h27"))
+    p.add_argument("--skip-check", help=H("h28"))
+    p = sub.add_parser("ready", help=H("h29"))
     p.add_argument("issue"); p.add_argument("--port", type=int)
-    p = sub.add_parser("stop-member", help="停止某成员在议题上正在跑的运行")
+    p = sub.add_parser("stop-member", help=H("h30"))
     p.add_argument("issue"); p.add_argument("member")
-    p = sub.add_parser("wrap", help="收尾：停掉成员当前的运行，续接同一会话要它用已有内容发言")
-    p.add_argument("issue"); p.add_argument("member"); p.add_argument("--reason", help="写进收尾提示的原因")
-    p.add_argument("--page", action="store_true", help="（内部）看板发起的：真的收尾时记一条进展")
-    p = sub.add_parser("meet-run", help="（内部）叫醒一位与会者跑一次，由 meet 调用")
+    p = sub.add_parser("wrap", help=H("h31"))
+    p.add_argument("issue"); p.add_argument("member"); p.add_argument("--reason", help=H("h32"))
+    p.add_argument("--page", action="store_true", help=H("h33"))
+    p = sub.add_parser("meet-run", help=H("h34"))
     p.add_argument("issue"); p.add_argument("member")
-    a = ap.parse_args(argv)
+    a = ap.parse_args(english_flags(sys.argv[1:] if argv is None else argv))  # 中文参数名保留为别名，解析前换成英文写法，帮助里只列英文
     project = Path(a.project).expanduser().resolve() if a.project else find_project(Path.cwd())
-    if not (project / "collab" / "PROGRESS.md").exists():
-        sys.exit(f"{project} 下没有 collab/PROGRESS.md")
+    flow.i18n.set_current(flow.i18n.project_lang(project))
+    if not (project / P.COLLAB / P.PROGRESS).exists():
+        sys.exit(L.t("disp.no_progress", project=project))
     refusal = flow.dev_write_refusal(project) if a.cmd not in ("list", "show") else None
     if refusal:
         sys.exit(refusal)

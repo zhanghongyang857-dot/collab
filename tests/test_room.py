@@ -28,8 +28,8 @@ class TestFeed(Room):
         self.assertIn("这句话叫两个人", text)
         self.assertNotIn("codex 的私下话", text, "私下发言看不到")
         self.assertNotIn("叫醒之后 codex 又说了一句", text, "同一句话叫醒的人互相独立，之后的不给")
-        call_seq = [e for e in state(sim, i)["事件"] if "这句话叫两个人" in e.get("正文", "")][0]["项目序"]
-        self.assertEqual(man[-1]["读到"], call_seq, "读到停在叫醒它的那句话，之后的下次补")
+        call_seq = [e for e in state(sim, i)["events"] if "这句话叫两个人" in e.get("body", "")][0]["project_seq"]
+        self.assertEqual(man[-1]["read_upto"], call_seq, "读到停在叫醒它的那句话，之后的下次补")
         later, _ = flow.context(sim.proj, i, "deepseek", since=call_seq)
         self.assertIn("叫醒之后 codex 又说了一句", later)
 
@@ -57,8 +57,8 @@ class TestRoom(Room):
         self.assertIn("deepseek", r.stdout)
         self.assertIn("没有开会", r.stdout)
         st = state(self.sim, "I001")
-        self.assertEqual(st["状态"], "起草", "有人没就绪不进讨论中")
-        ready = json.loads((self.runs_dir / "I001.到场.txt").read_text(encoding="utf-8"))
+        self.assertEqual(st["state"], "draft", "有人没就绪不进讨论中")
+        ready = json.loads((self.runs_dir / "I001.ready.txt").read_text(encoding="utf-8"))
         self.assertTrue(ready["members"]["codex"]["ok"])
         self.assertFalse(ready["members"]["deepseek"]["ok"])
         self.assertIn("Not logged in", ready["members"]["deepseek"]["error"])
@@ -66,7 +66,7 @@ class TestRoom(Room):
         os.environ.pop("FLOW_NOW", None)
         r = self.dispatch("ready", "I001", "--port", "3199")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        self.assertEqual(state(self.sim, "I001")["状态"], "讨论中")
+        self.assertEqual(state(self.sim, "I001")["state"], "discussing")
         self.assertRegex(r.stdout, r"http://127\.0\.0\.1:3199/p/[0-9a-f]{8}/meet/I001")
         self.assertEqual(self.runs(), [], "启动检查不留运行记录，也没人开口")
         self.assertEqual(self.msgs("I001"), [])
@@ -75,7 +75,7 @@ class TestRoom(Room):
         r = self.room()
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         st = state(self.sim, "I001")
-        self.assertEqual((st["状态"], st["持有人"]), ("讨论中", "总裁"))
+        self.assertEqual((st["state"], st["holder"]), ("discussing", "owner"))
         text, _ = flow.context(self.sim.proj, "I001", "codex")
         self.assertIn("## 开场约定", text)
         self.assertIn("只想听利弊", text)
@@ -104,7 +104,7 @@ class TestAddAttendee(Room):
         # 名单外的可用成员：用另一个班子成员 claude（花名册里有，班子配置里没写时按可用算）
         res = server.add_attendees(proj, i, ["claude"], "旁观")
         self.assertEqual(res["added"], ["claude"])
-        self.assertEqual([a["成员"] for a in state(sim, i)["与会"]], ["codex", "deepseek", "claude"])
+        self.assertEqual([a["member"] for a in state(sim, i)["attendees"]], ["codex", "deepseek", "claude"])
         text, _ = flow.context(proj, i, "claude")
         self.assertIn("公开立场", text, "中途加入的人看得到之前的公开发言")
         self.assertNotIn("机密内幕XYZ", text, "看不到私下发言")

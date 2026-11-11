@@ -1,5 +1,7 @@
 # NOW 总看板
 
+English: [README.en.md](README.en.md)
+
 一个 `NOW.md` 列出所有任务和大方向；看板服务（`board/server.py`）每次打开时调用本目录的 `build.py`，从 `NOW.md`、`NOW/` 数据和各任务的 `collab/PROGRESS.md` 当场生成 NOW 页（http://127.0.0.1:3100）。
 
 看板 = **核心 + 模块**。核心只管「任务」页（大方向、任务、最近完成），只装核心就能用；「今天」「短期」、近期截止等都是模块（`../../modules/`），在 `config.json` 的 `modules` 里打开或去掉，刷新页面即生效。模块怎么写见 [modules/README.md](../../modules/README.md)。

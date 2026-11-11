@@ -9,6 +9,7 @@ NOW 只认环境变量 NOW_PATH、工具包旁边的 NOW（有 config.json）、
   registry.py add    <工具包> <项目目录> <名字>   登记；输出 added / exists / off（没有登记表）
   registry.py remove <工具包> <项目目录>          移除；输出 removed / missing / off
   registry.py now-md <工具包>                     NOW.md 的位置，没启用 NOW 时输出空行
+  registry.py lang <工具包>                       工具包默认语言：COLLAB_LANG → NOW config.json 的 lang → en
   registry.py roots  <工具包>                     登记表和 NOW 任务表里的全部项目目录，每行一个
   registry.py url    <工具包> <项目目录>          本项目的看板网址
   registry.py open   <工具包> <项目目录> [--print]  看板在运行就用浏览器打开（--print 只打印），没运行时提示怎么启动
@@ -25,6 +26,9 @@ import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paths as P  # noqa: E402
+
 SERVICE_CONFIG = Path("~/Library/Application Support/ai-company-board/config").expanduser()
 
 
@@ -33,7 +37,7 @@ def path(kit: Path) -> Optional[Path]:
     env = os.environ.get("COLLAB_PROJECTS")
     if env:
         return Path(env).expanduser()
-    return kit.parent / "projects.json" if (kit / "版本.txt").exists() else None
+    return kit.parent / "projects.json" if (kit / P.VERSION_TXT).exists() else None
 
 
 def load(reg: Optional[Path]) -> List[Dict[str, str]]:
@@ -170,6 +174,22 @@ def open_board(kit: Path, root: Path, only_print: bool) -> int:
     return 0
 
 
+def kit_lang(kit: Path) -> str:
+    """工具包默认语言：环境变量 COLLAB_LANG，再看 NOW 数据目录 config.json 的 lang，都没有用 en。"""
+    v = os.environ.get("COLLAB_LANG", "")
+    if v in ("zh", "en"):
+        return v
+    data = now_data_dir(kit)
+    if data and (data / "config.json").exists():
+        try:
+            v = json.loads((data / "config.json").read_text(encoding="utf-8")).get("lang", "")
+        except ValueError:
+            v = ""
+        if v in ("zh", "en"):
+            return v
+    return "en"
+
+
 def main(argv: List[str]) -> int:
     cmd, rest = (argv[0], argv[1:]) if argv else ("", [])
     if cmd == "add" and len(rest) >= 3:
@@ -178,6 +198,8 @@ def main(argv: List[str]) -> int:
         print(remove(Path(rest[0]), Path(rest[1])))
     elif cmd == "now-md" and rest:
         print(now_md(Path(rest[0])) or "")
+    elif cmd == "lang" and rest:
+        print(kit_lang(Path(rest[0])))
     elif cmd == "roots" and rest:
         for r in roots(Path(rest[0])):
             print(r)

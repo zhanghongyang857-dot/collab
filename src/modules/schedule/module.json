@@ -5,7 +5,7 @@
   "contract": 1,
   "tabs": [{"id": "today", "title": "今天"}, {"id": "plan", "title": "短期"}],
   "slots": ["header", "status"],
-  "files": ["安排.md", "本月布局.md"],
+  "files": ["schedule.md", "month.md"],
   "requires": [],
   "uses": [],
   "provides": ["plan"]

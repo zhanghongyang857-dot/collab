@@ -1,4 +1,4 @@
-"""日历模块：读 日历/日历.md 的事件表，给「日历」页的月网格和日期待定栏。
+"""日历模块：读 calendar/calendar.md 的事件表，给「日历」页的月网格和日期待定栏。
 
 装了截止模块时，把它解析的考核项（ctx.get("deadlines")）合并进来，只记一份；没装就只显示日历文件里的事件。
 分类取自 config.json 的 calendar.categories（[{name, keywords, color, note}]）：
@@ -8,9 +8,14 @@
 """
 import datetime as dt
 import re
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[2] / "core"))
+import paths as P  # noqa: E402  数据文件名
+import i18n  # noqa: E402  NOW 数据的表头按代码认列
 
-DEFAULT_FILE = "日历/日历.md"
-DEFAULT_TENTATIVE = ["大致", "待公告", "暂定", "待定"]  # 备注含这些词时显示为虚线框
+DEFAULT_FILE = P.CALENDAR
+DEFAULT_TENTATIVE = ["大致", "待公告", "暂定", "待定", "approx", "to be announced", "tentative", "tbc", "tbd"]  # 备注含这些词时显示为虚线框
 
 
 UNCAT = "未分类"
@@ -51,7 +56,7 @@ def parse_date(cell):
     """日期单元 → (开始, 结束)，都是 ISO 字符串；`待定` → (None, None)；写错 → 抛 ValueError。
     结束可以省略年份；结束的月日早于开始时算到下一年（跨年）。"""
     s = cell.strip().replace("~", "～")
-    if s == "待定":
+    if s in ("待定", "TBD", "tbd"):
         return None, None
     m = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})(?:\s*～\s*(?:(\d{4})-)?(\d{1,2})-(\d{1,2}))?", s)
     if not m:
@@ -86,23 +91,24 @@ def parse_events(ctx, path, cat):
     tent_kw = ctx.config.get("tentative_keywords") or DEFAULT_TENTATIVE
     dated, pending, bad = [], [], []
     for r in ctx.table_dicts(path.read_text(encoding="utf-8").splitlines()):
-        title = r.get("事件", "").strip()
-        if not title or not r.get("日期", "").strip():
+        r = i18n.cols(r)  # 表头按代码认列，中英两种写法都认
+        title = r.get("event", "").strip()
+        if not title or not r.get("date", "").strip():
             continue
         try:
-            start, end = parse_date(r["日期"])
-            t0, t1, allday = parse_time(r.get("时间", ""))
+            start, end = parse_date(r["date"])
+            t0, t1, allday = parse_time(r.get("time", ""))
         except ValueError as e:
             bad.append(f"{e}（{title}）")
             continue
         important = len(title) > 4 and title.startswith("**") and title.endswith("**")
         title = title.strip("*").strip() if important else title
-        note = r.get("备注", "").strip()
-        kind = r.get("分类", "").strip()
+        note = r.get("note", "").strip()
+        kind = r.get("category", "").strip()
         ev = {"date": start or "", "end": end or "", "start": t0, "endTime": t1, "allDay": allday,
-              "title": title, "important": important, "place": r.get("地点", "").strip(), "note": note,
+              "title": title, "important": important, "place": r.get("place", "").strip(), "note": note,
               "category": kind, "cat": cat(kind)[0], "catKey": cat(kind)[1], "tentative": any(k in note for k in tent_kw),
-              "exam": False, "source": "日历"}
+              "exam": False, "source": "calendar"}
         (dated if start else pending).append(ev)
     dated.sort(key=lambda e: (e["date"], e["start"]))
     return dated, pending, bad
@@ -119,7 +125,7 @@ def exam_events(items, cat):
                     "title": f"{it['course']} · {it['title']}" + (f"（{it['weight']}）" if it.get("weight") else ""),
                     "important": bool(it.get("final")), "place": "", "note": "",
                     "category": it["course"], "cat": cat(it["course"])[0], "catKey": cat(it["course"])[1],
-                    "tentative": bool(it.get("tentative") or it.get("pending")), "exam": True, "source": "考核安排"})
+                    "tentative": bool(it.get("tentative") or it.get("pending")), "exam": True, "source": "deadlines"})
     return out
 
 

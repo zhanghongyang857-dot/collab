@@ -5,9 +5,10 @@
 派活走派活脚本同一套钩子（dispatch_begin / dispatch_end），只有成员「做了什么」是编的。
 剧情和每一步演示什么，见同目录的 剧本.md。
 
-用法：python3 demo/build.py [--到 N] [--输出 目录]
+用法：python3 demo/build.py [--到 N] [--输出 目录] [--lang zh|en]
   --到 N     只演到第 N 回（1–8，默认 8 即终回），项目停在那一回结束的时刻
-  --输出     生成到哪里（默认 demo/万历新政）；目录已存在且是演示案例时先删掉重建
+  --输出     生成到哪里（默认 demo/万历新政，英文 demo/wanli-reforms）；目录已存在且是演示案例时先删掉重建
+  --lang     剧情语言（默认 zh）。英文版事件序列和时间与中文完全一样，只换文字：剧情文字按 story_en.py 的对照表换成英文
 看板：python3 src/board/server.py --port 3101 --project demo/万历新政
 只用 Python 标准库。
 """
@@ -26,17 +27,74 @@ HERE = Path(__file__).resolve().parent
 KIT = HERE.parent / "src"  # 工具包
 sys.path.insert(0, str(KIT / "core"))
 import flow  # noqa: E402
+import paths as P  # noqa: E402
+from i18n import code_of  # noqa: E402
+import i18n  # noqa: E402
+import story_en  # noqa: E402
 
 TZ = dt.timezone(dt.timedelta(hours=8))
 YEAR = 1573  # 万历元年
 MARK = ".演示案例"
-TITLES = {
-    "总裁": "陛下", "总管": "内阁", "待你决定": "待批红", "没有需要你拍板的事": "无本上奏", "上报": "奏报", "确认": "核验", "越过": "逾制",
-    "偏离": "逾制", "转交": "转呈", "派发": "交办", "交付": "复命", "解除": "准行", "建立": "立案",
-    "提交": "进呈", "批准": "批红", "目标验收": "告成", "完成": "结案", "打回": "驳回", "退回": "留中",
-    "重开": "重议", "改派": "改委", "进展": "进展", "变更": "更张", "更正": "勘误", "目标": "国事",
-    "任务": "差事", "阶段": "节次", "总管建议": "内阁票拟", "规划中": "拟议", "意见": "批注",
+# 明朝叫法：写进演示项目 collab/config.json 的 names（覆盖语言包里的显示名，只用在看板上），中文和英文各一套。
+# 中文的取值和原来渲染规约里的「称谓」一样，看板上读到的照旧
+MING = {
+    "zh": {"names": {"seat": {"owner": "陛下", "lead": "内阁", "reviewer": "核验"}, "seat_class": {"owner": "陛下", "lead": "内阁"},
+                     "writer": {"lead": "内阁"}, "role": {"lead": "内阁", "reviewer": "核验"},
+                     "kind": {"goal": "国事", "task": "差事"}, "state": {"planned": "拟议", "done": "结案"},
+                     "edge": {"escalate": "奏报", "review": "核验", "hand_over": "转呈", "dispatch": "交办", "deliver": "复命", "unblock": "准行",
+                              "create": "立案", "submit": "进呈", "approve": "批红", "request_acceptance": "告成", "complete": "结案", "reject": "驳回",
+                              "return": "留中", "reopen": "重议", "reassign": "改委", "change": "更张", "correction": "勘误", "comment": "批注"},
+                     "pending": {"approve_plan": "批红框架", "acceptance": "告成"}},
+           "sections": {"decisions": "待批红", "goals": "国事", "tasks": "差事"},
+           "text": {"board.pend.empty": "无本上奏", "block.decisions.empty": "（无本上奏）", "board.pend.recommended": "内阁票拟",
+                    "board.deviation": "逾制", "board.stage_n": "节次 {n}", "board.pick.goals": "国事", "board.strip.tasks": "差事",
+                    "board.strip.goals": "{n} 个国事在推进", "board.appr.approve": "批红这一版", "board.appr.waiting": "等你批红",
+                    "board.reviews": "{who}核验", "board.act.review": "等{who}核验 {id}", "board.act.dispatch": "等{who}交办 {id}",
+                    "board.cell.nothing_next": "没有未开始的差事", "board.cell.nothing_running": "没有在跑的差事",
+                    "board.seq.who": "{doer} 做，{reviewer} 核验", "board.pick.loose": "零散差事"}},
+    "en": {"names": {"seat": {"owner": "the Throne", "lead": "Grand Secretariat", "reviewer": "Censorate review"},
+                     "seat_class": {"owner": "the Throne", "lead": "Grand Secretariat"}, "writer": {"lead": "Grand Secretariat"},
+                     "role": {"lead": "Grand Secretariat"}, "kind": {"goal": "Affair of state"},
+                     "edge": {"approve": "Vermilion rescript", "submit": "Memorialize", "escalate": "Memorialize", "deliver": "Report back",
+                              "dispatch": "Assign", "complete": "Close the case"},
+                     "pending": {"approve_plan": "Vermilion rescript on the plan"}},
+           "sections": {"decisions": "Awaiting the vermilion brush"},
+           "text": {"board.pend.empty": "No memorials awaiting the Throne", "board.pend.recommended": "Grand Secretariat's draft rescript",
+                    "board.appr.approve": "Grant the vermilion rescript", "board.appr.waiting": "Awaiting your vermilion brush"}},
 }
+LANG = "zh"  # 剧情语言，main() 按 --lang 设
+MISSING: List[str] = []  # 英文对照表里缺的剧情文字（测试断言为空）
+CJK = re.compile(r"[\u3400-\u9fff]")
+
+
+def tr(x: Any) -> Any:
+    """剧情文字：英文模式下按 story_en.EN 换成英文；状态、边、席位这类代码名原样（交给 flow 认）。"""
+    if LANG == "zh" or x is None:
+        return x
+    if isinstance(x, str):
+        if x in story_en.EN:
+            return story_en.EN[x]
+        if not CJK.search(x) or any(code_of(k, x) for k in ("edge", "seat", "state", "result", "draft_stage", "goal_type", "issue_type",
+                                                              "stage_type", "writer", "speech")):
+            return x
+        if code_of("field", x):
+            return i18n.pack("en").field(code_of("field", x))
+        MISSING.append(x)
+        return x
+    if isinstance(x, list):
+        return [tr(i) for i in x]
+    if isinstance(x, tuple):
+        return tuple(tr(i) for i in x)
+    if isinstance(x, dict):
+        return {k: tr(v) for k, v in x.items()}
+    return x
+
+
+def fmt(template: str, **kw: Any) -> str:
+    """带参数的剧情文字：整句一起换语言再填参数。"""
+    return tr(template).format(**kw)
+
+
 CHAPTERS = [
     "第一回　河决徐州　内阁票拟",
     "第二回　清丈议起　阁臣会审",
@@ -47,6 +105,36 @@ CHAPTERS = [
     "第七回　鱼鳞册伪　清丈重开",
     "终　回　朱批定案　新政初成",
 ]
+
+
+# 剧本里照中文写（边、席位、键都用中文名），交给 flow 前换成代码
+KW = {"说明": "note", "依据": "basis", "方案": "options", "建议": "recommendation", "结果": "result", "给": "to", "证据": "evidence",
+      "派活": "run", "会话": "session", "变更项": "changes", "阶段": "stage", "写入者": "writer", "正文": "body", "点名": "mentions",
+      "私下": "private", "与会": "attendees", "类型": "type", "标题": "title", "目标": "goal", "人选": "people", "越过": "override",
+      "差异理由": "diff_reason", "框架版本": "plan_version", "更正": "correct"}
+SEATS = {"总裁": "owner", "总管": "lead"}
+
+
+def seat_code(x):
+    return [seat_code(i) for i in x] if isinstance(x, list) else SEATS.get(x, x)
+
+
+def args(edge: str, kw: Dict[str, Any]) -> Dict[str, Any]:
+    out = {}
+    for k, v in kw.items():
+        key = KW.get(k, k)
+        if key == "result" and v is not None:
+            v = code_of("draft_stage" if edge == "draft_stage" else "result", v) or v
+        elif key == "writer":
+            v = code_of("writer", v) or v
+        elif key in ("to", "mentions", "from"):
+            v = seat_code(v)
+        elif key == "people" and isinstance(v, dict):
+            v = {n: seat_code(w) for n, w in v.items()}
+        elif key == "type" and v:
+            v = code_of("issue_type", v) or code_of("goal_type", v) or code_of("speech", v) or v
+        out[key] = v
+    return out
 
 
 class Court:
@@ -62,17 +150,19 @@ class Court:
 
     # ---------- 搭项目 ----------
     def found(self) -> None:
-        env = dict(os.environ, COLLAB_TEAM=str(HERE))
-        subprocess.run(["bash", str(KIT / "core" / "init.sh"), "new", str(self.root), "-n", "万历新政", "--no-now"],
-                       env=env, check=True, stdout=subprocess.DEVNULL)
-        (self.root / MARK).write_text("由 demo/build.py 生成的演示项目，全部是虚拟数据；重新生成会整个删掉重建。\n", encoding="utf-8")
-        rule = json.loads((KIT / "core" / "skeletons" / "render.json").read_text(encoding="utf-8"))
-        rule["称谓"] = TITLES
-        (self.root / "collab" / "内部" / "流程" / "渲染.json").write_text(json.dumps(rule, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        env = dict(os.environ, COLLAB_TEAM=str(HERE if LANG == "zh" else HERE / "team-en"))
+        subprocess.run(["bash", str(KIT / "core" / "init.sh"), "new", str(self.root), "-n", "万历新政" if LANG == "zh" else "Wanli Reforms",
+                        "--no-now", "--lang", LANG], env=env, check=True, stdout=subprocess.DEVNULL)
+        (self.root / MARK).write_text("由 demo/build.py 生成的演示项目，全部是虚拟数据；重新生成会整个删掉重建。\n" if LANG == "zh"
+                                      else story_en.FRAME["mark"], encoding="utf-8")
+        cfg_file = self.root / P.COLLAB / P.CONFIG  # 明朝叫法：config.json 的 names（和 sections、text）覆盖看板上的显示名
+        cfg = json.loads(cfg_file.read_text(encoding="utf-8"))
+        cfg_file.write_text(json.dumps({**cfg, **MING[LANG]}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         p = self.root / "collab" / "PROGRESS.md"
         text = p.read_text(encoding="utf-8")
-        head = next(l for l in text.splitlines() if l.startswith("目标："))
-        text = text.replace(head, "目标：万历元年新政：治河、清丈、北边、开海 ｜ 截止：万历元年秋 ｜ 状态：进行中 ｜ 建立于 1573-03-01")
+        head = next(l for l in text.splitlines() if l.startswith(("目标：", "Goal:")))
+        text = text.replace(head, "目标：万历元年新政：治河、清丈、北边、开海 ｜ 截止：万历元年秋 ｜ 状态：进行中 ｜ 建立于 1573-03-01" if LANG == "zh"
+                            else story_en.FRAME["progress_head"])
         p.write_text(re.sub(r"^\[← NOW\]\(.*\)\n", "", text, count=1, flags=re.M), encoding="utf-8")  # 演示不挂 NOW
         self.proj = flow.Project(self.root)
 
@@ -93,76 +183,87 @@ class Court:
     # ---------- 流转 ----------
     def log(self, obj: str, edge: str, actor: str = "总管", **kw) -> Dict[str, Any]:
         self.tick()
-        args = {"发起": actor, "写入者": kw.pop("写入者", "总管" if actor in flow.MANAGERS else "成员"), **kw}
-        ev, _ = flow.record(self.proj, obj, edge, args)
+        kw = {k: tr(v) for k, v in kw.items()}
+        edge, actor = code_of("edge", edge) or edge, seat_code(tr(actor))
+        kw.setdefault("写入者", "总管" if actor in flow.MANAGERS else "成员")
+        ev, _ = flow.record(self.proj, obj, edge, {"from": actor, **args(edge, kw)})
         return ev
 
     def goal(self, title: str, gtype: str, basis: str, fill: Dict[str, str], deps: str = "—", prio: int = 1) -> str:
         self.tick()
-        obj, path = flow.create(self.proj, "目标", {"发起": "总管", "写入者": "总管", "标题": title, "类型": gtype, "依据": basis})
+        title, basis, fill = tr(title), tr(basis), tr(fill)
+        obj, path = flow.create(self.proj, "goal", {"from": "lead", "writer": "lead", "title": title, "type": code_of("goal_type", gtype), "basis": basis})
         self.fill(path, fill)
-        text = path.read_text(encoding="utf-8").replace("\n## 要什么", f"优先：{prio} ｜ 依赖：{deps} ｜ 截止：万历元年秋\n\n## 要什么", 1)
+        want = "\n## " + self.proj.L.heading("want")
+        line = f"优先：{prio} ｜ 依赖：{deps} ｜ 截止：万历元年秋" if LANG == "zh" else story_en.FRAME["priority"].format(prio=prio, deps=deps)
+        text = path.read_text(encoding="utf-8").replace(want, f"{line}\n{want}", 1)
         path.write_text(text, encoding="utf-8")
         return obj
 
     def frame(self, goal: str, stages: List[Dict[str, Any]], note: str = "") -> None:
         """进呈前把差事都拟好：flow.py 框架，一次写好节次和全部差事卡。"""
         self.tick()
-        flow.frame(self.proj, goal, {"阶段": stages}, {"说明": note})
+        flow.frame(self.proj, goal, {"阶段": tr(stages)}, {"note": tr(note)})
 
     def task(self, title: str, basis: str, fill: Dict[str, str], goal: Optional[str] = None, stage: Optional[int] = None,
              actor: str = "总管") -> str:
         self.tick()
+        title, basis, fill = tr(title), tr(basis), tr(fill)
         states, _, _ = flow.replay_all(self.proj)
         if goal:  # 框架里已拟好的差事，直接拿来用
-            ready = next((t for t in flow.goal_tasks(states, goal) if t["标题"] == title), None)
+            ready = next((t for t in flow.goal_tasks(states, goal) if t["title"] == title), None)
             if ready:
-                return ready["编号"]
-        args = {"发起": actor, "写入者": "总管", "标题": title, "依据": basis}
+                return ready["id"]
+        a = {"from": seat_code(actor), "writer": "lead", "title": title, "basis": basis}
         if goal:
-            args.update({"目标": goal, "阶段": stage})
-        obj, path = flow.create(self.proj, "任务", args)
+            a.update({"goal": goal, "stage": stage})
+        obj, path = flow.create(self.proj, "task", a)
         self.fill(path, fill)
         return obj
 
     def fill(self, path: Path, values: Dict[str, str]) -> None:
         text = path.read_text(encoding="utf-8")
-        for k, v in values.items():
-            text = text.replace(f"- {k}：\n", f"- {k}：{v}\n", 1)
+        L = self.proj.L
+        for k, v in values.items():  # 字段名按代码换成卡片语言的写法（英文卡片是「- Purpose:」）
+            name = L.field(code_of("field", k) or k) if code_of("field", k) else k
+            text = text.replace(f"- {L.kv(name)}\n", f"- {L.kv(name, v)}\n", 1)
         path.write_text(text, encoding="utf-8")
 
     def add_people(self, goal: str, stage: int, who, why: str) -> None:
         """框架内换人：在阶段实例里加人选（一人或几人），记一条「变更」。"""
         states, _, _ = flow.replay_all(self.proj)
-        stages = [dict(s) for s in states[goal]["阶段实例"]]
+        stages = [dict(s) for s in states[goal]["stages"]]
         for s in stages:
-            if s["序"] == stage:
-                s["人选"] = s["人选"] + [w for w in ([who] if isinstance(who, str) else who) if w not in s["人选"]]
-        self.log(goal, "变更", 变更项=["人选"], 说明=why, 阶段=stages)
+            if s["order"] == stage:
+                s["people"] = s["people"] + [w for w in ([who] if isinstance(who, str) else who) if w not in s["people"]]
+        self.log(goal, "变更", 变更项=["人选" if LANG == "zh" else "people"], 说明=why, 阶段=stages)
 
     def evidence(self, obj: str, name: str, body: str) -> str:
         """交付放在所属目标的工作目录下 <工作目录>/<任务>/（见协议「工作区」）。"""
+        name, body = tr(name), tr(body)
         st = flow.replay_all(self.proj)[0][obj]
-        rel = flow.workspace(self.proj, st, "总管")["交付"] + name
+        rel = flow.workspace(self.proj, st, "lead")["delivery"] + name
         p = self.root / rel
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(f"# {name.rsplit('.', 1)[0]}\n\n{body}\n\n（演示案例虚拟数据）\n", encoding="utf-8")
+        virtual = "（演示案例虚拟数据）" if LANG == "zh" else story_en.FRAME["virtual"]
+        p.write_text(f"# {name.rsplit('.', 1)[0]}\n\n{body}\n\n{virtual}\n", encoding="utf-8")
         return rel
 
     def dispatch_live(self, task: str, member: str, note: str, ran: int) -> str:
         """模拟一次还在跑的派活：派活脚本代写派发、接手，运行记录停在「运行中」（演示停在它跑了 ran 分钟的时刻）。"""
+        member, note = tr(member), tr(note)
         n = self.runs.get(task, 0) + 1
         self.runs[task] = n
         rid = f"{task}-{n:02d}"
         self.tick()
         start = self.now
-        flow.dispatch_begin(self.proj, task, "执行", member, rid)
+        flow.dispatch_begin(self.proj, task, "executor", member, rid)
         last = start + dt.timedelta(minutes=ran - 2)
-        rec = {"run": rid, "task": task, "seat": "执行", "member": member, "mode": "新会话", "session": f"{member}-{rid.lower()}",
-               "continues": "", "prompt": f"（演示）执行 {task}", "steps": 11, "last_action": note, "final": "", "error": "",
-               "deviations": [], "override": "", "status": "运行中", "started": start.isoformat(), "last_at": last.isoformat(),
+        rec = {"run": rid, "task": task, "seat": "executor", "member": member, "mode": "new", "session": f"{member}-{rid.lower()}",
+               "continues": "", "prompt": f"（演示）执行 {task}" if LANG == "zh" else story_en.FRAME["prompt_live"].format(task=task), "steps": 11, "last_action": note, "final": "", "error": "",
+               "deviations": [], "override": "", "status": "running", "started": start.isoformat(), "last_at": last.isoformat(),
                "ended": None, "exit_code": None, "tokens": {"input": 21000, "cached": 98000, "output": 2600, "total": 121600}}
-        rdir = self.root / "collab" / "内部" / "运行记录"
+        rdir = self.root / P.COLLAB / P.INTERNAL_RUNS
         rdir.mkdir(parents=True, exist_ok=True)
         (rdir / f"{rid}.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         self.live_until = start + dt.timedelta(minutes=ran)
@@ -172,11 +273,13 @@ class Court:
                  note: str = "", doc: Optional[tuple] = None, to: Optional[str] = None, result: Optional[str] = None,
                  override: str = "", tokens: tuple = (42000, 260000, 6000), steps: int = 18) -> str:
         """模拟一次派活：派活脚本代写开头，成员（编的）写结束边，派活脚本补进展；同时写一份运行记录。"""
+        member, note, to, override = tr(member), tr(note), tr(to), tr(override)
         n = self.runs.get(task, 0) + 1
         self.runs[task] = n
         rid = f"{task}-{n:02d}"
         self.tick()
         start = self.now
+        seat = code_of("seat", seat) or seat
         flow.dispatch_begin(self.proj, task, seat, member, rid, override)
         session = f"{member}-{rid.lower()}"
         self.tick(minutes)
@@ -192,15 +295,17 @@ class Court:
         elif outcome == "确认":
             self.log(task, "确认", member, 结果=result, **kw)
         self.tick(1)
-        flow.dispatch_end(self.proj, task, member, rid, session, note or "（没有写结束边）", "完成")
+        flow.dispatch_end(self.proj, task, member, rid, session, note or ("（没有写结束边）" if LANG == "zh" else story_en.FRAME["no_closing"]),
+                          "完成" if LANG == "zh" else "done")
         inp, cached, out = tokens
-        rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": "新会话" if n == 1 else "续接",
-               "session": session, "continues": f"{task}-{n - 1:02d}" if n > 1 else "", "prompt": f"（演示）{seat} {task}",
-               "steps": steps, "last_action": "（演示）", "final": note or "（成员没写结束边）", "error": "",
-               "deviations": [], "override": override, "status": "完成", "started": start.isoformat(),
+        rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": "new" if n == 1 else "resume",
+               "session": session, "continues": f"{task}-{n - 1:02d}" if n > 1 else "", "prompt": f"（演示）{self.proj.L.name('seat', seat)} {task}" if LANG == "zh" else story_en.FRAME["prompt"].format(seat=self.proj.L.name('seat', seat), task=task),
+               "steps": steps, "last_action": "（演示）" if LANG == "zh" else story_en.FRAME["demo_action"],
+               "final": note or ("（成员没写结束边）" if LANG == "zh" else story_en.FRAME["no_closing"]), "error": "",
+               "deviations": [], "override": override, "status": "done", "started": start.isoformat(),
                "last_at": self.now.isoformat(), "ended": self.now.isoformat(), "exit_code": 0,
                "tokens": {"input": inp, "cached": cached, "output": out, "total": inp + cached + out}}
-        rdir = self.root / "collab" / "内部" / "运行记录"
+        rdir = self.root / P.COLLAB / P.INTERNAL_RUNS
         rdir.mkdir(parents=True, exist_ok=True)
         (rdir / f"{rid}.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         return rid
@@ -213,11 +318,13 @@ class Court:
         rounds 里每条是 (谁, 正文) 或 (谁, 正文, {"点名": [...], "私下": True})；谁是「总裁」时是陛下的发言。
         只有陛下公开的 @ 能叫醒人，部院写的 @ 只是文字。("加人", 成员, 视角) 是陛下在朝会页中途加人。"""
         self.tick()
-        args = {"发起": "总管", "写入者": "总管", "标题": title, "依据": f"陛下口谕：开廷议「{title}」",
-                "与会": [f"{m}:{v}" for m, v in who], "类型": kind}
+        title, question, who, rounds, summary, ruling = tr(title), tr(question), tr(who), tr(rounds), tr(summary), tr(ruling)
+        basis = f"陛下口谕：开廷议「{title}」" if LANG == "zh" else story_en.FRAME["issue_basis"].format(title=title)
+        a = {"from": "lead", "writer": "lead", "title": title, "basis": basis,
+             "attendees": [f"{m}:{v}" for m, v in who], "type": code_of("issue_type", kind)}
         if goal:
-            args["目标"] = goal
-        obj, path = flow.create(self.proj, "议题", args)
+            a["goal"] = goal
+        obj, path = flow.create(self.proj, "issue", a)
         assert obj == iid, (obj, iid)
         self.fill(path, question)
         self.log(iid, "开始", "总裁", 写入者="看板")
@@ -226,54 +333,62 @@ class Court:
                 if item[0] == "加人":
                     self.tick(2)
                     st = flow.replay_all(self.proj)[0][iid]
-                    new = [{"成员": x["成员"], "视角": x["视角"]} for x in st["与会"]] + [{"成员": item[1], "视角": item[2]}]
-                    flow.record(self.proj, iid, "变更", {"发起": "总裁", "写入者": "看板", "与会": new, "变更项": ["与会"],
-                                                       "说明": f"总裁在朝会页加人：{item[1]}"})
+                    new = [{"member": x["member"], "view": x["view"]} for x in st["attendees"]] + [{"member": item[1], "view": item[2]}]
+                    flow.record(self.proj, iid, "change", {"from": "owner", "writer": "board", "attendees": new,
+                                                         "changes": [self.proj.L.name("event_field", "attendees")],
+                                                         "note": f"总裁在朝会页加人：{item[1]}" if LANG == "zh" else story_en.FRAME["add_note"].format(who=item[1])})
                     continue
                 m, text, extra = (item + ({},))[:3]
                 self.tick(4)
-                flow.record(self.proj, iid, "发言", {"发起": m, "写入者": "看板" if m == "总裁" else "派活脚本", "正文": text,
-                                                     "点名": extra.get("点名", []), "私下": extra.get("私下")})
+                flow.record(self.proj, iid, "post", {"from": seat_code(m), "writer": "board" if m == "总裁" else "dispatcher", "body": text,
+                                                     "mentions": seat_code(extra.get("点名", [])), "private": extra.get("私下")})
         self.tick(10)
         self.log(iid, "结束讨论", "总裁", 写入者="看板")
         text = path.read_text(encoding="utf-8")
-        text = (text.replace("- 共识：\n", f"- 共识：{summary['共识']}\n", 1)
-                .replace("- 分歧：<各方立场、依据、代价>\n", f"- 分歧：{summary['争议']}\n", 1)
-                .replace("- 建议：\n", f"- 建议：{summary['总管建议']}\n", 1))
+        L = self.proj.L
+        text = (text.replace(f"- {L.kv(L.field('consensus'))}\n", f"- {L.kv(L.field('consensus'), summary['共识'])}\n", 1)
+                .replace(f"- {L.kv(L.field('disagreements'), L.t('card.disagreements_hint'))}\n", f"- {L.kv(L.field('disagreements'), summary['争议'])}\n", 1)
+                .replace(f"- {L.kv(L.field('recommendation'))}\n", f"- {L.kv(L.field('recommendation'), summary['总管建议'])}\n", 1))
         path.write_text(text, encoding="utf-8")
-        self.log(iid, "总结", 说明=f"共识：{summary['共识']}；分歧：{summary['争议']}", 方案=summary.get("方案", summary["总管建议"]),
-                 建议=summary["总管建议"])
+        note = f"共识：{summary['共识']}；分歧：{summary['争议']}" if LANG == "zh" else story_en.FRAME["summary_note"].format(c=summary['共识'], d=summary['争议'])
+        self.log(iid, "总结", 说明=note, 方案=summary.get("方案", summary["总管建议"]), 建议=summary["总管建议"])
         if ruling and kind != "会审":
             self.log(iid, "裁决", "总裁", 写入者="看板", 依据=ruling["决定"], 说明=ruling["决定"])
-        st = flow.replay_all(self.proj)[0][iid]["状态"]
-        assert kind == "会审" or st == state, (iid, st, state)
+        st = flow.replay_all(self.proj)[0][iid]["state"]
+        assert kind == "会审" or st == code_of("state", state), (iid, st, state)
 
     # ---------- 手写文件（决议、日志、PROGRESS 叙述） ----------
     def decide(self, did: str, what: str, why: str, src: str) -> None:
-        p = self.root / "collab" / "决议.md"
-        p.write_text(p.read_text(encoding="utf-8").rstrip() + f"\n\n## {did}｜{self.now.date().isoformat()}｜{what}\n- 理由：{why}\n- 来源：{src}\n- 取代：无\n",
-                     encoding="utf-8")
+        what, why = tr(what), tr(why)
+        p = self.root / P.COLLAB / P.DECISIONS
+        entry = (f"\n\n## {did}｜{self.now.date().isoformat()}｜{what}\n- 理由：{why}\n- 来源：{src}\n- 取代：无\n" if LANG == "zh"
+                 else "\n\n" + story_en.FRAME["decision"].format(did=did, date=self.now.date().isoformat(), what=what, why=why, src=src))
+        p.write_text(p.read_text(encoding="utf-8").rstrip() + entry, encoding="utf-8")
 
     def diary(self, line: str) -> None:
-        self.logs.append(f"- {self.now.strftime('%m-%d')}｜{line}")
+        self.logs.append(f"- {self.now.strftime('%m-%d')}{'｜' if LANG == 'zh' else ' | '}{tr(line)}")
 
     def narrate(self, chapter: str, nxt: str, status: List[str]) -> None:
+        nxt, status = tr(nxt), tr(status)
+        chapter = chapter if LANG == "zh" else story_en.CHAPTERS[CHAPTERS.index(chapter)]
+        L = self.proj.L
         p = self.root / "collab" / "PROGRESS.md"
         text = p.read_text(encoding="utf-8")
-        a, b = text.index("## ▶ 下一步\n"), text.index("## 卡点")
+        a, b = text.index(f"## {L.heading('next')}\n"), text.index("## 卡点" if LANG == "zh" else "## Blockers")
         self.chapter = chapter
-        body = f"## ▶ 下一步\n{nxt}\n\n## 现状\n" + "\n".join(f"- {s}" for s in status) + "\n\n"
+        body = f"## {L.heading('next')}\n{nxt}\n\n## {L.heading('status')}\n" + "\n".join(f"- {s}" for s in status) + "\n\n"
         p.write_text(text[:a] + body + text[b:], encoding="utf-8")
-        d = self.root / "collab" / "日志.md"
+        d = self.root / P.COLLAB / P.LOG
         d.write_text(d.read_text(encoding="utf-8").rstrip() + "\n\n" + "\n".join(reversed(self.logs)) + "\n", encoding="utf-8")
         self.logs = []
 
     def close(self) -> None:
-        clock = self.root / "collab" / "内部" / "流程" / "时钟.json"
+        clock = self.root / P.COLLAB / P.INTERNAL_PLANS / P.CLOCK
         # 有还在跑的派活时停在它跑到的那一刻，否则停在最后一件事之后一小时
         stop = getattr(self, "live_until", None) or self.now + dt.timedelta(hours=1)
-        clock.write_text(json.dumps({"现在": stop.isoformat(), "回目": self.chapter,
-                                     "说明": "演示案例停在剧情里的这一刻；检查里跟时间有关的提醒按它算"}, ensure_ascii=False) + "\n",
+        clock.write_text(json.dumps({"now": stop.isoformat(), "chapter": self.chapter,
+                                     "note": "演示案例停在剧情里的这一刻；检查里跟时间有关的提醒按它算" if LANG == "zh" else story_en.FRAME["clock_note"]},
+                                    ensure_ascii=False) + "\n",
                          encoding="utf-8")
         flow.render_all(self.proj)
 
@@ -288,12 +403,12 @@ def ch1(c: Court) -> None:
     c.diary("徐州河决，内阁立案 G001")
     c.at("03-01 11:00")
     c.log(g1, "起草阶段", 结果="讨论", 说明="陛下问治河两策，先议再定")
-    gdir = c.proj.collab / "目标" / g1
+    gdir = c.proj.collab / P.GOALS / g1
     gdir.mkdir(parents=True, exist_ok=True)
-    (gdir / "问题.md").write_text("# G001 问题\n\n## 待解决\n\n## 已解决\n- 束水攻沙还是分流？→ 束水攻沙，见方案\n", encoding="utf-8")
+    (gdir / P.QUESTIONS).write_text(tr("# G001 问题\n\n## 待解决\n\n## 已解决\n- 束水攻沙还是分流？→ 束水攻沙，见方案\n"), encoding="utf-8")
     c.at("03-01 13:00")
     c.log(g1, "起草阶段", 结果="方案", 说明="两策利弊议毕，拟分四节次")
-    (gdir / "方案.md").write_text("# G001 方案\n\n方略 → 施工（堵口、钱粮并行）；赈济另起；都察院巡按验收。\n\n## 硬约束\n- 不得加派江南田赋；工料银动用须奏准\n", encoding="utf-8")
+    (gdir / P.PROPOSAL).write_text(tr("# G001 方案\n\n方略 → 施工（堵口、钱粮并行）；赈济另起；都察院巡按验收。\n\n## 硬约束\n- 不得加派江南田赋；工料银动用须奏准\n"), encoding="utf-8")
     c.at("03-01 15:00")
     c.frame(g1, [
         {"序": 1, "名称": "方略", "类型": "执行", "前置": [], "任务": [
@@ -323,8 +438,9 @@ def ch1(c: Court) -> None:
     drafts = ["初稿：辞藻华丽，少实惠", "二稿：添蠲免钱粮", "三稿：语气过于自责", "四稿：增开仓日期"]
     for k, d in enumerate(drafts):
         c.tick(120)
-        c.log(t1, "交付", "翰林院", 给="总裁", 证据=[c.evidence(t1, f"诏书第{k + 1}稿.md", d)], 说明=f"呈{d.split('：')[0]}")
-        c.log(t1, "确认", "总裁", 结果="需补充", 说明=f"朱批：{['空言无补，要写开仓几处', '自责太过，有失体统', '开仓日期要写明', '可，再润色一字'][k]}")
+        c.log(t1, "交付", "翰林院", 给="总裁", 证据=[c.evidence(t1, fmt("诏书第{n}稿.md", n=k + 1), d)],
+              说明=fmt("呈{draft}", draft=tr(d).split("：" if LANG == "zh" else ":")[0].lower() if LANG == "en" else d.split("：")[0]))
+        c.log(t1, "确认", "总裁", 结果="需补充", 说明=fmt("朱批：{text}", text=tr(['空言无补，要写开仓几处', '自责太过，有失体统', '开仓日期要写明', '可，再润色一字'][k])))
     c.tick(90)
     c.log(t1, "交付", "翰林院", 给="总裁", 证据=[c.evidence(t1, "诏书定稿.md", "定稿：蠲免徐淮今年钱粮，开仓七处，三月初五起放赈")], 说明="呈定稿")
     c.log(t1, "确认", "总裁", 结果="通过", 说明="朱批：准颁行")
@@ -332,7 +448,7 @@ def ch1(c: Court) -> None:
     c.dispatch(a, "工部", minutes=200, note="方略：主束水攻沙，附分流备案", doc=("治河方略.md", "束水攻沙：筑堤束水，以水攻沙；分流：开支河泄洪。工料估算见附表"))
     c.at("03-03 10:00")
     c.issue("I001", "治河方略之争", "已裁决",
-            {"要决定什么": "徐州治河用束水攻沙还是分流", "背景与约束": "秋汛前须合龙；工料银有限", "参考资料": "work/G001-黄河决口：赈灾与治河/G001-T1/治河方略.md",
+            {"要决定什么": "徐州治河用束水攻沙还是分流", "背景与约束": "秋汛前须合龙；工料银有限", "参考资料": "work/G001/G001-T1/治河方略.md",
              "已知选项": "束水攻沙；分流；两者兼用"},
             [("工部", "治河工程"), ("户部", "钱粮成本"), ("都察院", "风险与先例")],
             [[("工部", "主束水攻沙：堤成则沙自去，一劳永逸；分流则河道日浅，十年后复决。"),
@@ -421,16 +537,17 @@ def ch2(c: Court) -> None:
     labor = c.task("征调民夫", "G001 批红 · 内阁拆分 G001-T2", {
         "目的": "征调徐邳民夫，供合龙之役", "交付物": "民夫名册", "验收标准": "民夫按期到工"}, "G001", 2)
     c.log("G001-T2", "变更", 变更项=["目的", "交付物"],
-          说明=f"拆分：料归 {stone}（工部）、夫归 {labor}（户部）；本差改为汇总两路、督工合龙")
-    card = next((c.proj.collab / "任务").glob("G001-T2-*.md"))
-    card.write_text(card.read_text(encoding="utf-8").replace("- 目的：按方略堵住徐州决口\n",
-                    f"- 目的：按方略堵住徐州决口；汇总 {stone} 石料、{labor} 民夫两路，督工合龙\n", 1), encoding="utf-8")
-    c.log("G001-T2", "解除", 说明=f"框架内拆为 {stone}、{labor} 两路并行，工部候料夫齐备后合龙；不必上奏")
+          说明=fmt("拆分：料归 {stone}（工部）、夫归 {labor}（户部）；本差改为汇总两路、督工合龙", stone=stone, labor=labor))
+    card = next((c.proj.collab / P.TASKS).glob("G001-T2-*.md"))
+    L, purpose = c.proj.L, c.proj.L.field("purpose")
+    card.write_text(card.read_text(encoding="utf-8").replace(f"- {L.kv(purpose, tr('按方略堵住徐州决口'))}\n",
+                    f"- {L.kv(purpose, fmt('按方略堵住徐州决口；汇总 {stone} 石料、{labor} 民夫两路，督工合龙', stone=stone, labor=labor))}\n", 1), encoding="utf-8")
+    c.log("G001-T2", "解除", 说明=fmt("框架内拆为 {stone}、{labor} 两路并行，工部候料夫齐备后合龙；不必上奏", stone=stone, labor=labor))
     c.log(stone, "派发", 给="工部", 说明="内阁拆差：料归工部")
     c.log(stone, "接手", "工部", 说明="开采徐州吕梁石")
     c.log(labor, "派发", 给="户部", 说明="内阁拆差：夫归户部")
     c.log(labor, "接手", "户部", 说明="行文徐邳二州征夫")
-    c.diary(f"工部奏报合龙须料、夫两件；内阁框架内拆为 {stone} 采石运料（工部）、{labor} 征调民夫（户部），原差改汇总合龙，不上奏")
+    c.diary(fmt("工部奏报合龙须料、夫两件；内阁框架内拆为 {stone} 采石运料（工部）、{labor} 征调民夫（户部），原差改汇总合龙，不上奏", stone=stone, labor=labor))
     c.narrate(CHAPTERS[1], "等江南清丈；料夫两路在办",
               ["G002 已批红（加都察院核验），两省并行", "G001 堵口料夫不足，内阁自拆两路"])
 
@@ -527,7 +644,7 @@ def ch5(c: Court) -> None:
     c.log("G001-T2", "确认", 结果="通过", 说明="合龙奏报属实")
     c.at("03-22 09:00")
     c.issue("I003", "和战之议", "已裁决",
-            {"要决定什么": "准俺答互市，还是闭关备战", "背景与约束": "边饷吃紧；俺答新降", "参考资料": "work/G003-北边：俺答求贡互市/G003-T2/互市章程初稿.md",
+            {"要决定什么": "准俺答互市，还是闭关备战", "背景与约束": "边饷吃紧；俺答新降", "参考资料": "work/G003/G003-T2/互市章程初稿.md",
              "已知选项": "开市；闭关"},
             [("兵部", "边务"), ("户部", "钱粮"), ("都察院", "风险")],
             [[("兵部", "主开市：以市易战，边军可省三成饷。"), ("户部", "赞成：马市可收税银，边饷可减。"),
@@ -657,12 +774,12 @@ def ch8(c: Court) -> None:
     g5 = c.goal("考成法：以簿册考课百官", "通用", "陛下口谕：新政行之，须有考课，否则奉行不力", {
         "要什么": "给六部和地方设完成期限的簿册，按月查考，误期者议处", "成功标准": "六部各立考成簿；每月有查考奏报；误期可追到人"}, prio=2)
     c.log(g5, "起草阶段", 结果="讨论", 说明="考课由谁主持、查到何级，先议")
-    gdir = c.proj.collab / "目标" / g5
+    gdir = c.proj.collab / P.GOALS / g5
     gdir.mkdir(parents=True, exist_ok=True)
-    (gdir / "问题.md").write_text(
+    (gdir / P.QUESTIONS).write_text(tr(
         "# G005 问题\n\n## 待解决\n- 考成簿由内阁查，还是六科查？\n- 地方州县是否一并考课？\n\n"
-        "## 已解决\n- 按月还是按季查考？→ 按月，见方案\n", encoding="utf-8")
-    (gdir / "方案.md").write_text("# G005 方案\n\n每事立限期，一簿送六科、一簿送内阁；按月注销，误期者参。\n", encoding="utf-8")
+        "## 已解决\n- 按月还是按季查考？→ 按月，见方案\n"), encoding="utf-8")
+    (gdir / P.PROPOSAL).write_text(tr("# G005 方案\n\n每事立限期，一簿送六科、一簿送内阁；按月注销，误期者参。\n"), encoding="utf-8")
     c.goal("漕粮改折银", "调研", "陛下口谕：漕运耗费太多，可否改折", {
         "要什么": "调研江南漕粮部分改征银两的利弊", "成功标准": "算清运费省多少、京仓够不够、粮价会不会涨"}, prio=3)
     c.diary("陛下提考成法、漕粮改折，内阁各立一卡（起草中）")
@@ -673,7 +790,10 @@ def ch8(c: Court) -> None:
 STORY = [ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8]
 
 
-def build(out: Path, upto: int = len(STORY)) -> Path:
+def build(out: Path, upto: int = len(STORY), lang: str = "zh") -> Path:
+    global LANG
+    LANG = lang if lang in i18n.LANGS else "zh"
+    MISSING.clear()
     if out.exists():
         if not (out / MARK).exists():
             sys.exit(f"{out} 已存在且不是演示案例，不覆盖")
@@ -690,13 +810,21 @@ def build(out: Path, upto: int = len(STORY)) -> Path:
 def main() -> int:
     ap = argparse.ArgumentParser(description="生成演示案例「万历新政」（虚拟数据）")
     ap.add_argument("--到", dest="upto", type=int, default=len(STORY), help=f"演到第几回（1–{len(STORY)}）")
-    ap.add_argument("--输出", dest="out", default=str(HERE / "万历新政"))
+    ap.add_argument("--输出", "--out", dest="out")
+    ap.add_argument("--lang", default="zh", choices=list(i18n.LANGS))
     a = ap.parse_args()
     if not 1 <= a.upto <= len(STORY):
         sys.exit(f"--到 要在 1–{len(STORY)} 之间")
-    out = build(Path(a.out).expanduser().resolve(), a.upto)
-    print(f"已生成：{out}（演到{CHAPTERS[a.upto - 1].replace('　', ' ')}）")
-    print(f"看板：python3 {KIT / 'board/server.py'} --port 3101 --project {out}")
+    out = build(Path(a.out or HERE / ("万历新政" if a.lang == "zh" else "wanli-reforms")).expanduser().resolve(), a.upto, a.lang)
+    if MISSING:
+        print("Missing from story_en.py: " + "; ".join(sorted(set(MISSING))), file=sys.stderr)
+    chapters = CHAPTERS if a.lang == "zh" else story_en.CHAPTERS
+    if a.lang == "zh":
+        print(f"已生成：{out}（演到{chapters[a.upto - 1].replace('　', ' ')}）")
+        print(f"看板：python3 {KIT / 'board/server.py'} --port 3101 --project {out}")
+    else:
+        print(f"Built: {out} (up to {chapters[a.upto - 1]})")
+        print(f"Board: python3 {KIT / 'board/server.py'} --port 3101 --project {out}")
     return 0
 
 

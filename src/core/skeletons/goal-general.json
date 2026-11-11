@@ -1,3 +1,7 @@
-{"骨架": "目标-通用", "版本": 1, "阶段": [
-  {"序": 1, "名称": "执行", "类型": "执行", "可并行": true, "前置": []}
-]}
+{
+  "skeleton": "goal-general",
+  "version": 1,
+  "stages": [
+    {"order": 1, "name": "执行", "type": "work", "parallel": true, "depends_on": []}
+  ]
+}

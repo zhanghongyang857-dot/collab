@@ -12,6 +12,7 @@
 set -euo pipefail
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+eval "$(python3 "$KIT/core/paths.py" sh)"  # 文件名：P_VERSION_TXT…（core/paths.py）
 REPO="$(git -C "$KIT" rev-parse --show-toplevel 2>/dev/null)" || { echo "错误：$KIT 不在 git 仓库里，只能从开发仓库发布" >&2; exit 1; }
 DIRTY=0; CORE=0; MODULE=""
 while [ $# -gt 0 ]; do
@@ -66,13 +67,13 @@ fi
   echo "说明：$(git -C "$REPO" log -1 --format=%s)"
   echo "发布：$(date '+%Y-%m-%d %H:%M')"
   echo "来源：$REPO/src$([ -n "$MODULE" ] && echo "/modules/$MODULE")$([ "$CORE" = 1 ] && echo "（只有核心）")"
-} > "$TMP/版本.txt"
+} > "$TMP/${P_VERSION_TXT}"
 
 if [ -n "$MODULE" ]; then
   mv "$TMP" "$DEST"
   trap - EXIT
   echo "已导出模块到 $DEST"
-  sed 's/^/  /' "$DEST/版本.txt"
+  sed 's/^/  /' "$DEST/${P_VERSION_TXT}"
   exit 0
 fi
 
@@ -84,7 +85,7 @@ fi
 mv "$TMP" "$DEST"
 trap - EXIT
 echo "已发布到 $DEST"
-sed 's/^/  /' "$DEST/版本.txt"
+sed 's/^/  /' "$DEST/${P_VERSION_TXT}"
 [ -d "$PREV" ] && echo "上一版：$PREV（回退：删掉 $DEST，把上一版改回原名）"
 
 CONF="$HOME/Library/Application Support/ai-company-board/config"

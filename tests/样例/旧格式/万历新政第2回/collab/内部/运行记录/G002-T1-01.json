@@ -1,0 +1,27 @@
+{
+ "run": "G002-T1-01",
+ "task": "G002-T1",
+ "seat": "执行",
+ "member": "户部",
+ "mode": "新会话",
+ "session": "户部-g002-t1-01",
+ "continues": "",
+ "prompt": "（演示）执行 G002-T1",
+ "steps": 18,
+ "last_action": "（演示）",
+ "final": "山东清丈毕，新增隐田四万顷",
+ "error": "",
+ "deviations": [],
+ "override": "",
+ "status": "完成",
+ "started": "1573-03-07T09:24:00+08:00",
+ "last_at": "1573-03-07T19:28:00+08:00",
+ "ended": "1573-03-07T19:28:00+08:00",
+ "exit_code": 0,
+ "tokens": {
+  "input": 42000,
+  "cached": 260000,
+  "output": 6000,
+  "total": 308000
+ }
+}

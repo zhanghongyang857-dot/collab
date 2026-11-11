@@ -56,7 +56,7 @@ class CalBase(Base):
         shutil.copytree(CAL / "sample", self.data, dirs_exist_ok=True)
         self.config(modules=["schedule", "deadlines", "calendar"])
 
-    def write(self, rows, name="日历/日历.md"):
+    def write(self, rows, name="calendar/calendar.md"):
         p = self.data / name
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("# 日历\n\n" + HEAD + rows, encoding="utf-8")
@@ -109,7 +109,7 @@ class TestLoad(CalBase):
         self.assertEqual(len(d["bad"]), 2)
 
     def test_missing_file_is_empty_state(self):
-        (self.data / "日历" / "日历.md").unlink()
+        (self.data / "calendar" / "calendar.md").unlink()
         d = self.cal()
         self.assertFalse(d["exists"])
         self.assertEqual(([e for e in d["events"] if not e["exam"]], d["pending"]), ([], []))
@@ -186,10 +186,10 @@ class TestDeadlines(CalBase):
         super().setUp()
         d = dt.date.today() + dt.timedelta(days=3)
         self.day = d.isoformat()
-        (self.data / "截止.md").write_text(
+        (self.data / "deadlines.md").write_text(
             f"## EE0001 示例课\n- **期中（30%）**：**{self.day}（周X）14:00–16:00**\n"
             f"- **作业（10%）**：**{self.day}（周X）23:59 暂定**\n", encoding="utf-8")
-        self.config(deadlines={"file": "截止.md", "category": "学习", "groups": ["EE0001"]})
+        self.config(deadlines={"file": "deadlines.md", "category": "学习", "groups": ["EE0001"]})
 
     def test_exams_merged_once_and_marked(self):
         self.write(f"| {self.day} | 10:00 | 讲座 | 探索 | | |\n")
@@ -202,32 +202,32 @@ class TestDeadlines(CalBase):
         self.assertEqual(evs[0]["title"], "讲座")  # 同一天按开始时间排：10:00 在 14:00 前
 
     def test_exam_category_uses_calendar_categories(self):
-        self.config(deadlines={"file": "截止.md", "groups": ["EE0001"]},
+        self.config(deadlines={"file": "deadlines.md", "groups": ["EE0001"]},
                     calendar={"categories": [{"name": "课程", "keywords": ["EE0001"], "color": "red"}]})
         self.assertEqual({e["cat"] for e in self.cal()["events"] if e["exam"]}, {"cat-red"})
 
     def test_major_category_merges_exams(self):
         self.write(f"| {self.day} | 10:00 | 面试 | 要事 | | |\n| {self.day} | 11:00 | 讲座 | 学 | | |\n")
-        self.config(deadlines={"file": "截止.md", "groups": ["EE0001"]},
+        self.config(deadlines={"file": "deadlines.md", "groups": ["EE0001"]},
                     calendar={"categories": [{"name": "要事", "color": "red", "note": "不能错过"},
                                              {"name": "学", "color": "blue"}], "major_category": "要事"})
         d = self.cal()
         self.assertEqual(d["major"], "要事")
-        self.assertEqual({(e["cat"], e["catKey"], e["source"]) for e in d["events"] if e["exam"]}, {("cat-red", "要事", "考核安排")})
+        self.assertEqual({(e["cat"], e["catKey"], e["source"]) for e in d["events"] if e["exam"]}, {("cat-red", "要事", "deadlines")})
         self.assertEqual([(e["title"], e["cat"], e["source"]) for e in d["events"] if not e["exam"] and e["catKey"] == "要事"],
-                         [("面试", "cat-red", "日历")])
+                         [("面试", "cat-red", "calendar")])
         self.assertEqual(len([e for e in d["events"] if e["catKey"] == "要事"]), 3)  # 1 日历 + 2 考核，各一次
         self.assertEqual(len([e for e in d["events"] if e["exam"]]), 2)
 
     def test_major_category_exams_not_in_calendar_provide(self):
         self.config(calendar={"categories": [{"name": "要事", "color": "red"}], "major_category": "要事"},
-                    deadlines={"file": "截止.md", "groups": ["EE0001"]})
+                    deadlines={"file": "deadlines.md", "groups": ["EE0001"]})
         self.module("probe", {"uses": ["calendar"]}, load="def load(ctx):\n    return {'n': len(ctx.get('events') or [])}\n")
         self.config(modules=["deadlines", "calendar", "probe"])
         self.assertEqual(self.mods(self.build().collect())["probe"]["data"]["n"], 5)
 
     def test_major_category_not_in_list_keeps_exam_mark_behaviour(self):
-        self.config(deadlines={"file": "截止.md", "groups": ["EE0001"]},
+        self.config(deadlines={"file": "deadlines.md", "groups": ["EE0001"]},
                     calendar={"categories": [{"name": "课程", "keywords": ["EE0001"], "color": "red"}], "major_category": "没有这类"})
         d = self.cal()
         self.assertEqual(d["major"], "")
@@ -271,7 +271,7 @@ class TestIsolation(CalBase):
         self.assertEqual(with_cal["now"], without["now"])
 
     def test_calendar_error_only_affects_itself(self):
-        (self.data / "日历" / "日历.md").write_bytes(b"\xff\xfe\x00bad")
+        (self.data / "calendar" / "calendar.md").write_bytes(b"\xff\xfe\x00bad")
         data = self.build().collect()
         m = self.mods(data)
         self.assertNotEqual(m["calendar"]["error"], "")
@@ -304,7 +304,7 @@ class TestMonthView(CalBase):
         js = (CAL / "view.js").read_text(encoding="utf-8")
         for word in ("D.days", "接下来"):
             self.assertNotIn(word, js)
-        for word in ("上一月", "下一月", "今天", "还有", "考核", "cal-more", "cal-grid", "cal-side", "cal-leg"):
+        for word in ("cal.prev", "cal.next", "board.today", "cal.more", "cal.exam", "cal-more", "cal-grid", "cal-side", "cal-leg"):
             self.assertIn(word, js)
         css = (CAL / "view.css").read_text(encoding="utf-8")
         self.assertIn("max-width: 760px", css)
@@ -317,7 +317,7 @@ class TestMonthView(CalBase):
 
 class TestRules(unittest.TestCase):
     def test_rules_text(self):
-        t = (CAL / "口令.md").read_text(encoding="utf-8")
+        t = (CAL / "commands.zh.md").read_text(encoding="utf-8")
         self.assertIn("## 记事件", t)
         self.assertIn("## 排明天", t)
         self.assertIn("不自造新类", t)
@@ -330,15 +330,15 @@ class TestRules(unittest.TestCase):
         for order, first in ((["calendar", "schedule"], "日历"), (["schedule", "calendar"], "archive")):
             tmp = Path(tempfile.mkdtemp())
             try:
-                (tmp / "config.json").write_text(json.dumps({"modules": order}), encoding="utf-8")
-                text = km.merged_rules(MODULES.parent, tmp, {"modules": order})
+                (tmp / "config.json").write_text(json.dumps({"modules": order, "lang": "zh"}), encoding="utf-8")
+                text = km.merged_rules(MODULES.parent, tmp, {"modules": order, "lang": "zh"})
                 body = text.split("## 排明天", 1)[1].split("\n## ", 1)[0]
                 self.assertEqual(text.count("## 排明天"), 1)
-                self.assertIn("日历/日历.md", body)
+                self.assertIn("calendar/calendar.md", body)
                 if first == "日历":
-                    self.assertLess(body.index("日历/日历.md"), body.index("写明天的行（每行"))
+                    self.assertLess(body.index("calendar/calendar.md"), body.index("写明天的行（每行"))
                 else:
-                    self.assertLess(body.index("写明天的行（每行"), body.index("日历/日历.md"))
+                    self.assertLess(body.index("写明天的行（每行"), body.index("calendar/calendar.md"))
             finally:
                 shutil.rmtree(tmp)
 
@@ -350,19 +350,19 @@ class TestCli(unittest.TestCase):
         try:
             data = tmp / "NOW"
             data.mkdir()
-            (data / "config.json").write_text('{"now_md": "../NOW.md", "categories": []}', encoding="utf-8")
+            (data / "config.json").write_text('{"lang": "zh", "now_md": "../NOW.md", "categories": []}', encoding="utf-8")
             init = MODULES.parent / "core" / "init.sh"
             r = subprocess.run(["bash", str(init), "module", "enable", "calendar", "--now-dir", str(data)],
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-            self.assertTrue((data / "日历" / "日历.md").exists())
-            self.assertIn("## 记事件", (data / "口令.md").read_text(encoding="utf-8"))
+            self.assertTrue((data / "calendar" / "calendar.md").exists())
+            self.assertIn("## 记事件", (data / "commands.md").read_text(encoding="utf-8"))
             self.assertIn("calendar", json.loads((data / "config.json").read_text(encoding="utf-8"))["modules"])
             r = subprocess.run(["bash", str(init), "module", "disable", "calendar", "--now-dir", str(data)],
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-            self.assertTrue((data / "日历" / "日历.md").exists())
-            self.assertNotIn("记事件", (data / "口令.md").read_text(encoding="utf-8"))
+            self.assertTrue((data / "calendar" / "calendar.md").exists())
+            self.assertNotIn("记事件", (data / "commands.md").read_text(encoding="utf-8"))
         finally:
             shutil.rmtree(tmp)
 

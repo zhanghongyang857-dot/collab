@@ -1,0 +1,27 @@
+{
+ "run": "G001-T2-01",
+ "task": "G001-T2",
+ "seat": "执行",
+ "member": "工部",
+ "mode": "新会话",
+ "session": "工部-g001-t2-01",
+ "continues": "",
+ "prompt": "（演示）执行 G001-T2",
+ "steps": 18,
+ "last_action": "（演示）",
+ "final": "合龙须石料与民夫两件：本部只能办料，民夫须户部征调，请内阁分派",
+ "error": "",
+ "deviations": [],
+ "override": "",
+ "status": "完成",
+ "started": "1573-03-08T09:03:00+08:00",
+ "last_at": "1573-03-08T12:07:00+08:00",
+ "ended": "1573-03-08T12:07:00+08:00",
+ "exit_code": 0,
+ "tokens": {
+  "input": 42000,
+  "cached": 260000,
+  "output": 6000,
+  "total": 308000
+ }
+}

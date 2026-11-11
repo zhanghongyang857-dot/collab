@@ -1,4 +1,8 @@
-{"骨架": "目标-调研", "版本": 1, "阶段": [
-  {"序": 1, "名称": "检索", "类型": "调研", "可并行": true, "前置": []},
-  {"序": 2, "名称": "综合成文", "类型": "执行", "可并行": false, "前置": [1]}
-]}
+{
+  "skeleton": "goal-research",
+  "version": 1,
+  "stages": [
+    {"order": 1, "name": "检索", "type": "research", "parallel": true, "depends_on": []},
+    {"order": 2, "name": "综合成文", "type": "work", "parallel": false, "depends_on": [1]}
+  ]
+}

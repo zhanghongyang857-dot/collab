@@ -9,7 +9,8 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD="$HERE/build"
-APP="$BUILD/御前看板.app"
+eval "$(python3 "$HERE/../core/paths.py" sh)"  # 文件名：P_BOARD_APP（core/paths.py）
+APP="$BUILD/${P_BOARD_APP}"
 BUNDLE_ID="com.local.ai-company-board"
 CLANG="${CLANG:-/usr/bin/clang}"
 
