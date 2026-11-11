@@ -1,1069 +1,1069 @@
 {
- "任务": [
+ "checks": [],
+ "current": [
   {
-   "主干": [
-    {
-     "槽位": 0,
-     "边": "建立",
-     "项目序": 2
-    }
-   ],
-   "交接": [
-    {
-     "发起": "总管",
-     "持有人": "总管",
-     "时间": "2026-11-01T09:14:00+08:00",
-     "状态": "规划中",
-     "类别": "待办",
-     "边": "建立",
-     "项目序": 2
-    },
-    {
-     "发起": "总裁",
-     "持有人": "总管",
-     "时间": "2026-11-01T09:28:00+08:00",
-     "状态": "已批准",
-     "类别": "待办",
-     "边": "批准",
-     "项目序": 6
-    }
-   ],
-   "内容": {
-    "上报条件": "",
-    "交付物": "模拟交付",
-    "可替换的做法": "",
-    "授权": "",
-    "目的": "模拟",
-    "硬约束": "",
-    "身份": "",
-    "输入": "",
-    "验收标准": "模拟通过"
-   },
-   "前置": [],
-   "意见": [],
-   "执行": null,
-   "拟执行": "总管",
-   "拟确认": "总管",
-   "持有人": "总管",
-   "持有期": [
-    {
-     "人": "总管",
-     "止序": null,
-     "止时": null,
-     "起序": 2,
-     "起时": "2026-11-01T09:14:00+08:00"
-    }
-   ],
-   "支线": [
-    {
-     "发起": "总裁",
-     "挂在": 0,
-     "接收": "总管",
-     "边": "批准",
-     "项目序": 6
-    }
-   ],
-   "标题": "占位",
-   "状态": "已批准",
-   "目标": "G001",
-   "确认": null,
-   "类别": "待办",
-   "结论": "",
-   "编号": "G001-T1",
-   "自确认": false,
-   "要求序": null,
-   "返工次": 0,
-   "键": "占位",
-   "阶段": 1
-  },
-  {
-   "主干": [
-    {
-     "槽位": 0,
-     "边": "建立",
-     "项目序": 7
-    },
-    {
-     "槽位": 1,
-     "边": "派发",
-     "项目序": 8
-    },
-    {
-     "槽位": 2,
-     "边": "接手",
-     "项目序": 9
-    },
-    {
-     "槽位": 3,
-     "边": "交付",
-     "项目序": 18
-    },
-    {
-     "槽位": 4,
-     "边": "确认",
-     "项目序": 19
-    }
-   ],
-   "交接": [
-    {
-     "发起": "总裁",
-     "持有人": "总管",
-     "时间": "2026-11-01T09:28:00+08:00",
-     "状态": "已批准",
-     "类别": "待办",
-     "边": "建立",
-     "项目序": 7
-    },
-    {
-     "发起": "总裁",
-     "持有人": "codex",
-     "时间": "2026-11-01T09:35:00+08:00",
-     "状态": "已交接",
-     "类别": "待办",
-     "边": "派发",
-     "项目序": 8
-    },
-    {
-     "发起": "总裁",
-     "持有人": "codex",
-     "时间": "2026-11-01T09:42:00+08:00",
-     "状态": "执行中",
-     "类别": "进行",
-     "边": "接手",
-     "项目序": 9
-    },
-    {
-     "发起": "codex",
-     "持有人": "总裁",
-     "时间": "2026-11-01T09:49:00+08:00",
-     "状态": "待验收",
-     "类别": "评审",
-     "边": "交付",
-     "项目序": 10
-    },
-    {
-     "发起": "总裁",
-     "持有人": "codex",
-     "时间": "2026-11-01T09:56:00+08:00",
-     "状态": "执行中",
-     "类别": "进行",
-     "边": "确认",
-     "项目序": 11
-    },
-    {
-     "发起": "codex",
-     "持有人": "总裁",
-     "时间": "2026-11-01T10:03:00+08:00",
-     "状态": "待验收",
-     "类别": "评审",
-     "边": "交付",
-     "项目序": 12
-    },
-    {
-     "发起": "总裁",
-     "持有人": "codex",
-     "时间": "2026-11-01T10:10:00+08:00",
-     "状态": "执行中",
-     "类别": "进行",
-     "边": "确认",
-     "项目序": 13
-    },
-    {
-     "发起": "codex",
-     "持有人": "总裁",
-     "时间": "2026-11-01T10:17:00+08:00",
-     "状态": "待验收",
-     "类别": "评审",
-     "边": "交付",
-     "项目序": 14
-    },
-    {
-     "发起": "总裁",
-     "持有人": "codex",
-     "时间": "2026-11-01T10:24:00+08:00",
-     "状态": "执行中",
-     "类别": "进行",
-     "边": "确认",
-     "项目序": 15
-    },
-    {
-     "发起": "codex",
-     "持有人": "总裁",
-     "时间": "2026-11-01T10:31:00+08:00",
-     "状态": "待验收",
-     "类别": "评审",
-     "边": "交付",
-     "项目序": 16
-    },
-    {
-     "发起": "总裁",
-     "持有人": "codex",
-     "时间": "2026-11-01T10:38:00+08:00",
-     "状态": "执行中",
-     "类别": "进行",
-     "边": "确认",
-     "项目序": 17
-    },
-    {
-     "发起": "codex",
-     "持有人": "总裁",
-     "时间": "2026-11-01T10:45:00+08:00",
-     "状态": "待验收",
-     "类别": "评审",
-     "边": "交付",
-     "项目序": 18
-    },
-    {
-     "发起": "总裁",
-     "持有人": null,
-     "时间": "2026-11-01T10:52:00+08:00",
-     "状态": "通过",
-     "类别": "完成",
-     "边": "确认",
-     "项目序": 19
-    }
-   ],
-   "内容": {
-    "上报条件": "",
-    "交付物": "模拟交付",
-    "可替换的做法": "",
-    "授权": "",
-    "目的": "模拟",
-    "硬约束": "",
-    "身份": "",
-    "输入": "",
-    "验收标准": "模拟通过"
-   },
-   "前置": [],
-   "意见": [],
-   "执行": "codex",
-   "拟执行": null,
-   "拟确认": null,
-   "持有人": null,
-   "持有期": [
-    {
-     "人": "总管",
-     "止序": 8,
-     "止时": "2026-11-01T09:35:00+08:00",
-     "起序": 7,
-     "起时": "2026-11-01T09:28:00+08:00"
-    },
-    {
-     "人": "codex",
-     "止序": 10,
-     "止时": "2026-11-01T09:49:00+08:00",
-     "起序": 8,
-     "起时": "2026-11-01T09:35:00+08:00"
-    },
-    {
-     "人": "总裁",
-     "止序": 11,
-     "止时": "2026-11-01T09:56:00+08:00",
-     "起序": 10,
-     "起时": "2026-11-01T09:49:00+08:00"
-    },
-    {
-     "人": "codex",
-     "止序": 12,
-     "止时": "2026-11-01T10:03:00+08:00",
-     "起序": 11,
-     "起时": "2026-11-01T09:56:00+08:00"
-    },
-    {
-     "人": "总裁",
-     "止序": 13,
-     "止时": "2026-11-01T10:10:00+08:00",
-     "起序": 12,
-     "起时": "2026-11-01T10:03:00+08:00"
-    },
-    {
-     "人": "codex",
-     "止序": 14,
-     "止时": "2026-11-01T10:17:00+08:00",
-     "起序": 13,
-     "起时": "2026-11-01T10:10:00+08:00"
-    },
-    {
-     "人": "总裁",
-     "止序": 15,
-     "止时": "2026-11-01T10:24:00+08:00",
-     "起序": 14,
-     "起时": "2026-11-01T10:17:00+08:00"
-    },
-    {
-     "人": "codex",
-     "止序": 16,
-     "止时": "2026-11-01T10:31:00+08:00",
-     "起序": 15,
-     "起时": "2026-11-01T10:24:00+08:00"
-    },
-    {
-     "人": "总裁",
-     "止序": 17,
-     "止时": "2026-11-01T10:38:00+08:00",
-     "起序": 16,
-     "起时": "2026-11-01T10:31:00+08:00"
-    },
-    {
-     "人": "codex",
-     "止序": 18,
-     "止时": "2026-11-01T10:45:00+08:00",
-     "起序": 17,
-     "起时": "2026-11-01T10:38:00+08:00"
-    },
-    {
-     "人": "总裁",
-     "止序": 19,
-     "止时": "2026-11-01T10:52:00+08:00",
-     "起序": 18,
-     "起时": "2026-11-01T10:45:00+08:00"
-    }
-   ],
-   "支线": [
-    {
-     "发起": "codex",
-     "挂在": 2,
-     "接收": "总裁",
-     "边": "交付",
-     "项目序": 10
-    },
-    {
-     "发起": "总裁",
-     "挂在": 2,
-     "接收": "codex",
-     "边": "确认",
-     "项目序": 11
-    },
-    {
-     "发起": "codex",
-     "挂在": 2,
-     "接收": "总裁",
-     "边": "交付",
-     "项目序": 12
-    },
-    {
-     "发起": "总裁",
-     "挂在": 2,
-     "接收": "codex",
-     "边": "确认",
-     "项目序": 13
-    },
-    {
-     "发起": "codex",
-     "挂在": 2,
-     "接收": "总裁",
-     "边": "交付",
-     "项目序": 14
-    },
-    {
-     "发起": "总裁",
-     "挂在": 2,
-     "接收": "codex",
-     "边": "确认",
-     "项目序": 15
-    },
-    {
-     "发起": "codex",
-     "挂在": 2,
-     "接收": "总裁",
-     "边": "交付",
-     "项目序": 16
-    },
-    {
-     "发起": "总裁",
-     "挂在": 2,
-     "接收": "codex",
-     "边": "确认",
-     "项目序": 17
-    }
-   ],
-   "标题": "班子设计文档",
-   "状态": "通过",
-   "目标": "G001",
-   "确认": "总裁",
-   "类别": "完成",
-   "结论": "可以",
-   "编号": "G001-T2",
-   "自确认": false,
-   "要求序": 7,
-   "返工次": 0,
-   "键": null,
-   "阶段": 1
+   "category": "todo",
+   "from": "owner",
+   "object": "G001-T1",
+   "project_seq": 6,
+   "state": "approved",
+   "to": "lead"
   }
  ],
- "当前": [
+ "decisions": [],
+ "goals": [
   {
-   "发起": "总裁",
-   "对象": "G001-T1",
-   "接收": "总管",
-   "状态": "已批准",
-   "类别": "待办",
-   "项目序": 6
-  }
- ],
- "待你决定": [],
- "截至": 19,
- "检查": [],
- "目标": [
-  {
-   "事件": [
+   "approved_version": 1,
+   "category": "doing",
+   "comments": [],
+   "draft_stage": null,
+   "drift": [
     {
-     "主干": false,
-     "依据": "总裁：模拟",
-     "写入者": "总管",
-     "前状态": "无",
-     "原话": true,
-     "发起": "总管",
-     "后状态": "起草",
-     "对象": "G001",
-     "层": "目标",
-     "接收": "总管",
-     "时间": "2026-11-01T09:14:00+08:00",
-     "边": "建立",
-     "阶段": null,
-     "项目序": 1
+     "note": "班子设计文档（codex）",
+     "task": "G001-T2",
+     "type": "added"
+    }
+   ],
+   "events": [
+    {
+     "basis": "总裁：模拟",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "goal",
+     "object": "G001",
+     "project_seq": 1,
+     "quote": true,
+     "stage": null,
+     "time": "2026-11-01T09:14:00+08:00",
+     "to": "lead",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": true,
-     "依据": "G001 框架",
-     "写入者": "总管",
-     "前状态": "无",
-     "发起": "总管",
-     "后状态": "规划中",
-     "对象": "G001-T1",
-     "层": "任务",
-     "接收": "总管",
-     "时间": "2026-11-01T09:14:00+08:00",
-     "槽位": 0,
-     "边": "建立",
-     "阶段": 1,
-     "项目序": 2
+     "basis": "G001 框架",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T1",
+     "project_seq": 2,
+     "slot": 0,
+     "stage": 1,
+     "time": "2026-11-01T09:14:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "写入者": "总管",
-     "前状态": "起草",
-     "发起": "总管",
-     "后状态": "起草",
-     "对象": "G001",
-     "层": "目标",
-     "接收": "无",
-     "时间": "2026-11-01T09:14:00+08:00",
-     "说明": "框架第 1 版",
-     "边": "变更",
-     "阶段": null,
-     "项目序": 3
+     "edge": "change",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "框架第 1 版",
+     "object": "G001",
+     "project_seq": 3,
+     "stage": null,
+     "time": "2026-11-01T09:14:00+08:00",
+     "to": "none",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "写入者": "总管",
-     "前状态": "起草",
-     "发起": "总管",
-     "后状态": "待批准",
-     "对象": "G001",
-     "层": "目标",
-     "接收": "总裁",
-     "时间": "2026-11-01T09:21:00+08:00",
-     "说明": "杂项",
-     "边": "提交",
-     "阶段": null,
-     "项目序": 4
+     "edge": "submit",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "杂项",
+     "object": "G001",
+     "project_seq": 4,
+     "stage": null,
+     "time": "2026-11-01T09:21:00+08:00",
+     "to": "owner",
+     "to_state": "pending_approval",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "依据": "总裁：模拟",
-     "写入者": "总管",
-     "前状态": "待批准",
-     "原话": true,
-     "发起": "总裁",
-     "后状态": "进行中",
-     "对象": "G001",
-     "层": "目标",
-     "接收": "总管",
-     "时间": "2026-11-01T09:28:00+08:00",
-     "说明": "批准（模拟）",
-     "边": "批准",
-     "阶段": null,
-     "项目序": 5
+     "basis": "总裁：模拟",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "pending_approval",
+     "layer": "goal",
+     "note": "批准（模拟）",
+     "object": "G001",
+     "project_seq": 5,
+     "quote": true,
+     "stage": null,
+     "time": "2026-11-01T09:28:00+08:00",
+     "to": "lead",
+     "to_state": "active",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "依据": "总裁：模拟",
-     "写入者": "总管",
-     "前状态": "规划中",
-     "原话": true,
-     "发起": "总裁",
-     "后状态": "已批准",
-     "对象": "G001-T1",
-     "层": "任务",
-     "接收": "总管",
-     "时间": "2026-11-01T09:28:00+08:00",
-     "说明": "随 G001「批准」",
-     "边": "批准",
-     "阶段": 1,
-     "项目序": 6
+     "basis": "总裁：模拟",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "随 G001「批准」",
+     "object": "G001-T1",
+     "project_seq": 6,
+     "quote": true,
+     "stage": 1,
+     "time": "2026-11-01T09:28:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": true,
-     "依据": "总裁：整理方案",
-     "写入者": "总管",
-     "前状态": "无",
-     "原话": true,
-     "发起": "总裁",
-     "后状态": "已批准",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "总管",
-     "时间": "2026-11-01T09:28:00+08:00",
-     "槽位": 0,
-     "画": {
-      "发起": "总裁",
-      "接收": "总管",
-      "标签": "要求"
+     "added_after_approval": true,
+     "basis": "总裁：整理方案",
+     "draw": {
+      "from": "owner",
+      "label": "request",
+      "to": "lead"
      },
-     "边": "建立",
-     "阶段": 1,
-     "项目序": 7
+     "edge": "create",
+     "from": "owner",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T2",
+     "project_seq": 7,
+     "quote": true,
+     "slot": 0,
+     "stage": 1,
+     "time": "2026-11-01T09:28:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": true,
+     "writer": "lead"
     },
     {
-     "主干": true,
-     "写入者": "总管",
-     "前状态": "已批准",
-     "发起": "总裁",
-     "后状态": "已交接",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "codex",
-     "时间": "2026-11-01T09:35:00+08:00",
-     "槽位": 1,
-     "说明": "派发（模拟）",
-     "边": "派发",
-     "阶段": 1,
-     "项目序": 8
+     "added_after_approval": true,
+     "edge": "dispatch",
+     "from": "owner",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "派发（模拟）",
+     "object": "G001-T2",
+     "project_seq": 8,
+     "slot": 1,
+     "stage": 1,
+     "time": "2026-11-01T09:35:00+08:00",
+     "to": "codex",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "lead"
     },
     {
-     "主干": true,
-     "写入者": "成员",
-     "前状态": "已交接",
-     "发起": "codex",
-     "后状态": "执行中",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "codex",
-     "时间": "2026-11-01T09:42:00+08:00",
-     "槽位": 2,
-     "说明": "接手（模拟）",
-     "边": "接手",
-     "阶段": 1,
-     "项目序": 9
+     "added_after_approval": true,
+     "edge": "pick_up",
+     "from": "codex",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "接手（模拟）",
+     "object": "G001-T2",
+     "project_seq": 9,
+     "slot": 2,
+     "stage": 1,
+     "time": "2026-11-01T09:42:00+08:00",
+     "to": "codex",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "member"
     },
     {
-     "主干": false,
-     "写入者": "成员",
-     "前状态": "执行中",
-     "发起": "codex",
-     "后状态": "待验收",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "总裁",
-     "时间": "2026-11-01T09:49:00+08:00",
-     "证据": [
-      "collab/产出/G001-T2/交付.md"
+     "added_after_approval": true,
+     "edge": "deliver",
+     "evidence": [
+      "collab/outputs/G001-T2/交付.md"
      ],
-     "说明": "交付（模拟）",
-     "边": "交付",
-     "阶段": 1,
-     "项目序": 10
+     "from": "codex",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "交付（模拟）",
+     "object": "G001-T2",
+     "project_seq": 10,
+     "stage": 1,
+     "time": "2026-11-01T09:49:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
     },
     {
-     "主干": false,
-     "写入者": "总管",
-     "前状态": "待验收",
-     "发起": "总裁",
-     "后状态": "执行中",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "codex",
-     "时间": "2026-11-01T09:56:00+08:00",
-     "结果": "需补充",
-     "说明": "按反馈再改",
-     "边": "确认",
-     "阶段": 1,
-     "项目序": 11
+     "added_after_approval": true,
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "按反馈再改",
+     "object": "G001-T2",
+     "project_seq": 11,
+     "result": "needs_more",
+     "stage": 1,
+     "time": "2026-11-01T09:56:00+08:00",
+     "to": "codex",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "写入者": "成员",
-     "前状态": "执行中",
-     "发起": "codex",
-     "后状态": "待验收",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "总裁",
-     "时间": "2026-11-01T10:03:00+08:00",
-     "证据": [
-      "collab/产出/G001-T2/交付.md"
+     "added_after_approval": true,
+     "edge": "deliver",
+     "evidence": [
+      "collab/outputs/G001-T2/交付.md"
      ],
-     "说明": "交付（模拟）",
-     "边": "交付",
-     "阶段": 1,
-     "项目序": 12
+     "from": "codex",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "交付（模拟）",
+     "object": "G001-T2",
+     "project_seq": 12,
+     "stage": 1,
+     "time": "2026-11-01T10:03:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
     },
     {
-     "主干": false,
-     "写入者": "总管",
-     "前状态": "待验收",
-     "发起": "总裁",
-     "后状态": "执行中",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "codex",
-     "时间": "2026-11-01T10:10:00+08:00",
-     "结果": "需补充",
-     "说明": "按反馈再改",
-     "边": "确认",
-     "阶段": 1,
-     "项目序": 13
+     "added_after_approval": true,
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "按反馈再改",
+     "object": "G001-T2",
+     "project_seq": 13,
+     "result": "needs_more",
+     "stage": 1,
+     "time": "2026-11-01T10:10:00+08:00",
+     "to": "codex",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "写入者": "成员",
-     "前状态": "执行中",
-     "发起": "codex",
-     "后状态": "待验收",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "总裁",
-     "时间": "2026-11-01T10:17:00+08:00",
-     "证据": [
-      "collab/产出/G001-T2/交付.md"
+     "added_after_approval": true,
+     "edge": "deliver",
+     "evidence": [
+      "collab/outputs/G001-T2/交付.md"
      ],
-     "说明": "交付（模拟）",
-     "边": "交付",
-     "阶段": 1,
-     "项目序": 14
+     "from": "codex",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "交付（模拟）",
+     "object": "G001-T2",
+     "project_seq": 14,
+     "stage": 1,
+     "time": "2026-11-01T10:17:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
     },
     {
-     "主干": false,
-     "写入者": "总管",
-     "前状态": "待验收",
-     "发起": "总裁",
-     "后状态": "执行中",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "codex",
-     "时间": "2026-11-01T10:24:00+08:00",
-     "结果": "需补充",
-     "说明": "按反馈再改",
-     "边": "确认",
-     "阶段": 1,
-     "项目序": 15
+     "added_after_approval": true,
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "按反馈再改",
+     "object": "G001-T2",
+     "project_seq": 15,
+     "result": "needs_more",
+     "stage": 1,
+     "time": "2026-11-01T10:24:00+08:00",
+     "to": "codex",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": false,
-     "写入者": "成员",
-     "前状态": "执行中",
-     "发起": "codex",
-     "后状态": "待验收",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "总裁",
-     "时间": "2026-11-01T10:31:00+08:00",
-     "证据": [
-      "collab/产出/G001-T2/交付.md"
+     "added_after_approval": true,
+     "edge": "deliver",
+     "evidence": [
+      "collab/outputs/G001-T2/交付.md"
      ],
-     "说明": "交付（模拟）",
-     "边": "交付",
-     "阶段": 1,
-     "项目序": 16
+     "from": "codex",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "交付（模拟）",
+     "object": "G001-T2",
+     "project_seq": 16,
+     "stage": 1,
+     "time": "2026-11-01T10:31:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
     },
     {
-     "主干": false,
-     "写入者": "总管",
-     "前状态": "待验收",
-     "发起": "总裁",
-     "后状态": "执行中",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "codex",
-     "时间": "2026-11-01T10:38:00+08:00",
-     "结果": "需补充",
-     "说明": "按反馈再改",
-     "边": "确认",
-     "阶段": 1,
-     "项目序": 17
+     "added_after_approval": true,
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "按反馈再改",
+     "object": "G001-T2",
+     "project_seq": 17,
+     "result": "needs_more",
+     "stage": 1,
+     "time": "2026-11-01T10:38:00+08:00",
+     "to": "codex",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
     },
     {
-     "主干": true,
-     "写入者": "成员",
-     "前状态": "执行中",
-     "发起": "codex",
-     "后状态": "待验收",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "总裁",
-     "时间": "2026-11-01T10:45:00+08:00",
-     "槽位": 3,
-     "证据": [
-      "collab/产出/G001-T2/交付.md"
+     "added_after_approval": true,
+     "edge": "deliver",
+     "evidence": [
+      "collab/outputs/G001-T2/交付.md"
      ],
-     "说明": "交付（模拟）",
-     "边": "交付",
-     "阶段": 1,
-     "项目序": 18
+     "from": "codex",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "交付（模拟）",
+     "object": "G001-T2",
+     "project_seq": 18,
+     "slot": 3,
+     "stage": 1,
+     "time": "2026-11-01T10:45:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": true,
+     "writer": "member"
     },
     {
-     "主干": true,
-     "写入者": "总管",
-     "前状态": "待验收",
-     "发起": "总裁",
-     "后状态": "通过",
-     "对象": "G001-T2",
-     "层": "任务",
-     "批准后新增": true,
-     "接收": "无",
-     "时间": "2026-11-01T10:52:00+08:00",
-     "槽位": 4,
-     "结果": "通过",
-     "说明": "可以",
-     "边": "确认",
-     "阶段": 1,
-     "项目序": 19
+     "added_after_approval": true,
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "可以",
+     "object": "G001-T2",
+     "project_seq": 19,
+     "result": "pass",
+     "slot": 4,
+     "stage": 1,
+     "time": "2026-11-01T10:52:00+08:00",
+     "to": "none",
+     "to_state": "passed",
+     "trunk": true,
+     "writer": "lead"
     }
    ],
-   "交接": [
+   "files": {},
+   "handoffs": [
     {
-     "发起": "总管",
-     "持有人": "总管",
-     "时间": "2026-11-01T09:14:00+08:00",
-     "状态": "起草",
-     "类别": "待办",
-     "边": "建立",
-     "项目序": 1
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 1,
+     "state": "draft",
+     "time": "2026-11-01T09:14:00+08:00"
     },
     {
-     "发起": "总管",
-     "持有人": "总裁",
-     "时间": "2026-11-01T09:21:00+08:00",
-     "状态": "待批准",
-     "类别": "评审",
-     "边": "提交",
-     "项目序": 4
+     "category": "review",
+     "edge": "submit",
+     "from": "lead",
+     "holder": "owner",
+     "project_seq": 4,
+     "state": "pending_approval",
+     "time": "2026-11-01T09:21:00+08:00"
     },
     {
-     "发起": "总裁",
-     "持有人": "总管",
-     "时间": "2026-11-01T09:28:00+08:00",
-     "状态": "进行中",
-     "类别": "进行",
-     "边": "批准",
-     "项目序": 5
+     "category": "doing",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 5,
+     "state": "active",
+     "time": "2026-11-01T09:28:00+08:00"
     }
    ],
-   "参与者": [
+   "holder": "lead",
+   "id": "G001",
+   "issues": [],
+   "open_questions": [],
+   "participants": [
     {
-     "出场": true,
-     "名": "总裁",
-     "计划内": true
+     "appeared": true,
+     "name": "owner",
+     "planned": true
     },
     {
-     "出场": true,
-     "名": "总管",
-     "计划内": true
+     "appeared": true,
+     "name": "lead",
+     "planned": true
     },
     {
-     "出场": true,
-     "名": "codex",
-     "计划内": true
+     "appeared": true,
+     "name": "codex",
+     "planned": true
     },
     {
-     "出场": false,
-     "名": "deepseek",
-     "计划内": true
+     "appeared": false,
+     "name": "deepseek",
+     "planned": true
     },
     {
-     "出场": false,
-     "名": "claude",
-     "计划内": true
+     "appeared": false,
+     "name": "claude",
+     "planned": true
     }
    ],
-   "工作目录": "work/G001-杂项",
-   "差别": [
-    {
-     "任务": "G001-T2",
-     "类型": "新增",
-     "说明": "班子设计文档（codex）"
-    }
-   ],
-   "待解决": [],
-   "意见": [],
-   "批准版本": 1,
-   "持有人": "总管",
-   "文件": {},
-   "本轮改动": [
+   "plan_version": 1,
+   "round_changes": [
     "新增 G001-T1 占位（总管 做，总管 确认）"
    ],
-   "标题": "杂项",
-   "框架版本": 1,
-   "状态": "进行中",
-   "类别": "进行",
-   "类型": "通用",
-   "结构": {
-    "介入": [],
-    "合并": {},
-    "开头": [
-     {
-      "发起": "总裁",
-      "含": [],
-      "接收": "总管",
-      "计划": false,
-      "边": "批准",
-      "项目序": 5
-     }
-    ],
-    "结尾": [
-     {
-      "发起": "总管",
-      "含": [],
-      "接收": "总裁",
-      "计划": true,
-      "边": "目标验收",
-      "项目序": null
-     },
-     {
-      "发起": "总裁",
-      "含": [],
-      "接收": "无",
-      "计划": true,
-      "边": "完成",
-      "项目序": null
-     }
-    ],
-    "记录": [
-     1,
-     3,
-     4
-    ],
-    "阶段": [
-     {
-      "产出": "",
-      "任务": [
-       {
-        "前": [],
-        "总裁介入": false,
-        "执行": null,
-        "批准后新增": false,
-        "拟执行": "总管",
-        "拟确认": "总管",
-        "换人": false,
-        "标题": "占位",
-        "步骤": [
-         {
-          "发起": "总管",
-          "含": [],
-          "接收": "总管",
-          "计划": true,
-          "边": "派发",
-          "项目序": null
-         },
-         {
-          "发起": "总管",
-          "含": [],
-          "接收": "总管",
-          "计划": true,
-          "边": "交付",
-          "项目序": null
-         },
-         {
-          "发起": "总管",
-          "含": [],
-          "接收": "无",
-          "计划": true,
-          "边": "确认",
-          "项目序": null
-         }
-        ],
-        "状态": "已批准",
-        "编号": "G001-T1",
-        "需要": []
-       },
-       {
-        "前": [],
-        "总裁介入": false,
-        "执行": "codex",
-        "批准后新增": true,
-        "拟执行": null,
-        "拟确认": null,
-        "换人": false,
-        "标题": "班子设计文档",
-        "步骤": [
-         {
-          "发起": "总裁",
-          "含": [],
-          "接收": "总管",
-          "来源": true,
-          "计划": false,
-          "边": "要求",
-          "项目序": 7
-         },
-         {
-          "发起": "总管",
-          "含": [
-           9
-          ],
-          "接收": "codex",
-          "计划": false,
-          "边": "派发",
-          "项目序": 8
-         },
-         {
-          "发起": "codex",
-          "含": [],
-          "接收": "总裁",
-          "计划": false,
-          "边": "交付",
-          "项目序": 10
-         },
-         {
-          "发起": "总裁",
-          "含": [],
-          "接收": "codex",
-          "计划": false,
-          "边": "确认",
-          "项目序": 11
-         },
-         {
-          "发起": "codex",
-          "含": [],
-          "接收": "总裁",
-          "计划": false,
-          "边": "交付",
-          "项目序": 12
-         },
-         {
-          "发起": "总裁",
-          "含": [],
-          "接收": "codex",
-          "计划": false,
-          "边": "确认",
-          "项目序": 13
-         },
-         {
-          "发起": "codex",
-          "含": [],
-          "接收": "总裁",
-          "计划": false,
-          "边": "交付",
-          "项目序": 14
-         },
-         {
-          "发起": "总裁",
-          "含": [],
-          "接收": "codex",
-          "计划": false,
-          "边": "确认",
-          "项目序": 15
-         },
-         {
-          "发起": "codex",
-          "含": [],
-          "接收": "总裁",
-          "计划": false,
-          "边": "交付",
-          "项目序": 16
-         },
-         {
-          "发起": "总裁",
-          "含": [],
-          "接收": "codex",
-          "计划": false,
-          "边": "确认",
-          "项目序": 17
-         },
-         {
-          "发起": "codex",
-          "含": [],
-          "接收": "总裁",
-          "计划": false,
-          "边": "交付",
-          "项目序": 18
-         },
-         {
-          "发起": "总裁",
-          "含": [],
-          "接收": "无",
-          "计划": false,
-          "边": "确认",
-          "项目序": 19
-         }
-        ],
-        "状态": "通过",
-        "编号": "G001-T2",
-        "需要": []
-       }
-      ],
-      "前": [],
-      "名称": "杂项",
-      "失效": false,
-      "层": 1,
-      "并行": [],
-      "序": 1,
-      "待拆": false,
-      "状态": "进行中",
-      "类型": "执行",
-      "通过条件": ""
-     }
-    ]
-   },
-   "编号": "G001",
-   "议题": [],
-   "起草阶段": null,
-   "阶段": [
+   "stages": [
     {
-     "产出": "",
-     "人选": [
-      "总管",
+     "added_after_approval": [
+      "G001-T2"
+     ],
+     "depends_on": [],
+     "invalid": false,
+     "name": "杂项",
+     "needs_split": false,
+     "order": 1,
+     "output": "",
+     "parallel": false,
+     "pass_condition": "",
+     "people": [
+      "lead",
       "codex",
       "deepseek",
       "claude"
      ],
-     "任务": [
+     "reviewers": [
+      "lead"
+     ],
+     "state": "active",
+     "tasks": [
       "G001-T1",
       "G001-T2"
      ],
-     "前置": [],
-     "可并行": false,
-     "名称": "杂项",
-     "失效": false,
-     "序": 1,
-     "待拆": false,
-     "批准后新增": [
-      "G001-T2"
-     ],
-     "状态": "进行中",
-     "确认人": [
-      "总管"
-     ],
-     "类型": "执行",
-     "通过条件": ""
+     "type": "work"
+    }
+   ],
+   "state": "active",
+   "structure": {
+    "head": [
+     {
+      "edge": "approve",
+      "from": "owner",
+      "includes": [],
+      "planned": false,
+      "project_seq": 5,
+      "to": "lead"
+     }
+    ],
+    "merged": {},
+    "owner_tasks": [],
+    "record": [
+     1,
+     3,
+     4
+    ],
+    "stages": [
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 1,
+      "name": "杂项",
+      "needs_split": false,
+      "order": 1,
+      "output": "",
+      "parallel_with": [],
+      "pass_condition": "",
+      "state": "active",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": null,
+        "id": "G001-T1",
+        "needs": [],
+        "owner_involved": false,
+        "planned_executor": "lead",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "approved",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "deliver",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "占位"
+       },
+       {
+        "added_after_approval": true,
+        "before": [],
+        "executor": "codex",
+        "id": "G001-T2",
+        "needs": [],
+        "owner_involved": false,
+        "planned_executor": null,
+        "planned_reviewer": null,
+        "reassigned": false,
+        "state": "passed",
+        "steps": [
+         {
+          "edge": "request",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 7,
+          "source": true,
+          "to": "lead"
+         },
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           9
+          ],
+          "planned": false,
+          "project_seq": 8,
+          "to": "codex"
+         },
+         {
+          "edge": "deliver",
+          "from": "codex",
+          "includes": [],
+          "planned": false,
+          "project_seq": 10,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 11,
+          "to": "codex"
+         },
+         {
+          "edge": "deliver",
+          "from": "codex",
+          "includes": [],
+          "planned": false,
+          "project_seq": 12,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 13,
+          "to": "codex"
+         },
+         {
+          "edge": "deliver",
+          "from": "codex",
+          "includes": [],
+          "planned": false,
+          "project_seq": 14,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 15,
+          "to": "codex"
+         },
+         {
+          "edge": "deliver",
+          "from": "codex",
+          "includes": [],
+          "planned": false,
+          "project_seq": 16,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 17,
+          "to": "codex"
+         },
+         {
+          "edge": "deliver",
+          "from": "codex",
+          "includes": [],
+          "planned": false,
+          "project_seq": 18,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 19,
+          "to": "none"
+         }
+        ],
+        "title": "班子设计文档"
+       }
+      ],
+      "type": "work"
+     }
+    ],
+    "tail": [
+     {
+      "edge": "request_acceptance",
+      "from": "lead",
+      "includes": [],
+      "planned": true,
+      "project_seq": null,
+      "to": "owner"
+     },
+     {
+      "edge": "complete",
+      "from": "owner",
+      "includes": [],
+      "planned": true,
+      "project_seq": null,
+      "to": "none"
+     }
+    ]
+   },
+   "title": "杂项",
+   "type": "general",
+   "workdir": "work/G001"
+  }
+ ],
+ "issues": [],
+ "loose": null,
+ "spec": "view@3",
+ "tasks": [
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 6,
+     "to": "lead"
+    }
+   ],
+   "category": "todo",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "模拟通过",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "模拟交付",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "模拟",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": null,
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 2,
+     "state": "planned",
+     "time": "2026-11-01T09:14:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 6,
+     "state": "approved",
+     "time": "2026-11-01T09:28:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "holds": [
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 2,
+     "start_time": "2026-11-01T09:14:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G001-T1",
+   "key": "占位",
+   "planned_executor": "lead",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 1,
+   "state": "approved",
+   "title": "占位",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 2,
+     "slot": 0
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "codex",
+     "project_seq": 10,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 11,
+     "to": "codex"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "codex",
+     "project_seq": 12,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 13,
+     "to": "codex"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "codex",
+     "project_seq": 14,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 15,
+     "to": "codex"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "codex",
+     "project_seq": 16,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 17,
+     "to": "codex"
+    }
+   ],
+   "category": "done",
+   "comments": [],
+   "conclusion": "可以",
+   "content": {
+    "acceptance": "模拟通过",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "模拟交付",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "模拟",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "codex",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 7,
+     "state": "approved",
+     "time": "2026-11-01T09:28:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "owner",
+     "holder": "codex",
+     "project_seq": 8,
+     "state": "dispatched",
+     "time": "2026-11-01T09:35:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "owner",
+     "holder": "codex",
+     "project_seq": 9,
+     "state": "in_progress",
+     "time": "2026-11-01T09:42:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "codex",
+     "holder": "owner",
+     "project_seq": 10,
+     "state": "in_review",
+     "time": "2026-11-01T09:49:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "codex",
+     "project_seq": 11,
+     "state": "in_progress",
+     "time": "2026-11-01T09:56:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "codex",
+     "holder": "owner",
+     "project_seq": 12,
+     "state": "in_review",
+     "time": "2026-11-01T10:03:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "codex",
+     "project_seq": 13,
+     "state": "in_progress",
+     "time": "2026-11-01T10:10:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "codex",
+     "holder": "owner",
+     "project_seq": 14,
+     "state": "in_review",
+     "time": "2026-11-01T10:17:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "codex",
+     "project_seq": 15,
+     "state": "in_progress",
+     "time": "2026-11-01T10:24:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "codex",
+     "holder": "owner",
+     "project_seq": 16,
+     "state": "in_review",
+     "time": "2026-11-01T10:31:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "codex",
+     "project_seq": 17,
+     "state": "in_progress",
+     "time": "2026-11-01T10:38:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "codex",
+     "holder": "owner",
+     "project_seq": 18,
+     "state": "in_review",
+     "time": "2026-11-01T10:45:00+08:00"
+    },
+    {
+     "category": "done",
+     "edge": "review",
+     "from": "owner",
+     "holder": null,
+     "project_seq": 19,
+     "state": "passed",
+     "time": "2026-11-01T10:52:00+08:00"
+    }
+   ],
+   "holder": null,
+   "holds": [
+    {
+     "end_seq": 8,
+     "end_time": "2026-11-01T09:35:00+08:00",
+     "start_seq": 7,
+     "start_time": "2026-11-01T09:28:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 10,
+     "end_time": "2026-11-01T09:49:00+08:00",
+     "start_seq": 8,
+     "start_time": "2026-11-01T09:35:00+08:00",
+     "who": "codex"
+    },
+    {
+     "end_seq": 11,
+     "end_time": "2026-11-01T09:56:00+08:00",
+     "start_seq": 10,
+     "start_time": "2026-11-01T09:49:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 12,
+     "end_time": "2026-11-01T10:03:00+08:00",
+     "start_seq": 11,
+     "start_time": "2026-11-01T09:56:00+08:00",
+     "who": "codex"
+    },
+    {
+     "end_seq": 13,
+     "end_time": "2026-11-01T10:10:00+08:00",
+     "start_seq": 12,
+     "start_time": "2026-11-01T10:03:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 14,
+     "end_time": "2026-11-01T10:17:00+08:00",
+     "start_seq": 13,
+     "start_time": "2026-11-01T10:10:00+08:00",
+     "who": "codex"
+    },
+    {
+     "end_seq": 15,
+     "end_time": "2026-11-01T10:24:00+08:00",
+     "start_seq": 14,
+     "start_time": "2026-11-01T10:17:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 16,
+     "end_time": "2026-11-01T10:31:00+08:00",
+     "start_seq": 15,
+     "start_time": "2026-11-01T10:24:00+08:00",
+     "who": "codex"
+    },
+    {
+     "end_seq": 17,
+     "end_time": "2026-11-01T10:38:00+08:00",
+     "start_seq": 16,
+     "start_time": "2026-11-01T10:31:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 18,
+     "end_time": "2026-11-01T10:45:00+08:00",
+     "start_seq": 17,
+     "start_time": "2026-11-01T10:38:00+08:00",
+     "who": "codex"
+    },
+    {
+     "end_seq": 19,
+     "end_time": "2026-11-01T10:52:00+08:00",
+     "start_seq": 18,
+     "start_time": "2026-11-01T10:45:00+08:00",
+     "who": "owner"
+    }
+   ],
+   "id": "G001-T2",
+   "key": null,
+   "planned_executor": null,
+   "planned_reviewer": null,
+   "request_seq": 7,
+   "reviewer": "owner",
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 1,
+   "state": "passed",
+   "title": "班子设计文档",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 7,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 8,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 9,
+     "slot": 2
+    },
+    {
+     "edge": "deliver",
+     "project_seq": 18,
+     "slot": 3
+    },
+    {
+     "edge": "review",
+     "project_seq": 19,
+     "slot": 4
     }
    ]
   }
  ],
- "称谓": {},
- "规约": "视图@2",
- "议题": [],
- "零散": null
+ "titles": {},
+ "upto": 19
 }

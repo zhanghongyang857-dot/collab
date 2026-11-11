@@ -1,0 +1,4533 @@
+{
+ "checks": [],
+ "current": [
+  {
+   "category": "doing",
+   "from": "lead",
+   "object": "G001-T2",
+   "project_seq": 105,
+   "state": "in_progress",
+   "to": "Works"
+  },
+  {
+   "category": "todo",
+   "from": "owner",
+   "object": "G001-T5",
+   "project_seq": 16,
+   "state": "approved",
+   "to": "lead"
+  },
+  {
+   "category": "todo",
+   "from": "lead",
+   "object": "G001-T6",
+   "project_seq": 96,
+   "state": "approved",
+   "to": "lead"
+  },
+  {
+   "category": "doing",
+   "from": "lead",
+   "object": "G001-T7",
+   "project_seq": 106,
+   "state": "in_progress",
+   "to": "Works"
+  },
+  {
+   "category": "doing",
+   "from": "lead",
+   "object": "G001-T8",
+   "project_seq": 108,
+   "state": "in_progress",
+   "to": "Revenue"
+  },
+  {
+   "category": "review",
+   "from": "Revenue",
+   "object": "G002-T1",
+   "project_seq": 88,
+   "state": "in_review",
+   "to": "lead"
+  },
+  {
+   "category": "doing",
+   "from": "lead",
+   "object": "G002-T2",
+   "project_seq": 94,
+   "state": "in_progress",
+   "to": "Revenue"
+  },
+  {
+   "category": "todo",
+   "from": "owner",
+   "object": "G002-T3",
+   "project_seq": 84,
+   "state": "approved",
+   "to": "lead"
+  },
+  {
+   "category": "todo",
+   "from": "owner",
+   "object": "G002-T4",
+   "project_seq": 85,
+   "state": "approved",
+   "to": "lead"
+  }
+ ],
+ "decisions": [],
+ "goals": [
+  {
+   "approved_version": 1,
+   "category": "doing",
+   "comments": [],
+   "draft_stage": null,
+   "drift": [
+    {
+     "note": "Close the breach",
+     "task": "G001-T2",
+     "type": "content_changed"
+    },
+    {
+     "note": "Henan disaster report (logged in error) (—)",
+     "task": "G001-T6",
+     "type": "added"
+    },
+    {
+     "note": "Quarry and haul stone (Works)",
+     "task": "G001-T7",
+     "type": "added"
+    },
+    {
+     "note": "Levy labourers (Revenue)",
+     "task": "G001-T8",
+     "type": "added"
+    }
+   ],
+   "events": [
+    {
+     "basis": "Imperial word: the river has broken at Xuzhou; the Grand Secretariat is to propose river works and relief at once",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "goal",
+     "object": "G001",
+     "project_seq": 1,
+     "quote": true,
+     "stage": null,
+     "time": "1573-03-01T09:03:00+08:00",
+     "to": "lead",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "draft_stage",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "The Throne asks about the two river strategies; discuss before deciding",
+     "object": "G001",
+     "project_seq": 2,
+     "result": "discussion",
+     "stage": null,
+     "time": "1573-03-01T11:03:00+08:00",
+     "to": "none",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "draft_stage",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "Both strategies weighed; plan in four stages",
+     "object": "G001",
+     "project_seq": 3,
+     "result": "proposal",
+     "stage": null,
+     "time": "1573-03-01T13:03:00+08:00",
+     "to": "none",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "G001 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T1",
+     "project_seq": 4,
+     "slot": 0,
+     "stage": 1,
+     "time": "1573-03-01T15:03:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "basis": "G001 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T2",
+     "project_seq": 5,
+     "slot": 0,
+     "stage": 2,
+     "time": "1573-03-01T15:03:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "basis": "G001 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T3",
+     "project_seq": 6,
+     "slot": 0,
+     "stage": 2,
+     "time": "1573-03-01T15:03:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "basis": "G001 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T4",
+     "project_seq": 7,
+     "slot": 0,
+     "stage": 3,
+     "time": "1573-03-01T15:03:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "basis": "G001 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T5",
+     "project_seq": 8,
+     "slot": 0,
+     "stage": 4,
+     "time": "1573-03-01T15:03:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "change",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "River works in two stages, strategy then construction; relief starts alongside; the Censorate inspects",
+     "object": "G001",
+     "project_seq": 9,
+     "stage": null,
+     "time": "1573-03-01T15:03:00+08:00",
+     "to": "none",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "submit",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "Draft rescript: settle the strategy first, then work on two fronts, the breach and the funding; relief as its own stage; the Censorate to inspect",
+     "object": "G001",
+     "project_seq": 10,
+     "stage": null,
+     "time": "1573-03-01T15:06:00+08:00",
+     "to": "owner",
+     "to_state": "pending_approval",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. Start work once the strategy is settled, begin relief now, and have the Censorate inspect",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "pending_approval",
+     "layer": "goal",
+     "object": "G001",
+     "project_seq": 11,
+     "quote": true,
+     "stage": null,
+     "time": "1573-03-02T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "active",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. Start work once the strategy is settled, begin relief now, and have the Censorate inspect",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G001 \"Approve\"",
+     "object": "G001-T1",
+     "project_seq": 12,
+     "quote": true,
+     "stage": 1,
+     "time": "1573-03-02T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. Start work once the strategy is settled, begin relief now, and have the Censorate inspect",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G001 \"Approve\"",
+     "object": "G001-T2",
+     "project_seq": 13,
+     "quote": true,
+     "stage": 2,
+     "time": "1573-03-02T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. Start work once the strategy is settled, begin relief now, and have the Censorate inspect",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G001 \"Approve\"",
+     "object": "G001-T3",
+     "project_seq": 14,
+     "quote": true,
+     "stage": 2,
+     "time": "1573-03-02T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. Start work once the strategy is settled, begin relief now, and have the Censorate inspect",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G001 \"Approve\"",
+     "object": "G001-T4",
+     "project_seq": 15,
+     "quote": true,
+     "stage": 3,
+     "time": "1573-03-02T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. Start work once the strategy is settled, begin relief now, and have the Censorate inspect",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G001 \"Approve\"",
+     "object": "G001-T5",
+     "project_seq": 16,
+     "quote": true,
+     "stage": 4,
+     "time": "1573-03-02T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "dispatch",
+     "from": "owner",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "The Throne hands it to the Hanlin Academy in person",
+     "object": "G001-T4",
+     "project_seq": 17,
+     "slot": 1,
+     "stage": 3,
+     "time": "1573-03-02T10:21:00+08:00",
+     "to": "Hanlin",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "pick_up",
+     "from": "Hanlin",
+     "from_state": "dispatched",
+     "layer": "task",
+     "object": "G001-T4",
+     "project_seq": 18,
+     "slot": 2,
+     "stage": 3,
+     "time": "1573-03-02T10:24:00+08:00",
+     "to": "Hanlin",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T4/edict-draft-1.md"
+     ],
+     "from": "Hanlin",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Submitted the first draft",
+     "object": "G001-T4",
+     "project_seq": 19,
+     "stage": 3,
+     "time": "1573-03-02T12:27:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
+    },
+    {
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "In vermilion: Empty words help no one; say how many granaries open",
+     "object": "G001-T4",
+     "project_seq": 20,
+     "result": "needs_more",
+     "stage": 3,
+     "time": "1573-03-02T12:30:00+08:00",
+     "to": "Hanlin",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T4/edict-draft-2.md"
+     ],
+     "from": "Hanlin",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Submitted the second draft",
+     "object": "G001-T4",
+     "project_seq": 21,
+     "stage": 3,
+     "time": "1573-03-02T14:33:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
+    },
+    {
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "In vermilion: Too much self-reproach; it lacks dignity",
+     "object": "G001-T4",
+     "project_seq": 22,
+     "result": "needs_more",
+     "stage": 3,
+     "time": "1573-03-02T14:36:00+08:00",
+     "to": "Hanlin",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T4/edict-draft-3.md"
+     ],
+     "from": "Hanlin",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Submitted the third draft",
+     "object": "G001-T4",
+     "project_seq": 23,
+     "stage": 3,
+     "time": "1573-03-02T16:39:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
+    },
+    {
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "In vermilion: State the dates the granaries open",
+     "object": "G001-T4",
+     "project_seq": 24,
+     "result": "needs_more",
+     "stage": 3,
+     "time": "1573-03-02T16:42:00+08:00",
+     "to": "Hanlin",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T4/edict-draft-4.md"
+     ],
+     "from": "Hanlin",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Submitted the fourth draft",
+     "object": "G001-T4",
+     "project_seq": 25,
+     "stage": 3,
+     "time": "1573-03-02T18:45:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "member"
+    },
+    {
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "In vermilion: Acceptable; polish one more word",
+     "object": "G001-T4",
+     "project_seq": 26,
+     "result": "needs_more",
+     "stage": 3,
+     "time": "1573-03-02T18:48:00+08:00",
+     "to": "Hanlin",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T4/edict-final.md"
+     ],
+     "from": "Hanlin",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Submitted the final draft",
+     "object": "G001-T4",
+     "project_seq": 27,
+     "slot": 3,
+     "stage": 3,
+     "time": "1573-03-02T20:21:00+08:00",
+     "to": "owner",
+     "to_state": "in_review",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "edge": "review",
+     "from": "owner",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "In vermilion: approved for issue",
+     "object": "G001-T4",
+     "project_seq": 28,
+     "result": "pass",
+     "slot": 4,
+     "stage": 3,
+     "time": "1573-03-02T20:24:00+08:00",
+     "to": "none",
+     "to_state": "passed",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Dispatcher: dispatched to Works (G001-T1-01)",
+     "object": "G001-T1",
+     "project_seq": 29,
+     "run": "G001-T1-01",
+     "slot": 1,
+     "stage": 1,
+     "time": "1573-03-02T20:27:00+08:00",
+     "to": "Works",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "pick_up",
+     "from": "Works",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Started (G001-T1-01)",
+     "object": "G001-T1",
+     "project_seq": 30,
+     "run": "G001-T1-01",
+     "slot": 2,
+     "stage": 1,
+     "time": "1573-03-02T20:27:00+08:00",
+     "to": "Works",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T1/river-strategy.md"
+     ],
+     "from": "Works",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Strategy: narrow the channel to scour the silt, with diversion as a fallback",
+     "object": "G001-T1",
+     "project_seq": 31,
+     "run": "G001-T1-01",
+     "session": "Works-g001-t1-01",
+     "slot": 3,
+     "stage": 1,
+     "time": "1573-03-02T23:50:00+08:00",
+     "to": "lead",
+     "to_state": "in_review",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "edge": "progress",
+     "from": "Works",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "G001-T1-01 ended: done",
+     "object": "G001-T1",
+     "project_seq": 32,
+     "run": "G001-T1-01",
+     "session": "Works-g001-t1-01",
+     "stage": 1,
+     "time": "1573-03-02T23:51:00+08:00",
+     "to": "none",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "review",
+     "from": "lead",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "Narrowing adopted per debate I001 and D001",
+     "object": "G001-T1",
+     "project_seq": 49,
+     "result": "pass",
+     "slot": 4,
+     "stage": 1,
+     "time": "1573-03-04T10:03:00+08:00",
+     "to": "none",
+     "to_state": "passed",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Dispatcher: dispatched to Revenue (G001-T3-01)",
+     "object": "G001-T3",
+     "project_seq": 50,
+     "run": "G001-T3-01",
+     "slot": 1,
+     "stage": 2,
+     "time": "1573-03-04T14:03:00+08:00",
+     "to": "Revenue",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "pick_up",
+     "from": "Revenue",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Started (G001-T3-01)",
+     "object": "G001-T3",
+     "project_seq": 51,
+     "run": "G001-T3-01",
+     "slot": 2,
+     "stage": 2,
+     "time": "1573-03-04T14:03:00+08:00",
+     "to": "Revenue",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G001/G001-T3/funding-ledger.md"
+     ],
+     "from": "Revenue",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Works silver costed at 400,000 taels, 300,000 released; seven granaries open",
+     "object": "G001-T3",
+     "project_seq": 52,
+     "run": "G001-T3-01",
+     "session": "Revenue-g001-t3-01",
+     "slot": 3,
+     "stage": 2,
+     "time": "1573-03-04T19:06:00+08:00",
+     "to": "lead",
+     "to_state": "in_review",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "edge": "progress",
+     "from": "Revenue",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "G001-T3-01 ended: done",
+     "object": "G001-T3",
+     "project_seq": 53,
+     "run": "G001-T3-01",
+     "session": "Revenue-g001-t3-01",
+     "stage": 2,
+     "time": "1573-03-04T19:07:00+08:00",
+     "to": "none",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Start work per D001",
+     "object": "G001-T2",
+     "project_seq": 54,
+     "slot": 1,
+     "stage": 2,
+     "time": "1573-03-05T09:03:00+08:00",
+     "to": "Works",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "pick_up",
+     "from": "Works",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Work begins at Xuzhou",
+     "object": "G001-T2",
+     "project_seq": 55,
+     "slot": 2,
+     "stage": 2,
+     "time": "1573-03-05T09:06:00+08:00",
+     "to": "Works",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "edge": "review",
+     "from": "lead",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "Funding ledger matches the stores",
+     "object": "G001-T3",
+     "project_seq": 95,
+     "result": "pass",
+     "slot": 4,
+     "stage": 2,
+     "time": "1573-03-07T20:10:00+08:00",
+     "to": "none",
+     "to_state": "passed",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "added_after_approval": true,
+     "basis": "Forwarded by the Office of Transmission from the Henan governor",
+     "draw": {
+      "from": "owner",
+      "label": "request",
+      "to": "lead"
+     },
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T6",
+     "project_seq": 96,
+     "quote": true,
+     "slot": 0,
+     "stage": 3,
+     "time": "1573-03-07T20:14:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "progress",
+     "from": "Works",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Resumed (G001-T2-01)",
+     "object": "G001-T2",
+     "project_seq": 99,
+     "run": "G001-T2-01",
+     "stage": 2,
+     "time": "1573-03-08T09:03:00+08:00",
+     "to": "none",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "escalate",
+     "from": "Works",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Closing the breach needs both stone and labourers. This ministry can supply the stone, but Revenue has to levy the labourers. Asking the Grand Secretariat to assign them",
+     "object": "G001-T2",
+     "project_seq": 100,
+     "run": "G001-T2-01",
+     "session": "Works-g001-t2-01",
+     "stage": 2,
+     "time": "1573-03-08T12:06:00+08:00",
+     "to": "lead",
+     "to_state": "blocked",
+     "trunk": false,
+     "writer": "member"
+    },
+    {
+     "edge": "progress",
+     "from": "Works",
+     "from_state": "blocked",
+     "layer": "task",
+     "note": "G001-T2-01 ended: done",
+     "object": "G001-T2",
+     "project_seq": 101,
+     "run": "G001-T2-01",
+     "session": "Works-g001-t2-01",
+     "stage": 2,
+     "time": "1573-03-08T12:07:00+08:00",
+     "to": "none",
+     "to_state": "blocked",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "added_after_approval": true,
+     "basis": "G001 rescript · split from G001-T2 by the Grand Secretariat",
+     "draw": {
+      "from": "owner",
+      "label": "request",
+      "to": "lead"
+     },
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T7",
+     "project_seq": 102,
+     "quote": true,
+     "slot": 0,
+     "stage": 2,
+     "time": "1573-03-08T12:11:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "added_after_approval": true,
+     "basis": "G001 rescript · split from G001-T2 by the Grand Secretariat",
+     "draw": {
+      "from": "owner",
+      "label": "request",
+      "to": "lead"
+     },
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G001-T8",
+     "project_seq": 103,
+     "quote": true,
+     "slot": 0,
+     "stage": 2,
+     "time": "1573-03-08T12:14:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "change",
+     "from": "lead",
+     "from_state": "blocked",
+     "layer": "task",
+     "note": "Split: stone to G001-T7 (Works), labourers to G001-T8 (Revenue); this task now pulls the two together and oversees the closure",
+     "object": "G001-T2",
+     "project_seq": 104,
+     "stage": 2,
+     "time": "1573-03-08T12:17:00+08:00",
+     "to": "none",
+     "to_state": "blocked",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "unblock",
+     "from": "lead",
+     "from_state": "blocked",
+     "layer": "task",
+     "note": "Split within the plan into G001-T7 and G001-T8 in parallel; Works closes the breach once stone and labour are in place. No need to memorialize the Throne",
+     "object": "G001-T2",
+     "project_seq": 105,
+     "stage": 2,
+     "time": "1573-03-08T12:20:00+08:00",
+     "to": "Works",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "added_after_approval": true,
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Grand Secretariat split: stone goes to Works",
+     "object": "G001-T7",
+     "project_seq": 106,
+     "slot": 1,
+     "stage": 2,
+     "time": "1573-03-08T12:23:00+08:00",
+     "to": "Works",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "added_after_approval": true,
+     "edge": "pick_up",
+     "from": "Works",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Quarrying Lüliang stone near Xuzhou",
+     "object": "G001-T7",
+     "project_seq": 107,
+     "slot": 2,
+     "stage": 2,
+     "time": "1573-03-08T12:26:00+08:00",
+     "to": "Works",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "added_after_approval": true,
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Grand Secretariat split: labourers go to Revenue",
+     "object": "G001-T8",
+     "project_seq": 108,
+     "slot": 1,
+     "stage": 2,
+     "time": "1573-03-08T12:29:00+08:00",
+     "to": "Revenue",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "added_after_approval": true,
+     "edge": "pick_up",
+     "from": "Revenue",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Writing to Xuzhou and Pizhou to levy labourers",
+     "object": "G001-T8",
+     "project_seq": 109,
+     "slot": 2,
+     "stage": 2,
+     "time": "1573-03-08T12:32:00+08:00",
+     "to": "Revenue",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "member"
+    }
+   ],
+   "files": {
+    "proposal": "collab/goals/G001/proposal.md",
+    "questions": "collab/goals/G001/questions.md"
+   },
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 1,
+     "state": "draft",
+     "time": "1573-03-01T09:03:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "submit",
+     "from": "lead",
+     "holder": "owner",
+     "project_seq": 10,
+     "state": "pending_approval",
+     "time": "1573-03-01T15:06:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 11,
+     "state": "active",
+     "time": "1573-03-02T10:03:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "id": "G001",
+   "issues": [
+    "I001"
+   ],
+   "open_questions": [],
+   "participants": [
+    {
+     "appeared": true,
+     "name": "owner",
+     "planned": true
+    },
+    {
+     "appeared": true,
+     "name": "lead",
+     "planned": true
+    },
+    {
+     "appeared": true,
+     "name": "Works",
+     "planned": true
+    },
+    {
+     "appeared": true,
+     "name": "Revenue",
+     "planned": true
+    },
+    {
+     "appeared": true,
+     "name": "Hanlin",
+     "planned": true
+    },
+    {
+     "appeared": false,
+     "name": "Censorate",
+     "planned": true
+    }
+   ],
+   "plan_version": 1,
+   "round_changes": [
+    "Added G001-T1 River strategy (Works does it, Lead reviews)",
+    "Added G001-T2 Close the breach (Works does it, Lead reviews)",
+    "Added G001-T3 Works funding (Revenue does it, Lead reviews)",
+    "Added G001-T4 Draft the edict of self-reproach and relief (Hanlin does it, Owner reviews)",
+    "Added G001-T5 Inspection of the works (Censorate does it, Lead reviews)"
+   ],
+   "stages": [
+    {
+     "added_after_approval": [],
+     "depends_on": [],
+     "invalid": false,
+     "name": "Strategy",
+     "needs_split": false,
+     "order": 1,
+     "output": "",
+     "parallel": false,
+     "pass_condition": "",
+     "people": [
+      "Works"
+     ],
+     "reviewers": [
+      "lead"
+     ],
+     "state": "passed",
+     "tasks": [
+      "G001-T1"
+     ],
+     "type": "work"
+    },
+    {
+     "added_after_approval": [
+      "G001-T7",
+      "G001-T8"
+     ],
+     "depends_on": [
+      1
+     ],
+     "invalid": false,
+     "name": "Works",
+     "needs_split": false,
+     "order": 2,
+     "output": "",
+     "parallel": true,
+     "pass_condition": "",
+     "people": [
+      "Works",
+      "Revenue"
+     ],
+     "reviewers": [
+      "lead",
+      "lead"
+     ],
+     "state": "active",
+     "tasks": [
+      "G001-T2",
+      "G001-T3",
+      "G001-T7",
+      "G001-T8"
+     ],
+     "type": "work"
+    },
+    {
+     "added_after_approval": [
+      "G001-T6"
+     ],
+     "depends_on": [],
+     "invalid": false,
+     "name": "Relief",
+     "needs_split": false,
+     "order": 3,
+     "output": "",
+     "parallel": true,
+     "pass_condition": "",
+     "people": [
+      "Hanlin"
+     ],
+     "reviewers": [
+      "owner"
+     ],
+     "state": "active",
+     "tasks": [
+      "G001-T4",
+      "G001-T6"
+     ],
+     "type": "work"
+    },
+    {
+     "added_after_approval": [],
+     "depends_on": [
+      1,
+      2,
+      3
+     ],
+     "invalid": false,
+     "name": "Acceptance",
+     "needs_split": false,
+     "order": 4,
+     "output": "",
+     "parallel": false,
+     "pass_condition": "",
+     "people": [
+      "Censorate"
+     ],
+     "reviewers": [
+      "lead"
+     ],
+     "state": "not_started",
+     "tasks": [
+      "G001-T5"
+     ],
+     "type": "acceptance"
+    }
+   ],
+   "state": "active",
+   "structure": {
+    "head": [
+     {
+      "edge": "approve",
+      "from": "owner",
+      "includes": [],
+      "planned": false,
+      "project_seq": 11,
+      "to": "lead"
+     }
+    ],
+    "merged": {},
+    "owner_tasks": [],
+    "record": [
+     1,
+     2,
+     3,
+     9,
+     10
+    ],
+    "stages": [
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 1,
+      "name": "Strategy",
+      "needs_split": false,
+      "order": 1,
+      "output": "",
+      "parallel_with": [
+       3
+      ],
+      "pass_condition": "",
+      "state": "passed",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": "Works",
+        "id": "G001-T1",
+        "needs": [],
+        "owner_involved": false,
+        "planned_executor": "Works",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "passed",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           30
+          ],
+          "planned": false,
+          "project_seq": 29,
+          "to": "Works"
+         },
+         {
+          "edge": "deliver",
+          "from": "Works",
+          "includes": [],
+          "planned": false,
+          "project_seq": 31,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": false,
+          "project_seq": 49,
+          "to": "none"
+         }
+        ],
+        "title": "River strategy"
+       }
+      ],
+      "type": "work"
+     },
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 2,
+      "name": "Works",
+      "needs_split": false,
+      "order": 2,
+      "output": "",
+      "parallel_with": [],
+      "pass_condition": "",
+      "state": "active",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": "Works",
+        "id": "G001-T2",
+        "needs": [
+         "G001-T1"
+        ],
+        "owner_involved": false,
+        "planned_executor": "Works",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "in_progress",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           55
+          ],
+          "planned": false,
+          "project_seq": 54,
+          "to": "Works"
+         },
+         {
+          "edge": "escalate",
+          "from": "Works",
+          "includes": [],
+          "planned": false,
+          "project_seq": 100,
+          "to": "lead"
+         },
+         {
+          "edge": "unblock",
+          "from": "lead",
+          "includes": [],
+          "planned": false,
+          "project_seq": 105,
+          "to": "Works"
+         },
+         {
+          "edge": "deliver",
+          "from": "Works",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Close the breach"
+       },
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": "Revenue",
+        "id": "G001-T3",
+        "needs": [
+         "G001-T1"
+        ],
+        "owner_involved": false,
+        "planned_executor": "Revenue",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "passed",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           51
+          ],
+          "planned": false,
+          "project_seq": 50,
+          "to": "Revenue"
+         },
+         {
+          "edge": "deliver",
+          "from": "Revenue",
+          "includes": [],
+          "planned": false,
+          "project_seq": 52,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": false,
+          "project_seq": 95,
+          "to": "none"
+         }
+        ],
+        "title": "Works funding"
+       },
+       {
+        "added_after_approval": true,
+        "before": [],
+        "executor": "Works",
+        "id": "G001-T7",
+        "needs": [
+         "G001-T1"
+        ],
+        "owner_involved": false,
+        "planned_executor": null,
+        "planned_reviewer": null,
+        "reassigned": false,
+        "state": "in_progress",
+        "steps": [
+         {
+          "edge": "request",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 102,
+          "source": true,
+          "to": "lead"
+         },
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           107
+          ],
+          "planned": false,
+          "project_seq": 106,
+          "to": "Works"
+         },
+         {
+          "edge": "deliver",
+          "from": "Works",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Quarry and haul stone"
+       },
+       {
+        "added_after_approval": true,
+        "before": [],
+        "executor": "Revenue",
+        "id": "G001-T8",
+        "needs": [
+         "G001-T1"
+        ],
+        "owner_involved": false,
+        "planned_executor": null,
+        "planned_reviewer": null,
+        "reassigned": false,
+        "state": "in_progress",
+        "steps": [
+         {
+          "edge": "request",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 103,
+          "source": true,
+          "to": "lead"
+         },
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           109
+          ],
+          "planned": false,
+          "project_seq": 108,
+          "to": "Revenue"
+         },
+         {
+          "edge": "deliver",
+          "from": "Revenue",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Levy labourers"
+       }
+      ],
+      "type": "work"
+     },
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 1,
+      "name": "Relief",
+      "needs_split": false,
+      "order": 3,
+      "output": "",
+      "parallel_with": [
+       1
+      ],
+      "pass_condition": "",
+      "state": "active",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": "Hanlin",
+        "id": "G001-T4",
+        "needs": [],
+        "owner_involved": true,
+        "planned_executor": "Hanlin",
+        "planned_reviewer": "owner",
+        "reassigned": false,
+        "state": "passed",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           18
+          ],
+          "planned": false,
+          "project_seq": 17,
+          "to": "Hanlin"
+         },
+         {
+          "edge": "deliver",
+          "from": "Hanlin",
+          "includes": [],
+          "planned": false,
+          "project_seq": 19,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 20,
+          "to": "Hanlin"
+         },
+         {
+          "edge": "deliver",
+          "from": "Hanlin",
+          "includes": [],
+          "planned": false,
+          "project_seq": 21,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 22,
+          "to": "Hanlin"
+         },
+         {
+          "edge": "deliver",
+          "from": "Hanlin",
+          "includes": [],
+          "planned": false,
+          "project_seq": 23,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 24,
+          "to": "Hanlin"
+         },
+         {
+          "edge": "deliver",
+          "from": "Hanlin",
+          "includes": [],
+          "planned": false,
+          "project_seq": 25,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 26,
+          "to": "Hanlin"
+         },
+         {
+          "edge": "deliver",
+          "from": "Hanlin",
+          "includes": [],
+          "planned": false,
+          "project_seq": 27,
+          "to": "owner"
+         },
+         {
+          "edge": "review",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 28,
+          "to": "none"
+         }
+        ],
+        "title": "Draft the edict of self-reproach and relief"
+       },
+       {
+        "added_after_approval": true,
+        "before": [],
+        "executor": null,
+        "id": "G001-T6",
+        "needs": [],
+        "owner_involved": false,
+        "planned_executor": null,
+        "planned_reviewer": null,
+        "reassigned": false,
+        "state": "approved",
+        "steps": [
+         {
+          "edge": "request",
+          "from": "owner",
+          "includes": [],
+          "planned": false,
+          "project_seq": 96,
+          "source": true,
+          "to": "lead"
+         },
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "Hanlin"
+         },
+         {
+          "edge": "deliver",
+          "from": "Hanlin",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Henan disaster report (logged in error)"
+       }
+      ],
+      "type": "work"
+     },
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 3,
+      "name": "Acceptance",
+      "needs_split": false,
+      "order": 4,
+      "output": "",
+      "parallel_with": [],
+      "pass_condition": "",
+      "state": "not_started",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": null,
+        "id": "G001-T5",
+        "needs": [
+         "G001-T1",
+         "G001-T2",
+         "G001-T3",
+         "G001-T7",
+         "G001-T8",
+         "G001-T4",
+         "G001-T6"
+        ],
+        "owner_involved": false,
+        "planned_executor": "Censorate",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "approved",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "Censorate"
+         },
+         {
+          "edge": "deliver",
+          "from": "Censorate",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Inspection of the works"
+       }
+      ],
+      "type": "acceptance"
+     }
+    ],
+    "tail": [
+     {
+      "edge": "request_acceptance",
+      "from": "lead",
+      "includes": [],
+      "planned": true,
+      "project_seq": null,
+      "to": "owner"
+     },
+     {
+      "edge": "complete",
+      "from": "owner",
+      "includes": [],
+      "planned": true,
+      "project_seq": null,
+      "to": "none"
+     }
+    ]
+   },
+   "title": "Yellow River breach: relief and repair",
+   "type": "dev",
+   "workdir": "work/G001"
+  },
+  {
+   "approved_version": 2,
+   "category": "doing",
+   "comments": [],
+   "draft_stage": null,
+   "drift": [],
+   "events": [
+    {
+     "basis": "Imperial word: we mean to even out taxes and labour service across the realm; the Grand Secretariat is to propose a land survey",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "goal",
+     "object": "G002",
+     "project_seq": 56,
+     "quote": true,
+     "stage": null,
+     "time": "1573-03-05T13:03:00+08:00",
+     "to": "lead",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "G002 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G002-T1",
+     "project_seq": 57,
+     "slot": 0,
+     "stage": 1,
+     "time": "1573-03-05T13:06:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "basis": "G002 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G002-T2",
+     "project_seq": 58,
+     "slot": 0,
+     "stage": 1,
+     "time": "1573-03-05T13:06:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "basis": "G002 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G002-T3",
+     "project_seq": 59,
+     "slot": 0,
+     "stage": 2,
+     "time": "1573-03-05T13:06:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "change",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "The template is research then synthesis; the survey needs the provinces in parallel, then a pilot",
+     "object": "G002",
+     "project_seq": 60,
+     "stage": null,
+     "time": "1573-03-05T13:06:00+08:00",
+     "to": "none",
+     "to_state": "draft",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "submit",
+     "from": "lead",
+     "from_state": "draft",
+     "layer": "goal",
+     "note": "Draft rescript: survey both provinces in parallel, then pilot the Single Whip in Shandong",
+     "object": "G002",
+     "project_seq": 61,
+     "stage": null,
+     "time": "1573-03-05T13:09:00+08:00",
+     "to": "owner",
+     "to_state": "pending_approval",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "comment",
+     "from": "owner",
+     "from_state": "pending_approval",
+     "layer": "goal",
+     "note": "In vermilion: as the review proposed, the survey must be followed by independent Censorate verification",
+     "object": "G002",
+     "project_seq": 77,
+     "stage": null,
+     "time": "1573-03-07T09:03:00+08:00",
+     "to": "none",
+     "to_state": "pending_approval",
+     "trunk": false,
+     "writer": "board"
+    },
+    {
+     "basis": "G002 plan",
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "layer": "task",
+     "object": "G002-T4",
+     "project_seq": 78,
+     "slot": 0,
+     "stage": 3,
+     "time": "1573-03-07T09:06:00+08:00",
+     "to": "lead",
+     "to_state": "planned",
+     "trunk": true,
+     "writer": "lead"
+    },
+    {
+     "edge": "change",
+     "from": "lead",
+     "from_state": "pending_approval",
+     "layer": "goal",
+     "note": "Added a Censorate verification stage per the Throne's note, with the ten per cent sample agreed at review",
+     "object": "G002",
+     "project_seq": 79,
+     "stage": null,
+     "time": "1573-03-07T09:06:00+08:00",
+     "to": "none",
+     "to_state": "pending_approval",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. As the review proposed, the Censorate verifies after the survey",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "pending_approval",
+     "layer": "goal",
+     "object": "G002",
+     "project_seq": 80,
+     "quote": true,
+     "stage": null,
+     "time": "1573-03-07T09:09:00+08:00",
+     "to": "lead",
+     "to_state": "active",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. As the review proposed, the Censorate verifies after the survey",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G002 \"Approve\"",
+     "object": "G002-T1",
+     "project_seq": 82,
+     "quote": true,
+     "stage": 1,
+     "time": "1573-03-07T09:09:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. As the review proposed, the Censorate verifies after the survey",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G002 \"Approve\"",
+     "object": "G002-T2",
+     "project_seq": 83,
+     "quote": true,
+     "stage": 1,
+     "time": "1573-03-07T09:09:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. As the review proposed, the Censorate verifies after the survey",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G002 \"Approve\"",
+     "object": "G002-T3",
+     "project_seq": 84,
+     "quote": true,
+     "stage": 2,
+     "time": "1573-03-07T09:09:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "basis": "In vermilion: approved. As the review proposed, the Censorate verifies after the survey",
+     "edge": "approve",
+     "from": "owner",
+     "from_state": "planned",
+     "layer": "task",
+     "note": "Along with G002 \"Approve\"",
+     "object": "G002-T4",
+     "project_seq": 85,
+     "quote": true,
+     "stage": 3,
+     "time": "1573-03-07T09:09:00+08:00",
+     "to": "lead",
+     "to_state": "approved",
+     "trunk": false,
+     "writer": "lead"
+    },
+    {
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Dispatcher: dispatched to Revenue (G002-T1-01)",
+     "object": "G002-T1",
+     "project_seq": 86,
+     "run": "G002-T1-01",
+     "slot": 1,
+     "stage": 1,
+     "time": "1573-03-07T09:24:00+08:00",
+     "to": "Revenue",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "pick_up",
+     "from": "Revenue",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Started (G002-T1-01)",
+     "object": "G002-T1",
+     "project_seq": 87,
+     "run": "G002-T1-01",
+     "slot": 2,
+     "stage": 1,
+     "time": "1573-03-07T09:24:00+08:00",
+     "to": "Revenue",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "deliver",
+     "evidence": [
+      "work/G002/G002-T1/shandong-register.md"
+     ],
+     "from": "Revenue",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "Shandong survey done; 40,000 qing of hidden land found",
+     "object": "G002-T1",
+     "project_seq": 88,
+     "run": "G002-T1-01",
+     "session": "Revenue-g002-t1-01",
+     "slot": 3,
+     "stage": 1,
+     "time": "1573-03-07T19:27:00+08:00",
+     "to": "lead",
+     "to_state": "in_review",
+     "trunk": true,
+     "writer": "member"
+    },
+    {
+     "edge": "progress",
+     "from": "Revenue",
+     "from_state": "in_review",
+     "layer": "task",
+     "note": "G002-T1-01 ended: done",
+     "object": "G002-T1",
+     "project_seq": 89,
+     "run": "G002-T1-01",
+     "session": "Revenue-g002-t1-01",
+     "stage": 1,
+     "time": "1573-03-07T19:28:00+08:00",
+     "to": "none",
+     "to_state": "in_review",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "dispatch",
+     "from": "lead",
+     "from_state": "approved",
+     "layer": "task",
+     "note": "Dispatcher: dispatched to Revenue (G002-T2-01)",
+     "object": "G002-T2",
+     "project_seq": 90,
+     "run": "G002-T2-01",
+     "slot": 1,
+     "stage": 1,
+     "time": "1573-03-07T19:31:00+08:00",
+     "to": "Revenue",
+     "to_state": "dispatched",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "pick_up",
+     "from": "Revenue",
+     "from_state": "dispatched",
+     "layer": "task",
+     "note": "Started (G002-T2-01)",
+     "object": "G002-T2",
+     "project_seq": 91,
+     "run": "G002-T2-01",
+     "slot": 2,
+     "stage": 1,
+     "time": "1573-03-07T19:31:00+08:00",
+     "to": "Revenue",
+     "to_state": "in_progress",
+     "trunk": true,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "progress",
+     "from": "Revenue",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "G002-T2-01 ended: done",
+     "object": "G002-T2",
+     "project_seq": 92,
+     "run": "G002-T2-01",
+     "session": "Revenue-g002-t2-01",
+     "stage": 1,
+     "time": "1573-03-07T20:02:00+08:00",
+     "to": "none",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "escalate",
+     "from": "Revenue",
+     "from_state": "in_progress",
+     "layer": "task",
+     "note": "No outcome declared (written by the dispatcher): (the member didn't record a closing move)",
+     "object": "G002-T2",
+     "project_seq": 93,
+     "run": "G002-T2-01",
+     "session": "Revenue-g002-t2-01",
+     "stage": 1,
+     "time": "1573-03-07T20:02:00+08:00",
+     "to": "lead",
+     "to_state": "blocked",
+     "trunk": false,
+     "writer": "dispatcher"
+    },
+    {
+     "edge": "unblock",
+     "from": "lead",
+     "from_state": "blocked",
+     "layer": "task",
+     "note": "Revenue continues surveying Jiangnan",
+     "object": "G002-T2",
+     "project_seq": 94,
+     "stage": 1,
+     "time": "1573-03-07T20:06:00+08:00",
+     "to": "Revenue",
+     "to_state": "in_progress",
+     "trunk": false,
+     "writer": "lead"
+    }
+   ],
+   "files": {},
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 56,
+     "state": "draft",
+     "time": "1573-03-05T13:03:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "submit",
+     "from": "lead",
+     "holder": "owner",
+     "project_seq": 61,
+     "state": "pending_approval",
+     "time": "1573-03-05T13:09:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 80,
+     "state": "active",
+     "time": "1573-03-07T09:09:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "id": "G002",
+   "issues": [
+    "I002"
+   ],
+   "open_questions": [],
+   "participants": [
+    {
+     "appeared": true,
+     "name": "owner",
+     "planned": true
+    },
+    {
+     "appeared": true,
+     "name": "lead",
+     "planned": true
+    },
+    {
+     "appeared": true,
+     "name": "Revenue",
+     "planned": true
+    },
+    {
+     "appeared": false,
+     "name": "Censorate",
+     "planned": true
+    }
+   ],
+   "plan_version": 2,
+   "round_changes": [
+    "Stages changed",
+    "Added G002-T4 Censorate verification (Censorate does it, Lead reviews)"
+   ],
+   "stages": [
+    {
+     "added_after_approval": [],
+     "depends_on": [],
+     "invalid": false,
+     "name": "Survey",
+     "needs_split": false,
+     "order": 1,
+     "output": "",
+     "parallel": true,
+     "pass_condition": "",
+     "people": [
+      "Revenue"
+     ],
+     "reviewers": [
+      "lead",
+      "lead"
+     ],
+     "state": "active",
+     "tasks": [
+      "G002-T1",
+      "G002-T2"
+     ],
+     "type": "research"
+    },
+    {
+     "added_after_approval": [],
+     "depends_on": [
+      1
+     ],
+     "invalid": false,
+     "name": "Pilot",
+     "needs_split": false,
+     "order": 2,
+     "output": "",
+     "parallel": false,
+     "pass_condition": "",
+     "people": [
+      "Revenue"
+     ],
+     "reviewers": [
+      "lead"
+     ],
+     "state": "not_started",
+     "tasks": [
+      "G002-T3"
+     ],
+     "type": "work"
+    },
+    {
+     "added_after_approval": [],
+     "depends_on": [
+      1,
+      2
+     ],
+     "invalid": false,
+     "name": "Acceptance",
+     "needs_split": false,
+     "order": 3,
+     "output": "",
+     "parallel": false,
+     "pass_condition": "",
+     "people": [
+      "Censorate"
+     ],
+     "reviewers": [
+      "lead"
+     ],
+     "state": "not_started",
+     "tasks": [
+      "G002-T4"
+     ],
+     "type": "acceptance"
+    }
+   ],
+   "state": "active",
+   "structure": {
+    "head": [
+     {
+      "edge": "approve",
+      "from": "owner",
+      "includes": [],
+      "planned": false,
+      "project_seq": 80,
+      "to": "lead"
+     }
+    ],
+    "merged": {},
+    "owner_tasks": [],
+    "record": [
+     56,
+     60,
+     61,
+     79
+    ],
+    "stages": [
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 1,
+      "name": "Survey",
+      "needs_split": false,
+      "order": 1,
+      "output": "",
+      "parallel_with": [],
+      "pass_condition": "",
+      "state": "active",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": "Revenue",
+        "id": "G002-T1",
+        "needs": [],
+        "owner_involved": false,
+        "planned_executor": "Revenue",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "in_review",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           87
+          ],
+          "planned": false,
+          "project_seq": 86,
+          "to": "Revenue"
+         },
+         {
+          "edge": "deliver",
+          "from": "Revenue",
+          "includes": [],
+          "planned": false,
+          "project_seq": 88,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Shandong survey"
+       },
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": "Revenue",
+        "id": "G002-T2",
+        "needs": [],
+        "owner_involved": false,
+        "planned_executor": "Revenue",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "in_progress",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [
+           91
+          ],
+          "planned": false,
+          "project_seq": 90,
+          "to": "Revenue"
+         },
+         {
+          "edge": "escalate",
+          "from": "Revenue",
+          "includes": [],
+          "planned": false,
+          "project_seq": 93,
+          "to": "lead"
+         },
+         {
+          "edge": "unblock",
+          "from": "lead",
+          "includes": [],
+          "planned": false,
+          "project_seq": 94,
+          "to": "Revenue"
+         },
+         {
+          "edge": "deliver",
+          "from": "Revenue",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Jiangnan survey"
+       }
+      ],
+      "type": "research"
+     },
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 2,
+      "name": "Pilot",
+      "needs_split": false,
+      "order": 2,
+      "output": "",
+      "parallel_with": [],
+      "pass_condition": "",
+      "state": "not_started",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": null,
+        "id": "G002-T3",
+        "needs": [
+         "G002-T1",
+         "G002-T2"
+        ],
+        "owner_involved": false,
+        "planned_executor": "Revenue",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "approved",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "Revenue"
+         },
+         {
+          "edge": "deliver",
+          "from": "Revenue",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Single Whip pilot in Shandong"
+       }
+      ],
+      "type": "work"
+     },
+     {
+      "before": [],
+      "invalid": false,
+      "layer": 3,
+      "name": "Acceptance",
+      "needs_split": false,
+      "order": 3,
+      "output": "",
+      "parallel_with": [],
+      "pass_condition": "",
+      "state": "not_started",
+      "tasks": [
+       {
+        "added_after_approval": false,
+        "before": [],
+        "executor": null,
+        "id": "G002-T4",
+        "needs": [
+         "G002-T1",
+         "G002-T2",
+         "G002-T3"
+        ],
+        "owner_involved": false,
+        "planned_executor": "Censorate",
+        "planned_reviewer": "lead",
+        "reassigned": false,
+        "state": "approved",
+        "steps": [
+         {
+          "edge": "dispatch",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "Censorate"
+         },
+         {
+          "edge": "deliver",
+          "from": "Censorate",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "lead"
+         },
+         {
+          "edge": "review",
+          "from": "lead",
+          "includes": [],
+          "planned": true,
+          "project_seq": null,
+          "to": "none"
+         }
+        ],
+        "title": "Censorate verification"
+       }
+      ],
+      "type": "acceptance"
+     }
+    ],
+    "tail": [
+     {
+      "edge": "request_acceptance",
+      "from": "lead",
+      "includes": [],
+      "planned": true,
+      "project_seq": null,
+      "to": "owner"
+     },
+     {
+      "edge": "complete",
+      "from": "owner",
+      "includes": [],
+      "planned": true,
+      "project_seq": null,
+      "to": "none"
+     }
+    ]
+   },
+   "title": "Land survey and Single Whip pilot",
+   "type": "research",
+   "workdir": "work/G002"
+  }
+ ],
+ "issues": [
+  {
+   "attendees": [
+    {
+     "member": "Works",
+     "view": "river engineering"
+    },
+    {
+     "member": "Revenue",
+     "view": "cost"
+    },
+    {
+     "member": "Censorate",
+     "view": "risk and precedent"
+    }
+   ],
+   "category": "done",
+   "end_seq": 48,
+   "goal": "G001",
+   "holder": null,
+   "id": "I001",
+   "messages": [
+    {
+     "body": "Narrow the channel. Once the dykes stand, the current carries the silt away for good. Diversion lets the bed silt up, and within ten years it breaks again.",
+     "edge": "post",
+     "from": "Works",
+     "project_seq": 35,
+     "seq": 3,
+     "time": "1573-03-03T10:10:00+08:00",
+     "type": "position"
+    },
+    {
+     "body": "Diversion is cheaper and works this year. Narrowing costs twice as much; I doubt we can pay for it.",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 36,
+     "seq": 4,
+     "time": "1573-03-03T10:14:00+08:00",
+     "type": "position"
+    },
+    {
+     "body": "Earlier reigns tried diversion again and again, and it failed every time. Narrowing needs strict checks on the dykes to stop corner-cutting.",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 37,
+     "seq": 5,
+     "time": "1573-03-03T10:18:00+08:00",
+     "type": "position"
+    },
+    {
+     "body": "@Works @Revenue You disagree. Works says diversion breaks again in ten years; Revenue says there isn't silver for narrowing. Answer each other.",
+     "edge": "post",
+     "from": "owner",
+     "mentions": [
+      "Works",
+      "Revenue"
+     ],
+     "project_seq": 38,
+     "seq": 6,
+     "time": "1573-03-03T10:22:00+08:00",
+     "type": "question"
+    },
+    {
+     "body": "@Works Narrowing is costed at 800,000 taels. Revenue can release 400,000 at most this year. Where does the rest come from?",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 39,
+     "seq": 7,
+     "time": "1573-03-03T10:26:00+08:00",
+     "type": "answer"
+    },
+    {
+     "body": "@Revenue Diversion saves this year's silver. When it breaks again in ten years, closing it will cost far more than 800,000. Under Jiajing we diverted three times, and it broke three times.",
+     "edge": "post",
+     "from": "Works",
+     "project_seq": 40,
+     "seq": 8,
+     "time": "1573-03-03T10:30:00+08:00",
+     "type": "answer"
+    },
+    {
+     "body": "@Revenue The Jiajing cases Works cites are accurate. Whatever diversion saves now will be repaid twice over.",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 41,
+     "seq": 9,
+     "time": "1573-03-03T10:34:00+08:00",
+     "type": "followup"
+    },
+    {
+     "body": "@Works Revenue has only 400,000 taels this year. Can narrowing wait a step, so we do what's urgent this year first?",
+     "edge": "post",
+     "from": "owner",
+     "mentions": [
+      "Works"
+     ],
+     "project_seq": 42,
+     "seq": 10,
+     "time": "1573-03-03T10:38:00+08:00",
+     "type": "question"
+    },
+    {
+     "body": "We can give ground: this year close the breach and build the inner dykes for 240,000 taels; the outer dykes next year. Add spillway dams at the dangerous stretches to release floods, which takes the best of diversion.",
+     "edge": "post",
+     "from": "Works",
+     "project_seq": 43,
+     "seq": 11,
+     "time": "1573-03-03T10:42:00+08:00",
+     "type": "answer"
+    },
+    {
+     "body": "At 240,000 taels this year, Revenue can pay. We'll raise next year's dyke silver separately. Agreed.",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 44,
+     "seq": 12,
+     "time": "1573-03-03T10:46:00+08:00",
+     "type": "followup"
+    },
+    {
+     "body": "The compromise works; no new objections. With the dykes built over two years, corner-cutting is likeliest in the second, so the inspection should check the dykes specifically.",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 45,
+     "seq": 13,
+     "time": "1573-03-03T10:50:00+08:00",
+     "type": "followup"
+    }
+   ],
+   "post_count": 11,
+   "process": [
+    {
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "project_seq": 33,
+     "seq": 1,
+     "time": "1573-03-03T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "draft"
+    },
+    {
+     "edge": "start",
+     "from": "owner",
+     "from_state": "draft",
+     "project_seq": 34,
+     "seq": 2,
+     "time": "1573-03-03T10:06:00+08:00",
+     "to": "owner",
+     "to_state": "discussing"
+    },
+    {
+     "edge": "end_discussion",
+     "from": "owner",
+     "from_state": "discussing",
+     "project_seq": 46,
+     "seq": 14,
+     "time": "1573-03-03T11:03:00+08:00",
+     "to": "lead",
+     "to_state": "closing"
+    },
+    {
+     "edge": "summarize",
+     "from": "lead",
+     "from_state": "closing",
+     "note": "Consensus: Narrow the channel; close the breach and build the inner dykes this year, the outer dykes next year, spillway dams at dangerous stretches; cost spread over two years; disagreements: No real disagreement once Works gave ground; the Censorate asks for a dedicated dyke inspection",
+     "project_seq": 47,
+     "seq": 15,
+     "time": "1573-03-03T11:06:00+08:00",
+     "to": "owner",
+     "to_state": "pending_ruling"
+    },
+    {
+     "edge": "rule",
+     "from": "owner",
+     "from_state": "pending_ruling",
+     "note": "In vermilion: as proposed. Narrow the channel, build the dykes over two years, spillway dams at the dangerous stretches → D001",
+     "project_seq": 48,
+     "seq": 16,
+     "time": "1573-03-03T11:09:00+08:00",
+     "to": "none",
+     "to_state": "ruled"
+    }
+   ],
+   "ruling": {
+    "basis": "In vermilion: as proposed. Narrow the channel, build the dykes over two years, spillway dams at the dangerous stretches → D001",
+    "note": "In vermilion: as proposed. Narrow the channel, build the dykes over two years, spillway dams at the dangerous stretches → D001"
+   },
+   "start_seq": 33,
+   "state": "ruled",
+   "summary": {
+    "note": "Consensus: Narrow the channel; close the breach and build the inner dykes this year, the outer dykes next year, spillway dams at dangerous stretches; cost spread over two years; disagreements: No real disagreement once Works gave ground; the Censorate asks for a dedicated dyke inspection",
+    "options": "A Narrow the channel, dykes over two years, spillway dams at dangerous stretches; B Divert",
+    "recommendation": "Narrow the channel, build the dykes over two years, add spillway dams at dangerous stretches, inspect the dykes specifically"
+   },
+   "title": "The river strategy dispute",
+   "type": "council"
+  },
+  {
+   "attendees": [
+    {
+     "member": "Revenue",
+     "view": "funding"
+    },
+    {
+     "member": "War",
+     "view": "local order"
+    },
+    {
+     "member": "Censorate",
+     "view": "oversight"
+    }
+   ],
+   "category": "done",
+   "end_seq": 81,
+   "goal": "G002",
+   "holder": null,
+   "id": "I002",
+   "messages": [
+    {
+     "body": "In favour: both provinces in parallel, done in three months.",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 64,
+     "seq": 3,
+     "time": "1573-03-06T09:10:00+08:00",
+     "type": "position"
+    },
+    {
+     "body": "In favour, but watch for unrest in Jiangnan.",
+     "edge": "post",
+     "from": "War",
+     "project_seq": 65,
+     "seq": 4,
+     "time": "1573-03-06T09:14:00+08:00",
+     "type": "position"
+    },
+    {
+     "body": "Against the plan as it stands: every figure comes from local officials with no independent check, so there will be forgeries. Add a stage for the censors to verify.",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 66,
+     "seq": 5,
+     "time": "1573-03-06T09:18:00+08:00",
+     "type": "position"
+    },
+    {
+     "body": "How will Revenue verify what the localities report?",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 67,
+     "seq": 6,
+     "time": "1573-03-06T09:22:00+08:00",
+     "type": "followup"
+    },
+    {
+     "body": "@Revenue How do you answer the Censorate?",
+     "edge": "post",
+     "from": "owner",
+     "mentions": [
+      "Revenue"
+     ],
+     "project_seq": 68,
+     "seq": 7,
+     "time": "1573-03-06T09:26:00+08:00",
+     "type": "question"
+    },
+    {
+     "body": "Agreed to add verification; it can come after the pilot.",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 69,
+     "seq": 8,
+     "time": "1573-03-06T09:30:00+08:00",
+     "type": "answer"
+    },
+    {
+     "body": "Acceptable, provided verification comes after the pilot and before rollout.",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 70,
+     "seq": 9,
+     "time": "1573-03-06T09:34:00+08:00",
+     "type": "followup"
+    },
+    {
+     "body": "@Revenue @Censorate How should it be verified? Resurveying whole counties takes too long, but no check at all isn't safe.",
+     "edge": "post",
+     "from": "owner",
+     "mentions": [
+      "Revenue",
+      "Censorate"
+     ],
+     "project_seq": 71,
+     "seq": 10,
+     "time": "1573-03-06T09:38:00+08:00",
+     "type": "question"
+    },
+    {
+     "body": "Spot-survey a tenth of the land in each county against the register; if the error exceeds two per cent, resurvey the whole county.",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 72,
+     "seq": 11,
+     "time": "1573-03-06T09:42:00+08:00",
+     "type": "answer"
+    },
+    {
+     "body": "I accept a ten per cent spot survey with a full resurvey above two per cent. The censors choose the plots at short notice, so the localities can't know in advance.",
+     "edge": "post",
+     "from": "Censorate",
+     "project_seq": 73,
+     "seq": 12,
+     "time": "1573-03-06T09:46:00+08:00",
+     "type": "answer"
+    },
+    {
+     "body": "Agreed; the censors choose the plots.",
+     "edge": "post",
+     "from": "Revenue",
+     "project_seq": 74,
+     "seq": 13,
+     "time": "1573-03-06T09:50:00+08:00",
+     "type": "followup"
+    }
+   ],
+   "post_count": 11,
+   "process": [
+    {
+     "edge": "create",
+     "from": "lead",
+     "from_state": "none",
+     "project_seq": 62,
+     "seq": 1,
+     "time": "1573-03-06T09:03:00+08:00",
+     "to": "lead",
+     "to_state": "draft"
+    },
+    {
+     "edge": "start",
+     "from": "owner",
+     "from_state": "draft",
+     "project_seq": 63,
+     "seq": 2,
+     "time": "1573-03-06T09:06:00+08:00",
+     "to": "owner",
+     "to_state": "discussing"
+    },
+    {
+     "edge": "end_discussion",
+     "from": "owner",
+     "from_state": "discussing",
+     "project_seq": 75,
+     "seq": 14,
+     "time": "1573-03-06T10:03:00+08:00",
+     "to": "lead",
+     "to_state": "closing"
+    },
+    {
+     "edge": "summarize",
+     "from": "lead",
+     "from_state": "closing",
+     "note": "Consensus: Survey both provinces in parallel; after the pilot the Censorate verifies by spot-surveying a tenth of each county, with a full resurvey above two per cent error and plots chosen by the censors; disagreements: The Censorate insisted on independent verification; Revenue agreed and proposed the sampling rate, which the Censorate accepted",
+     "project_seq": 76,
+     "seq": 15,
+     "time": "1573-03-06T10:06:00+08:00",
+     "to": "owner",
+     "to_state": "pending_ruling"
+    },
+    {
+     "edge": "rule",
+     "from": "owner",
+     "from_state": "pending_ruling",
+     "note": "Ruled along with G002 \"Approve\"",
+     "project_seq": 81,
+     "seq": 16,
+     "time": "1573-03-07T09:09:00+08:00",
+     "to": "none",
+     "to_state": "ruled"
+    }
+   ],
+   "ruling": {
+    "basis": "In vermilion: approved. As the review proposed, the Censorate verifies after the survey",
+    "note": "Ruled along with G002 \"Approve\""
+   },
+   "start_seq": 62,
+   "state": "ruled",
+   "summary": {
+    "note": "Consensus: Survey both provinces in parallel; after the pilot the Censorate verifies by spot-surveying a tenth of each county, with a full resurvey above two per cent error and plots chosen by the censors; disagreements: The Censorate insisted on independent verification; Revenue agreed and proposed the sampling rate, which the Censorate accepted",
+    "options": "A The plan plus a Censorate review (ten per cent sample); B The plan as it stands",
+    "recommendation": "Add a Censorate third-party review at approval, sampling one tenth"
+   },
+   "title": "Land survey plan review",
+   "type": "review_meeting"
+  }
+ ],
+ "loose": null,
+ "spec": "view@3",
+ "tasks": [
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 12,
+     "to": "lead"
+    },
+    {
+     "attached_to": 3,
+     "edge": "progress",
+     "from": "Works",
+     "project_seq": 32,
+     "to": "none"
+    }
+   ],
+   "category": "done",
+   "comments": [],
+   "conclusion": "Narrowing adopted per debate I001 and D001",
+   "content": {
+    "acceptance": "Pros, cons, materials and time for both options, clear enough for court debate",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "A strategy memorial with cost estimates for both options",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Compare narrowing the channel against diverting the flow and settle the river strategy",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Works",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 4,
+     "state": "planned",
+     "time": "1573-03-01T15:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 12,
+     "state": "approved",
+     "time": "1573-03-02T10:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 29,
+     "state": "dispatched",
+     "time": "1573-03-02T20:27:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 30,
+     "state": "in_progress",
+     "time": "1573-03-02T20:27:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Works",
+     "holder": "lead",
+     "project_seq": 31,
+     "state": "in_review",
+     "time": "1573-03-02T23:50:00+08:00"
+    },
+    {
+     "category": "done",
+     "edge": "review",
+     "from": "lead",
+     "holder": null,
+     "project_seq": 49,
+     "state": "passed",
+     "time": "1573-03-04T10:03:00+08:00"
+    }
+   ],
+   "holder": null,
+   "holds": [
+    {
+     "end_seq": 29,
+     "end_time": "1573-03-02T20:27:00+08:00",
+     "start_seq": 4,
+     "start_time": "1573-03-01T15:03:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 31,
+     "end_time": "1573-03-02T23:50:00+08:00",
+     "start_seq": 29,
+     "start_time": "1573-03-02T20:27:00+08:00",
+     "who": "Works"
+    },
+    {
+     "end_seq": 49,
+     "end_time": "1573-03-04T10:03:00+08:00",
+     "start_seq": 31,
+     "start_time": "1573-03-02T23:50:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G001-T1",
+   "key": "Strategy",
+   "planned_executor": "Works",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": "lead",
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 1,
+   "state": "passed",
+   "title": "River strategy",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 4,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 29,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 30,
+     "slot": 2
+    },
+    {
+     "edge": "deliver",
+     "project_seq": 31,
+     "slot": 3
+    },
+    {
+     "edge": "review",
+     "project_seq": 49,
+     "slot": 4
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 13,
+     "to": "lead"
+    },
+    {
+     "attached_to": 2,
+     "edge": "progress",
+     "from": "Works",
+     "project_seq": 99,
+     "to": "none"
+    },
+    {
+     "attached_to": 2,
+     "edge": "escalate",
+     "from": "Works",
+     "project_seq": 100,
+     "to": "lead"
+    },
+    {
+     "attached_to": 2,
+     "edge": "progress",
+     "from": "Works",
+     "project_seq": 101,
+     "to": "none"
+    },
+    {
+     "attached_to": 2,
+     "edge": "change",
+     "from": "lead",
+     "project_seq": 104,
+     "to": "none"
+    },
+    {
+     "attached_to": 2,
+     "edge": "unblock",
+     "from": "lead",
+     "project_seq": 105,
+     "to": "Works"
+    }
+   ],
+   "category": "doing",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "Closed before the autumn floods",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Closure report and materials ledger",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Close the Xuzhou breach according to the strategy; bring together the stone from G001-T7 and the labourers from G001-T8 and oversee the closure",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Works",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 5,
+     "state": "planned",
+     "time": "1573-03-01T15:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 13,
+     "state": "approved",
+     "time": "1573-03-02T10:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 54,
+     "state": "dispatched",
+     "time": "1573-03-05T09:03:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 55,
+     "state": "in_progress",
+     "time": "1573-03-05T09:06:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "escalate",
+     "from": "Works",
+     "holder": "lead",
+     "project_seq": 100,
+     "state": "blocked",
+     "time": "1573-03-08T12:06:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "unblock",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 105,
+     "state": "in_progress",
+     "time": "1573-03-08T12:20:00+08:00"
+    }
+   ],
+   "holder": "Works",
+   "holds": [
+    {
+     "end_seq": 54,
+     "end_time": "1573-03-05T09:03:00+08:00",
+     "start_seq": 5,
+     "start_time": "1573-03-01T15:03:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 100,
+     "end_time": "1573-03-08T12:06:00+08:00",
+     "start_seq": 54,
+     "start_time": "1573-03-05T09:03:00+08:00",
+     "who": "Works"
+    },
+    {
+     "end_seq": 105,
+     "end_time": "1573-03-08T12:20:00+08:00",
+     "start_seq": 100,
+     "start_time": "1573-03-08T12:06:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 105,
+     "start_time": "1573-03-08T12:20:00+08:00",
+     "who": "Works"
+    }
+   ],
+   "id": "G001-T2",
+   "key": "close-breach",
+   "planned_executor": "Works",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 2,
+   "state": "in_progress",
+   "title": "Close the breach",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 5,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 54,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 55,
+     "slot": 2
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 14,
+     "to": "lead"
+    },
+    {
+     "attached_to": 3,
+     "edge": "progress",
+     "from": "Revenue",
+     "project_seq": 53,
+     "to": "none"
+    }
+   ],
+   "category": "done",
+   "comments": [],
+   "conclusion": "Funding ledger matches the stores",
+   "content": {
+    "acceptance": "Books match the stores",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Funding ledger",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Cost the works silver and allocate relief grain",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Revenue",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 6,
+     "state": "planned",
+     "time": "1573-03-01T15:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 14,
+     "state": "approved",
+     "time": "1573-03-02T10:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 50,
+     "state": "dispatched",
+     "time": "1573-03-04T14:03:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 51,
+     "state": "in_progress",
+     "time": "1573-03-04T14:03:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Revenue",
+     "holder": "lead",
+     "project_seq": 52,
+     "state": "in_review",
+     "time": "1573-03-04T19:06:00+08:00"
+    },
+    {
+     "category": "done",
+     "edge": "review",
+     "from": "lead",
+     "holder": null,
+     "project_seq": 95,
+     "state": "passed",
+     "time": "1573-03-07T20:10:00+08:00"
+    }
+   ],
+   "holder": null,
+   "holds": [
+    {
+     "end_seq": 50,
+     "end_time": "1573-03-04T14:03:00+08:00",
+     "start_seq": 6,
+     "start_time": "1573-03-01T15:03:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 52,
+     "end_time": "1573-03-04T19:06:00+08:00",
+     "start_seq": 50,
+     "start_time": "1573-03-04T14:03:00+08:00",
+     "who": "Revenue"
+    },
+    {
+     "end_seq": 95,
+     "end_time": "1573-03-07T20:10:00+08:00",
+     "start_seq": 52,
+     "start_time": "1573-03-04T19:06:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G001-T3",
+   "key": "funding",
+   "planned_executor": "Revenue",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": "lead",
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 2,
+   "state": "passed",
+   "title": "Works funding",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 6,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 50,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 51,
+     "slot": 2
+    },
+    {
+     "edge": "deliver",
+     "project_seq": 52,
+     "slot": 3
+    },
+    {
+     "edge": "review",
+     "project_seq": 95,
+     "slot": 4
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 15,
+     "to": "lead"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "Hanlin",
+     "project_seq": 19,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 20,
+     "to": "Hanlin"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "Hanlin",
+     "project_seq": 21,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 22,
+     "to": "Hanlin"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "Hanlin",
+     "project_seq": 23,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 24,
+     "to": "Hanlin"
+    },
+    {
+     "attached_to": 2,
+     "edge": "deliver",
+     "from": "Hanlin",
+     "project_seq": 25,
+     "to": "owner"
+    },
+    {
+     "attached_to": 2,
+     "edge": "review",
+     "from": "owner",
+     "project_seq": 26,
+     "to": "Hanlin"
+    }
+   ],
+   "category": "done",
+   "comments": [],
+   "conclusion": "In vermilion: approved for issue",
+   "content": {
+    "acceptance": "The Throne is satisfied in vermilion",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Final edict",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Issue an edict in the Emperor's name to reassure the people of Xuzhou and Huai",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Hanlin",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 7,
+     "state": "planned",
+     "time": "1573-03-01T15:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 15,
+     "state": "approved",
+     "time": "1573-03-02T10:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "owner",
+     "holder": "Hanlin",
+     "project_seq": 17,
+     "state": "dispatched",
+     "time": "1573-03-02T10:21:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "owner",
+     "holder": "Hanlin",
+     "project_seq": 18,
+     "state": "in_progress",
+     "time": "1573-03-02T10:24:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Hanlin",
+     "holder": "owner",
+     "project_seq": 19,
+     "state": "in_review",
+     "time": "1573-03-02T12:27:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "Hanlin",
+     "project_seq": 20,
+     "state": "in_progress",
+     "time": "1573-03-02T12:30:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Hanlin",
+     "holder": "owner",
+     "project_seq": 21,
+     "state": "in_review",
+     "time": "1573-03-02T14:33:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "Hanlin",
+     "project_seq": 22,
+     "state": "in_progress",
+     "time": "1573-03-02T14:36:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Hanlin",
+     "holder": "owner",
+     "project_seq": 23,
+     "state": "in_review",
+     "time": "1573-03-02T16:39:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "Hanlin",
+     "project_seq": 24,
+     "state": "in_progress",
+     "time": "1573-03-02T16:42:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Hanlin",
+     "holder": "owner",
+     "project_seq": 25,
+     "state": "in_review",
+     "time": "1573-03-02T18:45:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "review",
+     "from": "owner",
+     "holder": "Hanlin",
+     "project_seq": 26,
+     "state": "in_progress",
+     "time": "1573-03-02T18:48:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Hanlin",
+     "holder": "owner",
+     "project_seq": 27,
+     "state": "in_review",
+     "time": "1573-03-02T20:21:00+08:00"
+    },
+    {
+     "category": "done",
+     "edge": "review",
+     "from": "owner",
+     "holder": null,
+     "project_seq": 28,
+     "state": "passed",
+     "time": "1573-03-02T20:24:00+08:00"
+    }
+   ],
+   "holder": null,
+   "holds": [
+    {
+     "end_seq": 17,
+     "end_time": "1573-03-02T10:21:00+08:00",
+     "start_seq": 7,
+     "start_time": "1573-03-01T15:03:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 19,
+     "end_time": "1573-03-02T12:27:00+08:00",
+     "start_seq": 17,
+     "start_time": "1573-03-02T10:21:00+08:00",
+     "who": "Hanlin"
+    },
+    {
+     "end_seq": 20,
+     "end_time": "1573-03-02T12:30:00+08:00",
+     "start_seq": 19,
+     "start_time": "1573-03-02T12:27:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 21,
+     "end_time": "1573-03-02T14:33:00+08:00",
+     "start_seq": 20,
+     "start_time": "1573-03-02T12:30:00+08:00",
+     "who": "Hanlin"
+    },
+    {
+     "end_seq": 22,
+     "end_time": "1573-03-02T14:36:00+08:00",
+     "start_seq": 21,
+     "start_time": "1573-03-02T14:33:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 23,
+     "end_time": "1573-03-02T16:39:00+08:00",
+     "start_seq": 22,
+     "start_time": "1573-03-02T14:36:00+08:00",
+     "who": "Hanlin"
+    },
+    {
+     "end_seq": 24,
+     "end_time": "1573-03-02T16:42:00+08:00",
+     "start_seq": 23,
+     "start_time": "1573-03-02T16:39:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 25,
+     "end_time": "1573-03-02T18:45:00+08:00",
+     "start_seq": 24,
+     "start_time": "1573-03-02T16:42:00+08:00",
+     "who": "Hanlin"
+    },
+    {
+     "end_seq": 26,
+     "end_time": "1573-03-02T18:48:00+08:00",
+     "start_seq": 25,
+     "start_time": "1573-03-02T18:45:00+08:00",
+     "who": "owner"
+    },
+    {
+     "end_seq": 27,
+     "end_time": "1573-03-02T20:21:00+08:00",
+     "start_seq": 26,
+     "start_time": "1573-03-02T18:48:00+08:00",
+     "who": "Hanlin"
+    },
+    {
+     "end_seq": 28,
+     "end_time": "1573-03-02T20:24:00+08:00",
+     "start_seq": 27,
+     "start_time": "1573-03-02T20:21:00+08:00",
+     "who": "owner"
+    }
+   ],
+   "id": "G001-T4",
+   "key": "edict",
+   "planned_executor": "Hanlin",
+   "planned_reviewer": "owner",
+   "request_seq": null,
+   "reviewer": "owner",
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 3,
+   "state": "passed",
+   "title": "Draft the edict of self-reproach and relief",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 7,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 17,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 18,
+     "slot": 2
+    },
+    {
+     "edge": "deliver",
+     "project_seq": 27,
+     "slot": 3
+    },
+    {
+     "edge": "review",
+     "project_seq": 28,
+     "slot": 4
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 16,
+     "to": "lead"
+    }
+   ],
+   "category": "todo",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "Checked against each success criterion",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Inspection memorial",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "An inspecting censor checks the river works on site",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": null,
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 8,
+     "state": "planned",
+     "time": "1573-03-01T15:03:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 16,
+     "state": "approved",
+     "time": "1573-03-02T10:03:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "holds": [
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 8,
+     "start_time": "1573-03-01T15:03:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G001-T5",
+   "key": "inspection",
+   "planned_executor": "Censorate",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 4,
+   "state": "approved",
+   "title": "Inspection of the works",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 8,
+     "slot": 0
+    }
+   ]
+  },
+  {
+   "branches": [],
+   "category": "todo",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Verify the Henan disaster report",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": null,
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 96,
+     "state": "approved",
+     "time": "1573-03-07T20:14:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "holds": [
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 96,
+     "start_time": "1573-03-07T20:14:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G001-T6",
+   "key": null,
+   "planned_executor": null,
+   "planned_reviewer": null,
+   "request_seq": 96,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 3,
+   "state": "approved",
+   "title": "Henan disaster report (logged in error)",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 96,
+     "slot": 0
+    }
+   ]
+  },
+  {
+   "branches": [],
+   "category": "doing",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "The stone needed for the closure delivered to site",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Stone ledger",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Quarry and haul stone for closing the Xuzhou breach",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Works",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 102,
+     "state": "approved",
+     "time": "1573-03-08T12:11:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 106,
+     "state": "dispatched",
+     "time": "1573-03-08T12:23:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Works",
+     "project_seq": 107,
+     "state": "in_progress",
+     "time": "1573-03-08T12:26:00+08:00"
+    }
+   ],
+   "holder": "Works",
+   "holds": [
+    {
+     "end_seq": 106,
+     "end_time": "1573-03-08T12:23:00+08:00",
+     "start_seq": 102,
+     "start_time": "1573-03-08T12:11:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 106,
+     "start_time": "1573-03-08T12:23:00+08:00",
+     "who": "Works"
+    }
+   ],
+   "id": "G001-T7",
+   "key": null,
+   "planned_executor": null,
+   "planned_reviewer": null,
+   "request_seq": 102,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 2,
+   "state": "in_progress",
+   "title": "Quarry and haul stone",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 102,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 106,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 107,
+     "slot": 2
+    }
+   ]
+  },
+  {
+   "branches": [],
+   "category": "doing",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "Labourers on site on time",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Labour roll",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Levy labourers from Xuzhou and Pizhou for the closure",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Revenue",
+   "goal": "G001",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 103,
+     "state": "approved",
+     "time": "1573-03-08T12:14:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 108,
+     "state": "dispatched",
+     "time": "1573-03-08T12:29:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 109,
+     "state": "in_progress",
+     "time": "1573-03-08T12:32:00+08:00"
+    }
+   ],
+   "holder": "Revenue",
+   "holds": [
+    {
+     "end_seq": 108,
+     "end_time": "1573-03-08T12:29:00+08:00",
+     "start_seq": 103,
+     "start_time": "1573-03-08T12:14:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 108,
+     "start_time": "1573-03-08T12:29:00+08:00",
+     "who": "Revenue"
+    }
+   ],
+   "id": "G001-T8",
+   "key": null,
+   "planned_executor": null,
+   "planned_reviewer": null,
+   "request_seq": 103,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 2,
+   "state": "in_progress",
+   "title": "Levy labourers",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 103,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 108,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 109,
+     "slot": 2
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 82,
+     "to": "lead"
+    },
+    {
+     "attached_to": 3,
+     "edge": "progress",
+     "from": "Revenue",
+     "project_seq": 89,
+     "to": "none"
+    }
+   ],
+   "category": "review",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "Registers by county, error under two per cent",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Shandong fish-scale register",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Survey the land in Shandong",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Revenue",
+   "goal": "G002",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 57,
+     "state": "planned",
+     "time": "1573-03-05T13:06:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 82,
+     "state": "approved",
+     "time": "1573-03-07T09:09:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 86,
+     "state": "dispatched",
+     "time": "1573-03-07T09:24:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 87,
+     "state": "in_progress",
+     "time": "1573-03-07T09:24:00+08:00"
+    },
+    {
+     "category": "review",
+     "edge": "deliver",
+     "from": "Revenue",
+     "holder": "lead",
+     "project_seq": 88,
+     "state": "in_review",
+     "time": "1573-03-07T19:27:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "holds": [
+    {
+     "end_seq": 86,
+     "end_time": "1573-03-07T09:24:00+08:00",
+     "start_seq": 57,
+     "start_time": "1573-03-05T13:06:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 88,
+     "end_time": "1573-03-07T19:27:00+08:00",
+     "start_seq": 86,
+     "start_time": "1573-03-07T09:24:00+08:00",
+     "who": "Revenue"
+    },
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 88,
+     "start_time": "1573-03-07T19:27:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G002-T1",
+   "key": "shandong",
+   "planned_executor": "Revenue",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": "lead",
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 1,
+   "state": "in_review",
+   "title": "Shandong survey",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 57,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 86,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 87,
+     "slot": 2
+    },
+    {
+     "edge": "deliver",
+     "project_seq": 88,
+     "slot": 3
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 83,
+     "to": "lead"
+    },
+    {
+     "attached_to": 2,
+     "edge": "progress",
+     "from": "Revenue",
+     "project_seq": 92,
+     "to": "none"
+    },
+    {
+     "attached_to": 2,
+     "edge": "escalate",
+     "from": "Revenue",
+     "project_seq": 93,
+     "to": "lead"
+    },
+    {
+     "attached_to": 2,
+     "edge": "unblock",
+     "from": "lead",
+     "project_seq": 94,
+     "to": "Revenue"
+    }
+   ],
+   "category": "doing",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "Registers by county, error under two per cent",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Jiangnan fish-scale register",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Survey the land in Suzhou, Songjiang, Changzhou and Zhenjiang",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": "Revenue",
+   "goal": "G002",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 58,
+     "state": "planned",
+     "time": "1573-03-05T13:06:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 83,
+     "state": "approved",
+     "time": "1573-03-07T09:09:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "dispatch",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 90,
+     "state": "dispatched",
+     "time": "1573-03-07T19:31:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "pick_up",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 91,
+     "state": "in_progress",
+     "time": "1573-03-07T19:31:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "escalate",
+     "from": "Revenue",
+     "holder": "lead",
+     "project_seq": 93,
+     "state": "blocked",
+     "time": "1573-03-07T20:02:00+08:00"
+    },
+    {
+     "category": "doing",
+     "edge": "unblock",
+     "from": "lead",
+     "holder": "Revenue",
+     "project_seq": 94,
+     "state": "in_progress",
+     "time": "1573-03-07T20:06:00+08:00"
+    }
+   ],
+   "holder": "Revenue",
+   "holds": [
+    {
+     "end_seq": 90,
+     "end_time": "1573-03-07T19:31:00+08:00",
+     "start_seq": 58,
+     "start_time": "1573-03-05T13:06:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": 93,
+     "end_time": "1573-03-07T20:02:00+08:00",
+     "start_seq": 90,
+     "start_time": "1573-03-07T19:31:00+08:00",
+     "who": "Revenue"
+    },
+    {
+     "end_seq": 94,
+     "end_time": "1573-03-07T20:06:00+08:00",
+     "start_seq": 93,
+     "start_time": "1573-03-07T20:02:00+08:00",
+     "who": "lead"
+    },
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 94,
+     "start_time": "1573-03-07T20:06:00+08:00",
+     "who": "Revenue"
+    }
+   ],
+   "id": "G002-T2",
+   "key": "jiangnan",
+   "planned_executor": "Revenue",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 1,
+   "state": "in_progress",
+   "title": "Jiangnan survey",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 58,
+     "slot": 0
+    },
+    {
+     "edge": "dispatch",
+     "project_seq": 90,
+     "slot": 1
+    },
+    {
+     "edge": "pick_up",
+     "project_seq": 91,
+     "slot": 2
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 84,
+     "to": "lead"
+    }
+   ],
+   "category": "todo",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "Conversion works without unsettling the people",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Pilot report",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Trial converting taxes and service to silver in three Shandong counties",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": null,
+   "goal": "G002",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 59,
+     "state": "planned",
+     "time": "1573-03-05T13:06:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 84,
+     "state": "approved",
+     "time": "1573-03-07T09:09:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "holds": [
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 59,
+     "start_time": "1573-03-05T13:06:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G002-T3",
+   "key": "Pilot",
+   "planned_executor": "Revenue",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 2,
+   "state": "approved",
+   "title": "Single Whip pilot in Shandong",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 59,
+     "slot": 0
+    }
+   ]
+  },
+  {
+   "branches": [
+    {
+     "attached_to": 0,
+     "edge": "approve",
+     "from": "owner",
+     "project_seq": 85,
+     "to": "lead"
+    }
+   ],
+   "category": "todo",
+   "comments": [],
+   "conclusion": "",
+   "content": {
+    "acceptance": "One tenth of each county spot-surveyed; error against the register no more than two per cent",
+    "alternatives": "",
+    "authority": "",
+    "constraints": "",
+    "deliverables": "Inspection memorial",
+    "escalate_when": "",
+    "inputs": "",
+    "purpose": "Independently verify the survey and the pilot",
+    "role": ""
+   },
+   "depends_on": [],
+   "executor": null,
+   "goal": "G002",
+   "handoffs": [
+    {
+     "category": "todo",
+     "edge": "create",
+     "from": "lead",
+     "holder": "lead",
+     "project_seq": 78,
+     "state": "planned",
+     "time": "1573-03-07T09:06:00+08:00"
+    },
+    {
+     "category": "todo",
+     "edge": "approve",
+     "from": "owner",
+     "holder": "lead",
+     "project_seq": 85,
+     "state": "approved",
+     "time": "1573-03-07T09:09:00+08:00"
+    }
+   ],
+   "holder": "lead",
+   "holds": [
+    {
+     "end_seq": null,
+     "end_time": null,
+     "start_seq": 78,
+     "start_time": "1573-03-07T09:06:00+08:00",
+     "who": "lead"
+    }
+   ],
+   "id": "G002-T4",
+   "key": "verify",
+   "planned_executor": "Censorate",
+   "planned_reviewer": "lead",
+   "request_seq": null,
+   "reviewer": null,
+   "rework_count": 0,
+   "self_reviewed": false,
+   "stage": 3,
+   "state": "approved",
+   "title": "Censorate verification",
+   "trunk": [
+    {
+     "edge": "create",
+     "project_seq": 78,
+     "slot": 0
+    }
+   ]
+  }
+ ],
+ "titles": {},
+ "upto": 109
+}

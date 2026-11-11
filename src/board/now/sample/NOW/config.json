@@ -9,11 +9,11 @@
   ],
   "rest_keywords": ["不计时"],
   "deadlines": {
-    "file": "截止.md",
+    "file": "deadlines.md",
     "groups": [],
     "category": "学习",
     "final_keyword": "期末",
-    "note": "截止.md"
+    "note": "deadlines.md"
   },
   "done_show": 5
 }

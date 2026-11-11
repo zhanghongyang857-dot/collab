@@ -1,21 +1,23 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>项目</title>
+<title data-i18n="page.projects">Projects</title>
 <link rel="stylesheet" href="/static/board.css">
+<script src="/static/vocab.js" defer></script>
+<script src="/static/i18n.js" defer></script>
 <script src="/static/projects.js" defer></script>
 </head>
 <body>
 <header class="top">
   <a class="back" id="back" href="/" hidden>← NOW</a>
-  <h1>项目</h1>
+  <h1 data-i18n="page.projects">Projects</h1>
   <span class="meta" id="meta"></span>
   <span class="spacer"></span>
-  <a class="toplink" href="/team">班子</a>
-  <a class="toplink" href="/talent">人才市场</a>
+  <a class="toplink" href="/team" data-i18n="team.page">Team</a>
+  <a class="toplink" href="/talent" data-i18n="talent.page">Talent</a>
 </header>
-<main id="app"><div class="empty">加载中…</div></main>
+<main id="app"><div class="empty" data-i18n="page.loading">Loading…</div></main>
 </body>
 </html>

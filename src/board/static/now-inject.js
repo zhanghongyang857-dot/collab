@@ -24,20 +24,21 @@
       const p = byProgress[decodeURIComponent(href.replace(/^file:\/\//, ""))];
       if (!p) return;
       a.href = "/p/" + p.id;
-      a.title = "打开项目看板";
-      if (p.summary) {
+      a.title = window.t("now.open_board");
+      const text = window.I18n_summary(p);
+      if (text) {
         const sum = document.createElement("a");
-        sum.className = "bd-chip" + (/受阻/.test(p.summary) ? " bd-warn" : "");
+        sum.className = "bd-chip" + (window.I18n_blocked(p) ? " bd-warn" : "");
         sum.href = "/p/" + p.id;
-        sum.textContent = p.summary;
+        sum.textContent = text;
         a.after(sum);
       }
       const doc = document.createElement("a");
       doc.className = "bd-chip bd-doc";
       doc.dataset.bd = "1";
       doc.href = href;
-      doc.title = "用默认应用打开 PROGRESS.md";
-      doc.textContent = "文档";
+      doc.title = window.t("now.open_doc");
+      doc.textContent = window.t("board.docs");
       (a.nextElementSibling && a.nextElementSibling.classList.contains("bd-chip") ? a.nextElementSibling : a).after(doc);
     });
   }
@@ -50,7 +51,7 @@
 
   const live = document.createElement("div");
   live.className = "bd-live";
-  live.innerHTML = '本地服务 · 回到此页时自动刷新 · <a href="/team">班子</a> · <a href="/talent">人才市场</a>';
+  live.innerHTML = `${window.t("now.live")} · <a href="/team">${window.t("team.page")}</a> · <a href="/talent">${window.t("talent.page")}</a>`;
   document.body.appendChild(live);
   // 朝会入口：跨项目只读聚合（方案 03 第 7 节），没有进行中或待裁决的议题就不显示
   fetch("/api/meetings").then((r) => r.json()).then((list) => {
@@ -58,8 +59,8 @@
     const box = document.createElement("div");
     box.className = "bd-meet";
     const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
-    box.innerHTML = `<b>朝会 ${list.length}</b>` + list.map((m) =>
-      `<a href="/p/${m.pid}/meet/${esc(m.id)}">${esc(m.project)} · ${esc(m.id)} ${esc(m.title)} · <span class="${m.stage === "待裁决" ? "bd-w" : ""}">${esc(m.stage)}</span>${m.thinking.length ? " · " + esc(m.thinking.join("、")) + " 运行中" : ""}</a>`).join("");
+    box.innerHTML = `<b>${esc(window.t("board.seq.meeting"))} ${list.length}</b>` + list.map((m) =>
+      `<a href="/p/${m.pid}/meet/${esc(m.id)}">${esc(m.project)} · ${esc(m.id)} ${esc(m.title)} · <span class="${m.stage === V.State.PENDING_RULING ? "bd-w" : ""}">${esc(N("state", m.stage))}</span>${m.thinking.length ? " · " + esc(window.t("board.issue.thinking", {who: m.thinking.join(window.t("sep.list"))})) : ""}</a>`).join("");
     document.body.appendChild(box);
   }).catch(() => {});
   const loaded = Date.now();

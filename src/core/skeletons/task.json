@@ -1,49 +1,49 @@
 {
-  "骨架": "任务",
-  "版本": 2,
-  "说明": "任务级状态机。发起、接收用席位类：持有人、管理（总管或总裁）、总管、执行人、确认人、自己、无；@ 开头的由回放推出。",
-  "初始": "规划中",
-  "终止": ["通过", "取消", "撤下"],
-  "返工上限": 3,
-  "状态": {
-    "规划中": {"类别": "待办", "持有": "总管"},
-    "已批准": {"类别": "待办", "持有": "总管"},
-    "已交接": {"类别": "待办", "持有": "执行人"},
-    "执行中": {"类别": "进行", "持有": "执行人"},
-    "待验收": {"类别": "评审", "持有": "确认人"},
-    "受阻": {"类别": "进行", "持有": "管理"},
-    "暂停": {"类别": "待办", "持有": "总管"},
-    "未通过": {"类别": "评审", "持有": "总管"},
-    "通过": {"类别": "完成"},
-    "取消": {"类别": "完成"},
-    "撤下": {"类别": "完成", "说明": "目标批准前改框架去掉的草稿卡：各视图不显示，编号留给之后的版本用（重拟）"}
+  "skeleton": "task",
+  "version": 2,
+  "description": "Task state machine. Initiator and receiver are seat classes: holder, manager (lead or owner), lead, owner, executor, reviewer, self, none; those starting with @ are derived by replay.",
+  "initial": "planned",
+  "terminal": ["passed", "cancelled", "withdrawn"],
+  "max_rework": 3,
+  "states": {
+    "planned": {"category": "todo", "holder": "lead"},
+    "approved": {"category": "todo", "holder": "lead"},
+    "dispatched": {"category": "todo", "holder": "executor"},
+    "in_progress": {"category": "doing", "holder": "executor"},
+    "in_review": {"category": "review", "holder": "reviewer"},
+    "blocked": {"category": "doing", "holder": "manager"},
+    "paused": {"category": "todo", "holder": "lead"},
+    "failed": {"category": "review", "holder": "lead"},
+    "passed": {"category": "done"},
+    "cancelled": {"category": "done"},
+    "withdrawn": {"category": "done", "description": "Draft card dropped when the plan changed before the goal was approved: hidden in every view; its ID is reused by later versions (redraft)."}
   },
-  "边": {
-    "建立": {"从": ["无"], "到": "规划中", "发起": "管理", "接收": "总管", "必填": ["依据"]},
-    "批准": {"从": ["规划中"], "到": "已批准", "发起": "总裁", "接收": "总管", "必填": ["依据"]},
-    "派发": {"从": ["已批准"], "到": "已交接", "发起": "管理", "接收": "执行人"},
-    "接手": {"从": ["已交接"], "到": "执行中", "发起": "持有人", "接收": "自己"},
-    "交付": {"从": ["执行中"], "到": "待验收", "发起": "持有人", "接收": "确认人", "默认接收": "总管", "必填": ["证据", "说明"]},
-    "确认": {"从": ["待验收"], "发起": "持有人", "必填": ["说明"], "结果": {
-      "通过": {"到": "通过", "接收": "无"},
-      "需补充": {"到": "执行中", "接收": "执行人", "默认接收": "@上次交付人"},
-      "未通过": {"到": "未通过", "接收": "总管"}
+  "edges": {
+    "create": {"from": ["none"], "to": "planned", "initiator": "manager", "receiver": "lead", "required": ["basis"]},
+    "approve": {"from": ["planned"], "to": "approved", "initiator": "owner", "receiver": "lead", "required": ["basis"]},
+    "dispatch": {"from": ["approved"], "to": "dispatched", "initiator": "manager", "receiver": "executor"},
+    "pick_up": {"from": ["dispatched"], "to": "in_progress", "initiator": "holder", "receiver": "self"},
+    "deliver": {"from": ["in_progress"], "to": "in_review", "initiator": "holder", "receiver": "reviewer", "default_receiver": "lead", "required": ["evidence", "note"]},
+    "review": {"from": ["in_review"], "initiator": "holder", "required": ["note"], "results": {
+      "pass": {"to": "passed", "receiver": "none"},
+      "needs_more": {"to": "in_progress", "receiver": "executor", "default_receiver": "@last_deliverer"},
+      "fail": {"to": "failed", "receiver": "lead"}
     }},
-    "转交": {"从": ["执行中", "待验收", "受阻"], "到": "@不变", "发起": "持有人", "接收": "@该状态席位", "必填": ["说明"]},
-    "上报": {"从": ["已批准", "已交接", "执行中", "待验收", "未通过", "暂停"], "到": "受阻", "发起": "持有人", "接收": "管理", "默认接收": "总管", "必填": ["说明"]},
-    "解除": {"从": ["受阻"], "到": "@上报前状态", "发起": "管理", "接收": "@上报前持有人"},
-    "改派": {"从": ["已交接", "执行中", "受阻", "未通过"], "到": "已交接", "发起": "管理", "接收": "执行人", "必填": ["说明"]},
-    "暂停": {"从": ["已批准", "已交接", "执行中", "待验收", "受阻", "未通过"], "到": "暂停", "发起": "管理", "接收": "总管", "必填": ["说明"]},
-    "恢复": {"从": ["暂停"], "到": "@暂停前状态", "发起": "管理", "接收": "@暂停前持有人"},
-    "重开": {"从": ["通过"], "到": "已交接", "发起": "管理", "接收": "执行人", "必填": ["说明"]},
-    "取消": {"从": ["规划中", "已批准", "已交接", "执行中", "待验收", "受阻", "暂停", "未通过"], "到": "取消", "发起": "管理", "接收": "无", "必填": ["说明"]},
-    "撤下": {"从": ["规划中"], "到": "撤下", "发起": "管理", "接收": "无", "必填": ["说明"]},
-    "重拟": {"从": ["撤下"], "到": "规划中", "发起": "管理", "接收": "总管", "必填": ["依据"]}
+    "hand_over": {"from": ["in_progress", "in_review", "blocked"], "to": "@unchanged", "initiator": "holder", "receiver": "@state_seat", "required": ["note"]},
+    "escalate": {"from": ["approved", "dispatched", "in_progress", "in_review", "failed", "paused"], "to": "blocked", "initiator": "holder", "receiver": "manager", "default_receiver": "lead", "required": ["note"]},
+    "unblock": {"from": ["blocked"], "to": "@state_before_escalation", "initiator": "manager", "receiver": "@holder_before_escalation"},
+    "reassign": {"from": ["dispatched", "in_progress", "blocked", "failed"], "to": "dispatched", "initiator": "manager", "receiver": "executor", "required": ["note"]},
+    "pause": {"from": ["approved", "dispatched", "in_progress", "in_review", "blocked", "failed"], "to": "paused", "initiator": "manager", "receiver": "lead", "required": ["note"]},
+    "resume": {"from": ["paused"], "to": "@state_before_pause", "initiator": "manager", "receiver": "@holder_before_pause"},
+    "reopen": {"from": ["passed"], "to": "dispatched", "initiator": "manager", "receiver": "executor", "required": ["note"]},
+    "cancel": {"from": ["planned", "approved", "dispatched", "in_progress", "in_review", "blocked", "paused", "failed"], "to": "cancelled", "initiator": "manager", "receiver": "none", "required": ["note"]},
+    "withdraw": {"from": ["planned"], "to": "withdrawn", "initiator": "manager", "receiver": "none", "required": ["note"]},
+    "redraft": {"from": ["withdrawn"], "to": "planned", "initiator": "manager", "receiver": "lead", "required": ["basis"]}
   },
-  "特殊事件": {
-    "变更": {"必填": ["说明", "变更项"]},
-    "进展": {"必填": []},
-    "更正": {"必填": ["更正", "说明"]},
-    "意见": {"必填": ["说明"]}
+  "special_events": {
+    "change": {"required": ["note", "changes"]},
+    "progress": {"required": []},
+    "correction": {"required": ["correct", "note"]},
+    "comment": {"required": ["note"]}
   }
 }

@@ -1,0 +1,26 @@
+{
+ "note": "Example talent pool (planned): records skills and strengths by role, and which command-line members can play each role. The talent section of the board's team page reads ~/.collab-team/talent.json and shows this example when there isn't one. How roles are divided and skills described is still open.",
+ "talent": [
+  {
+   "identity": "Execution engineer",
+   "skills": ["Writing code", "Running experiments", "Fixing environments"],
+   "strengths": "Works through clear steps to the end, tests, then delivers",
+   "played_by": ["Codex Astra", "Codex"],
+   "status": "Example"
+  },
+  {
+   "identity": "Independent reviewer",
+   "skills": ["Review", "Finding holes", "Checking evidence"],
+   "strengths": "Opens a fresh session without the Lead's context and reviews deliveries independently",
+   "played_by": ["Claude CLI", "Codex"],
+   "status": "Example"
+  },
+  {
+   "identity": "Researcher",
+   "skills": ["Searching", "Comparing", "Writing it up"],
+   "strengths": "Researches across sources and writes a report with clear conclusions",
+   "played_by": ["DeepSeek", "Codex Astra"],
+   "status": "Example"
+  }
+ ]
+}

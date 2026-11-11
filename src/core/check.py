@@ -20,6 +20,9 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import collab_parse as cp  # noqa: E402
+import i18n  # noqa: E402
+import paths as P  # noqa: E402
+from vocab import Kind, Seat, State  # noqa: E402
 
 TASK_STATES = ("规划中", "已批准", "已交接", "待派发", "待开始", "执行中", "待验收", "通过", "需补充", "受阻", "未通过")
 GOAL_STATES = ("待批准", "进行中", "暂停", "完成", "取消")
@@ -42,7 +45,8 @@ def plain(cell: str) -> str:
 
 def find_project(start: Path) -> Optional[Path]:
     for d in [start, *start.parents]:
-        if (d / "collab" / "PROGRESS.md").is_file():
+        if (d / P.COLLAB / P.PROGRESS).is_file():
+
             return d
     return None
 
@@ -83,16 +87,23 @@ def section(secs: Dict[str, List[str]], prefix: str) -> Optional[List[str]]:
 
 
 def check(project: Path) -> List[Dict[str, Any]]:
-    collab = project / "collab"
-    prog = collab / "PROGRESS.md"
+    collab = project / P.COLLAB
+    prog = collab / P.PROGRESS
     rep = Report(project)
     if not prog.is_file():
-        rep.err(prog, "没有 collab/PROGRESS.md")
+        rep.err(prog, i18n.pack(i18n.project_lang(project)).t("check.no_progress"))
         return rep.items
-    if (collab / "内部" / "流转").is_dir():  # 新结构：流转由事件记录，检查全部交给 flow.py
+    if (collab / P.INTERNAL_FLOW).is_dir():  # 新结构：流转由事件记录，检查全部交给 flow.py
         import flow
         proj = flow.Project(project)
-        return flow.check(proj, now=flow.project_now(proj))
+        items = flow.check(proj, now=flow.project_now(proj))
+        if proj.needs_migration():
+            items.insert(0, {"level": "error", "file": f"{P.COLLAB}/{P.CONFIG}", "line": None,
+                             "msg": proj.L.t("check.needs_migration")})
+        return items
+    if (collab / "内部" / "流转").is_dir():  # 旧格式（中文目录）的新结构项目
+        rep.err(prog, "这是旧格式账本（collab/内部/流转/）：先运行 init.sh migrate 改成新格式")
+        return rep.items
     for old in ("流转", "流程", "运行记录"):
         if (collab / old).is_dir():
             rep.warn(prog, f"collab/{old}/ 是旧位置：运行 init.sh tidy 搬进 collab/内部/，否则派活、看板读不到")
@@ -235,7 +246,7 @@ def check(project: Path) -> List[Dict[str, Any]]:
         s = l.strip()
         if not s.startswith("- ") or cp.PLACEHOLDER.match(s[2:].strip()):
             continue
-        f6 = [x.strip() for x in s[2:].split("｜")]
+        f6 = [x.strip() for x in re.split(r"[｜|]", s[2:])]
         head = plain(f6[0]).replace("（示例）", "").strip()
         if len(f6) != 6:
             rep.err(prog, f"「待你决定」{head or s[:20]} 有 {len(f6)} 段，约定 6 段："
@@ -271,13 +282,14 @@ def errors(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def fmt(items: List[Dict[str, Any]]) -> str:
+    L = i18n.pack()  # check() 载入项目时已设成项目语言
     errs, warns = errors(items), [x for x in items if x["level"] == "warn"]
     if not items:
-        return "校验通过：collab/ 符合协议"
+        return L.t("check.passed")
     out = []
-    for title, group, mark in (("错误", errs, "✗"), ("提醒", warns, "!")):
+    for level, group, mark in (("error", errs, "✗"), ("warn", warns, "!")):
         if group:
-            out.append(f"{title} {len(group)} 项：")
+            out.append(L.t("check.group_" + level, n=len(group)))
             out += [f"  {mark} {x['file']}{':' + str(x['line']) if x['line'] else ''}  {x['msg']}" for x in group]
     return "\n".join(out)
 
@@ -295,11 +307,7 @@ def hook() -> int:
         return 0
     items = check(project)
     if errors(items):
-        reason = ("collab/ 校验没通过，按协议改好再结束（规则见 collab/协议.md 或 PROGRESS 末尾的协作规则；"
-                  "新结构项目的流转只能用 core/flow.py 写，生成块被改动就运行 flow.py 渲染；"
-                  "改完可运行 python3 " + str(Path(__file__).resolve()) + " 自查）。"
-                  "补全格式、补建卡片，不要为了通过校验删掉内容或编造批准；缺的信息（例如总裁是否批准）拿不准就停下来问总裁。\n"
-                  + fmt(errors(items)))
+        reason = i18n.pack().t("check.hook_block", check=str(Path(__file__).resolve())) + "\n" + fmt(errors(items))
         print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
         return 0
     note = dirty_without_task(project)
@@ -312,12 +320,12 @@ def lead_is_working(project: Path) -> bool:
     """项目里有没有总管正在执行的任务。"""
     import flow
     states, _, _ = flow.replay_all(flow.Project(project))
-    return any(s["种类"] == "任务" and s["状态"] == "执行中" and s["持有人"] == flow.LEAD for s in states.values())
+    return any(s["kind"] == Kind.TASK and s["state"] == State.IN_PROGRESS and s["holder"] == flow.LEAD for s in states.values())
 
 
 def dirty_without_task(project: Path) -> str:
     """git 项目里有未提交的改动、却没有总管执行中的任务时提醒一句。只提醒不阻止：改动也可能是总裁自己做的。"""
-    if not (project / "collab" / "内部" / "流转").is_dir():
+    if not (project / P.COLLAB / P.INTERNAL_FLOW).is_dir():
         return ""
     try:
         out = subprocess.run(["git", "-C", str(project), "status", "--porcelain", "--", ".", ":!collab"],
@@ -326,7 +334,7 @@ def dirty_without_task(project: Path) -> str:
             return ""
     except Exception:
         return ""
-    return "提醒：项目有未提交的改动，但没有总管执行中的任务。如果是总管改的，要补建目标和任务卡并请总裁批准。"
+    return i18n.pack(i18n.project_lang(project)).t("check.dirty_without_task")
 
 
 def pretool() -> int:
@@ -334,7 +342,7 @@ def pretool() -> int:
     只拦 Edit、Write 这类工具；collab/ 账本不拦；派活脚本启动的成员不拦（派活本身已过批准）。工具自身出错时放行。"""
     try:
         data = json.load(sys.stdin)
-        if os.environ.get("COLLAB_ACTOR") and os.environ["COLLAB_ACTOR"] != "总管":
+        if os.environ.get("COLLAB_ACTOR") and os.environ["COLLAB_ACTOR"] not in (Seat.LEAD, "总管", "Lead"):
             return 0
         tool_input = data.get("tool_input") or {}
         raw = tool_input.get("file_path") or tool_input.get("notebook_path")
@@ -345,15 +353,13 @@ def pretool() -> int:
             path = Path(data.get("cwd") or ".") / path
         path = path.resolve()
         project = find_project(path.parent)
-        if not project or not (project / "collab" / "内部" / "流转").is_dir():
+        if not project or not (project / P.COLLAB / P.INTERNAL_FLOW).is_dir():
             return 0
-        if (project / "collab") in path.parents or lead_is_working(project):
+        if (project / P.COLLAB) in path.parents or lead_is_working(project):
             return 0
     except Exception:
         return 0
-    reason = ("这个项目没有总管正在执行的任务，不能改文件。所有改动都要先有目标和任务卡并经总裁批准："
-              "用 flow.py 框架 搭好任务，flow.py 记 <目标> 提交，总裁批准后 flow.py 开工 <任务>。"
-              "规则见 collab/协议.md「目标与流程」。")
+    reason = i18n.pack(i18n.project_lang(project)).t("check.pretool_deny")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
                                              "permissionDecisionReason": reason}}, ensure_ascii=False))
     return 0
@@ -367,7 +373,7 @@ def main(argv: List[str]) -> int:
     args = [a for a in argv if not a.startswith("--")]
     project = find_project(Path(args[0] if args else ".").resolve())
     if not project:
-        print("找不到 collab/PROGRESS.md", file=sys.stderr)
+        print(i18n.pack().t("check.no_project"), file=sys.stderr)
         return 2
     items = check(project)
     if "--json" in argv:

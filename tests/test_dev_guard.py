@@ -9,7 +9,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 CORE = ROOT / "src" / "core"
-WORKBENCH = ROOT / "src" / "workbench"
+WORKBENCH = ROOT / "src" / "workbench" / "zh"
 sys.path.insert(0, str(CORE))
 import flow  # noqa: E402
 
@@ -37,7 +37,7 @@ class TestRefusal(unittest.TestCase):
         self.assertIsNone(flow.dev_write_refusal(self.tmp / "别的项目"))
 
     def test_published_copy_is_not_limited(self):
-        (self.kit / "版本.txt").write_text("提交：abc\n", encoding="utf-8")
+        (self.kit / "VERSION.txt").write_text("提交：abc\n", encoding="utf-8")
         self.assertIsNone(flow.dev_write_refusal(self.repo))
 
     def test_lock_refuses_before_touching_ledger(self):
@@ -59,7 +59,7 @@ class TestCommandLine(unittest.TestCase):
         r = self.run_tool("flow.py", "渲染")
         self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
         self.assertIn("开发版工具包", r.stdout + r.stderr)
-        self.assertFalse((WORKBENCH / "collab" / "内部" / "流转" / ".lock").exists())
+        self.assertFalse((WORKBENCH / "collab" / "internal" / "flow" / ".lock").exists())
 
     def test_dispatch_refuses_writes_but_not_reads(self):
         r = self.run_tool("dispatch.py", "stop", "--all")

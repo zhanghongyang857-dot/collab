@@ -1,10 +1,15 @@
 // 静态演示站顶上的回目条：第几回、上一回 / 下一回、回目录。只在 demo/site.py 导出的页面里加载。
-// 换回时尽量停在同一种页面：项目页带着地址栏里的 #选中项，朝会页在那一回还没开的议题就回项目页。
+// 右端链到另一种语言的同一回（中文站在根目录，英文站在 en/）。换回时尽量停在同一种页面：项目页带着地址栏里的 #选中项，朝会页在那一回还没开的议题就回项目页。
 (function () {
   const S = window.BOARD_STATIC;
   if (!S || !S.chapters) return;
   const n = S.chapter, list = S.chapters, cur = list[n - 1];
   const root = S.base + "/..";
+  const EN = S.lang === "en";
+  const W = EN ? {home: "The Wanli Reforms · demo", prev: "‹ Previous", next: "Next ›", pick: "Chapter", other: "中文"}
+    : {home: "万历新政 · 演示", prev: "‹ 上一回", next: "下一回 ›", pick: "选回目", other: "English"};
+  // 另一种语言的同一回同一页：中文站在根目录，英文站在 en/
+  const otherRoot = EN ? `${root}/..` : `${root}/en`;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
   function where(k) {
     const c = list[k - 1], p = `${root}/ch${k}`;
@@ -14,13 +19,19 @@
   }
   const bar = document.createElement("nav");
   bar.className = "demobar";
-  bar.innerHTML = `<a class="home" href="${root}/">万历新政 · 演示</a>
-    <span class="nav">${n > 1 ? `<a data-k="${n - 1}" href="${where(n - 1)}" title="${esc(list[n - 2].title)}">‹ 上一回</a>` : '<span class="off">‹ 上一回</span>'}
-    <select aria-label="选回目">${list.map((c, i) => `<option value="${i + 1}"${i + 1 === n ? " selected" : ""}>${esc(c.title)}</option>`).join("")}</select>
-    ${n < list.length ? `<a data-k="${n + 1}" href="${where(n + 1)}" title="${esc(list[n].title)}">下一回 ›</a>` : '<span class="off">下一回 ›</span>'}</span>
-    <span class="see">${esc(cur.see)}</span>`;
+  bar.innerHTML = `<a class="home" href="${root}/">${W.home}</a>
+    <span class="nav">${n > 1 ? `<a data-k="${n - 1}" href="${where(n - 1)}" title="${esc(list[n - 2].title)}">${W.prev}</a>` : `<span class="off">${W.prev}</span>`}
+    <select aria-label="${W.pick}">${list.map((c, i) => `<option value="${i + 1}"${i + 1 === n ? " selected" : ""}>${esc(c.title)}</option>`).join("")}</select>
+    ${n < list.length ? `<a data-k="${n + 1}" href="${where(n + 1)}" title="${esc(list[n].title)}">${W.next}</a>` : `<span class="off">${W.next}</span>`}</span>
+    <span class="see">${esc(cur.see)}</span>
+    <a class="lang" data-lang="1" href="${where(n).replace(root, otherRoot)}">${W.other}</a>`;
   // 选中项可能在打开后变了（地址栏 #），点的时候再算去处
-  bar.addEventListener("click", (e) => { const a = e.target.closest("a[data-k]"); if (a) a.href = where(+a.dataset.k); });
+  bar.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-k]");
+    if (a) a.href = where(+a.dataset.k);
+    const l = e.target.closest("a[data-lang]");
+    if (l) l.href = where(n).replace(root, otherRoot);
+  });
   bar.querySelector("select").addEventListener("change", (e) => { location.href = where(+e.target.value); });
   const style = document.createElement("style");
   style.textContent = `.demobar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 16px;background:#7a1f1f;color:#fbefe6;font-size:13px;line-height:1.5}

@@ -1,0 +1,12 @@
+{
+  "note": "演示案例「万历新政」的班子：部院是剧中身份，括号里是现实中扮演它的应用。全部是虚拟数据，演示不真实派活。",
+  "owner": {"duty": "皇帝：定国是，朱笔批红，裁决廷议。", "wake": "奏本递到御前（看板「待批红」）。"},
+  "lead": {"name": "内阁", "app": "Claude Desktop", "duty": "首辅票拟：拆解国事、调度部院、整合奏疏。"},
+  "members": [
+    {"name": "工部", "dispatch_name": "工部", "aliases": ["工部"], "app": "Codex", "usual_seat": "执行", "model": "gpt-6.1-sol", "tier": "A", "cost": "高", "strengths": "河工、营造等工程方案和施工", "weaknesses": "钱粮核算", "available": "✓", "duty": "治河、营造", "parser": "codex", "start_command": ["true"]},
+    {"name": "户部", "dispatch_name": "户部", "aliases": ["户部"], "app": "DeepSeek", "usual_seat": "执行", "model": "deepseek-v4", "tier": "B", "cost": "低", "strengths": "钱粮、清丈、批量核算", "weaknesses": "疑难工程", "available": "✓", "duty": "钱粮、田赋、清丈", "parser": "dsh", "start_command": ["true"]},
+    {"name": "兵部", "dispatch_name": "兵部", "aliases": ["兵部"], "app": "Codex（另一型号）", "usual_seat": "执行", "model": "gpt-6-astra", "tier": "A", "cost": "中", "strengths": "边务、谈判章程", "weaknesses": "—", "available": "✓", "duty": "边务、互市", "parser": "codex", "start_command": ["true"]},
+    {"name": "都察院", "dispatch_name": "都察院", "aliases": ["都察院", "科道"], "app": "Claude 命令行", "usual_seat": "验收", "model": "claude-opus", "tier": "A", "cost": "高", "strengths": "核验、封驳、找漏洞", "weaknesses": "—", "available": "✓", "duty": "巡按核验、给事中封驳", "parser": "claude", "start_command": ["true"]},
+    {"name": "翰林院", "dispatch_name": "翰林院", "aliases": ["翰林院"], "app": "Claude 命令行", "usual_seat": "执行", "model": "claude-sonnet", "tier": "B", "cost": "中", "strengths": "拟诏、文书", "weaknesses": "—", "available": "✓", "duty": "拟诏、起草文书", "parser": "claude", "start_command": ["true"]}
+  ]
+}

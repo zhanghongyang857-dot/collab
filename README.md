@@ -2,6 +2,8 @@
 
 # 批红（collab）
 
+**中文** · [English](README.en.md)
+
 **AI 票拟，你来批红。**
 
 把 Claude、Codex、DeepSeek 组织成一个小班子，替你推进持续几周的真实项目。<br>
@@ -175,14 +177,14 @@ python3 demo/build.py
 python3 src/board/server.py --port 3101 --project demo/万历新政
 ```
 
-打开 http://127.0.0.1:3101 ，看板可以真的批红、在朝会里发言。
+打开 http://127.0.0.1:3101 ，看板可以真的批红、在朝会里发言。英文版演示：`python3 demo/build.py --lang en`，再把 `--project` 换成 `demo/wanli-reforms`。
 
 **用到自己的项目（核心三步）：**
 
 ```bash
 src/core/publish.sh ~/批红/系统                  # 1. 把工具包发布成一份独立拷贝
 bash ~/批红/系统/board/service.sh install        # 2. 看板开机常驻（端口 3100）
-cd <项目目录> && ~/批红/系统/core/init.sh new     # 3. 给项目装上工作台（AGENTS.md + collab/）
+cd <项目目录> && ~/批红/系统/core/init.sh new --lang zh   # 3. 给项目装上中文工作台（AGENTS.md + collab/）
 ```
 
 项目会自动登记到看板，http://127.0.0.1:3100 首页列出所有项目。然后让总管按 `collab/PROGRESS.md` 立第一个目标。NOW 总看板、派活和班子配置等，详见 [src/README.md](src/README.md)「快速开始」。
@@ -217,6 +219,11 @@ demo/     演示「万历新政」：剧本、生成脚本、静态站生成
 多智能体框架在代码里编排几个 agent 互相对话；批红不写 agent、不编排对话，它管的是项目账本、流程、批准和验收，agent 用你已有的命令行工具。
 </details>
 
+<details><summary><b>支持哪些语言？</b></summary>
+
+中文和英文。给项目装工作台时选（`--lang zh` 或 `--lang en`），规则、模板和提示都跟着走；已有项目用 `init.sh lang zh|en` 切换。两种语言底层的文件名和编号都是英文。看板顶上有 中 / EN 切换。
+</details>
+
 <details><summary><b>支持哪些系统？</b></summary>
 
 目前只在 macOS 上用过；需要 Python 3（只用标准库）和 git。
@@ -236,4 +243,4 @@ demo/     演示「万历新政」：剧本、生成脚本、静态站生成
 
 ## 状态和许可
 
-早期版本：接口和文件格式还会变；文档目前只有中文；统一的 `collab` 命令还在做。[MIT](LICENSE) 许可。
+早期版本：接口和文件格式还会变；统一的 `collab` 命令还在做。文档有中文和英文。[MIT](LICENSE) 许可。

@@ -276,6 +276,8 @@ table.runs tr.dayrow span { font-size: 12px; color: var(--ink-3); }
 .seq .fold { cursor: pointer; }
 .seq .fold rect { fill: var(--green-soft); stroke: color-mix(in srgb, var(--green) 45%, var(--card)); }
 .seq .fold text { font-size: 11.5px; fill: var(--green); dominant-baseline: central; }
+.seq .shfold { cursor: pointer; }
+.seq .shfold:hover .shm { fill: var(--green); }
 .seqlegend { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 8px 0 2px; font-size: 12px; }
 .seqlegend .lg { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 10px; border: .5px solid var(--line); }
 .seqlegend .lg.on { border-color: var(--accent); background: var(--accent-soft); }
@@ -304,6 +306,11 @@ table.runs tr.dayrow span { font-size: 12px; color: var(--ink-3); }
 /* 班子页（/team）成员卡、人才市场（/talent）身份卡 */
 .toplink { font-size: 13px; color: var(--ink-2); text-decoration: none; margin-left: 12px; }
 .toplink:hover { color: var(--accent); }
+/* 中 / EN 切换（i18n.js 加在页头末尾） */
+.langsw { margin-left: 14px; font-size: 12px; color: var(--ink-3, #999); white-space: nowrap; }
+.langsw button { border: 0; background: none; padding: 2px 4px; font: inherit; color: var(--ink-2); cursor: pointer; border-radius: 4px; }
+.langsw button.on { color: var(--accent); font-weight: 600; }
+.langsw button:hover { background: var(--line, #eee); }
 .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 .mcard, .tcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--card); }
 .mcard:target { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
@@ -524,13 +531,13 @@ button.act:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 朝会页：运行状态、正在写的内容 */
 .st { font-size: 10.5px; padding: 0 7px; border-radius: 8px; background: #EEE; color: #555; }
-.st-启动中 { background: #EEF1F6; color: #51607A; }
-.st-思考 { background: #EAF1FB; color: #2F6FB3; }
-.st-调用工具 { background: #FFF1D6; color: #8A6100; }
-.st-正在写回复 { background: #E3F4EC; color: #1D7A5C; }
-.st-疑似卡住 { background: #FBE6E0; color: #A5361F; font-weight: 600; }
-.st-失败 { background: #FBE6E0; color: #A5361F; }
-.st-已停止 { background: #EEE; color: #666; }
+.st-starting { background: #EEF1F6; color: #51607A; }
+.st-thinking { background: #EAF1FB; color: #2F6FB3; }
+.st-tool { background: #FFF1D6; color: #8A6100; }
+.st-writing { background: #E3F4EC; color: #1D7A5C; }
+.st-stalled { background: #FBE6E0; color: #A5361F; font-weight: 600; }
+.st-failed { background: #FBE6E0; color: #A5361F; }
+.st-stopped { background: #EEE; color: #666; }
 .bub.draft { opacity: .85; border-style: dashed; white-space: normal; word-break: break-word; }
 .caret { display: inline-block; width: 7px; height: 14px; margin-left: 2px; vertical-align: text-bottom; background: currentColor; animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }

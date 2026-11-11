@@ -23,12 +23,12 @@ class TestParsers(unittest.TestCase):
             out = {}
             dispatch.parse_claude(ev, out)
             return out
-        self.assertEqual(parse({"type": "stream_event", "event": {"type": "message_start"}}), {"phase": "思考", "draft_reset": True})
-        self.assertEqual(parse({"type": "stream_event", "event": {"type": "content_block_start", "content_block": {"type": "text"}}})["phase"], "正在写回复")
+        self.assertEqual(parse({"type": "stream_event", "event": {"type": "message_start"}}), {"phase": "thinking", "draft_reset": True})
+        self.assertEqual(parse({"type": "stream_event", "event": {"type": "content_block_start", "content_block": {"type": "text"}}})["phase"], "writing")
         o = parse({"type": "stream_event", "event": {"type": "content_block_start", "content_block": {"type": "tool_use", "name": "Bash"}}})
-        self.assertEqual((o["phase"], o["action"]), ("调用工具", "Bash"))
+        self.assertEqual((o["phase"], o["action"]), ("tool", "Bash"))
         self.assertEqual(parse({"type": "stream_event", "event": {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "你好"}}}), {"draft_add": "你好"})
-        self.assertEqual(parse({"type": "user"})["phase"], "思考")
+        self.assertEqual(parse({"type": "user"})["phase"], "thinking")
 
     def test_live_usage_dedupes_by_message(self):
         acc = {}
@@ -49,27 +49,27 @@ class TestParsers(unittest.TestCase):
         import server
         now = time.time()
         iso = lambda ago: __import__("datetime").datetime.fromtimestamp(now - ago).astimezone().isoformat(timespec="seconds")
-        run = {"status": "运行中", "started": iso(30), "last_at": iso(2)}
-        self.assertEqual(server.run_state({"status": "运行中", "started": iso(3)}), "启动中")
-        for ph in ("思考", "调用工具", "正在写回复"):
+        run = {"status": "running", "started": iso(30), "last_at": iso(2)}
+        self.assertEqual(server.run_state({"status": "running", "started": iso(3)}), "starting")
+        for ph in ("thinking", "tool", "writing"):
             self.assertEqual(server.run_state({**run, "phase": ph}), ph)
-        self.assertEqual(server.run_state({**run, "phase": "思考", "last_at": iso(server.STALL_SECONDS + 20)}), "疑似卡住")
-        self.assertEqual(server.run_state({"status": "失败"}), "失败")
-        self.assertEqual(server.run_state({"status": "异常结束"}), "失败")
-        self.assertEqual(server.run_state({"status": "已中断"}), "已停止")
-        self.assertEqual(server.run_state({"status": "完成"}), "完成")
+        self.assertEqual(server.run_state({**run, "phase": "thinking", "last_at": iso(server.STALL_SECONDS + 20)}), "stalled")
+        self.assertEqual(server.run_state({"status": "failed"}), "failed")
+        self.assertEqual(server.run_state({"status": "lost"}), "failed")
+        self.assertEqual(server.run_state({"status": "stopped"}), "stopped")
+        self.assertEqual(server.run_state({"status": "done"}), "done")
 
 
 class Ctl(Room):
     def team(self, **top):
-        p = self.root / "team" / "班子.json"
+        p = self.root / "team" / "team.json"
         d = json.loads(p.read_text(encoding="utf-8"))
         d.update(top)
         p.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
 
     def start(self):
         i = meeting(self.sim)
-        self.sim.log(i, "开始", "总裁", 写入者="看板")
+        self.sim.log(i, "开始", "总裁", 写入者="board")
         os.environ.pop("FLOW_NOW", None)
         return i
 
@@ -91,7 +91,7 @@ class Ctl(Room):
         self.fail("等待超时")
 
     def running(self):
-        return [r for r in self.runs() if r["status"] == "运行中" and r.get("pid") and r.get("steps") is not None and r.get("last_at")]
+        return [r for r in self.runs() if r["status"] == "running" and r.get("pid") and r.get("steps") is not None and r.get("last_at")]
 
 
 class TestLive(Ctl):
@@ -99,22 +99,22 @@ class TestLive(Ctl):
         i = self.start()
         self.ask(i, "写一段 [[工具 2]] [[慢]]")
         p = self.spawn(i)
-        run = self.wait(lambda: next((r for r in self.runs() if r["status"] == "运行中" and r.get("phase") == "调用工具"), None))
+        run = self.wait(lambda: next((r for r in self.runs() if r["status"] == "running" and r.get("phase") == "tool"), None))
         self.assertTrue(run["last_action"])
         draft = self.runs_dir / f"{run['run']}.draft.txt"
         got = self.wait(lambda: draft.exists() and draft.read_text(encoding="utf-8") if draft.exists() and draft.read_text(encoding="utf-8") else None)
         self.assertIn("先写", got)
         import server
-        v = server.run_view(next(r for r in self.runs() if r["status"] == "运行中"), self.root / "p")
-        self.assertEqual(v["state"], "正在写回复")
+        v = server.run_view(next(r for r in self.runs() if r["status"] == "running"), self.root / "p")
+        self.assertEqual(v["state"], "writing")
         self.assertIn("先写", v["draft"])
         self.assertIsNotNone(v["elapsed"])
         p.wait(timeout=30)
         done = self.runs("codex")[-1]
-        self.assertEqual((done["status"], done["steps"]), ("完成", 2))
+        self.assertEqual((done["status"], done["steps"]), ("done", 2))
         self.assertFalse(draft.exists(), "结束后草稿换成正式发言")
         self.assertTrue(done["tokens"]["total"] > 0)
-        self.assertEqual(done["phase"], "完成")
+        self.assertEqual(done["phase"], "done")
 
 
 class TestStopAndWrap(Ctl):
@@ -122,30 +122,30 @@ class TestStopAndWrap(Ctl):
         i = self.start()
         self.ask(i, "想一想 [[卡]]")
         p = self.spawn(i)
-        run = self.wait(lambda: next((r for r in self.runs() if r["status"] == "运行中" and r.get("session")), None))
+        run = self.wait(lambda: next((r for r in self.runs() if r["status"] == "running" and r.get("session")), None))
         r = self.dispatch("stop-member", i, "codex")
         self.assertIn("已停止", r.stdout)
         p.wait(timeout=20)
         stopped = self.runs("codex")[-1]
-        self.assertEqual(stopped["status"], "已中断")
-        self.assertEqual([m for m in self.msgs(i) if m["发起"] == "codex"], [], "停止的运行不写发言")
+        self.assertEqual(stopped["status"], "stopped")
+        self.assertEqual([m for m in self.msgs(i) if m["from"] == "codex"], [], "停止的运行不写发言")
         r = self.dispatch("wrap", i, "codex", "--reason", "总裁点了收尾")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         wrapped = self.runs("codex")[-1]
-        self.assertEqual((wrapped["status"], wrapped["mode"], wrapped["session"]), ("完成", "续接", run["session"]))
+        self.assertEqual((wrapped["status"], wrapped["mode"], wrapped["session"]), ("done", "resume", run["session"]))
         self.assertIn("不要再调用任何工具", wrapped["prompt"])
-        self.assertEqual([m["正文"] for m in self.msgs(i) if m["发起"] == "codex"], ["收尾：codex 用已有内容发言"])
+        self.assertEqual([m["body"] for m in self.msgs(i) if m["from"] == "codex"], ["收尾：codex 用已有内容发言"])
 
     def test_wrap_while_running_stops_first(self):
         i = self.start()
         self.ask(i, "想一想 [[卡]]")
         p = self.spawn(i)
-        self.wait(lambda: next((r for r in self.runs() if r["status"] == "运行中" and r.get("session")), None))
+        self.wait(lambda: next((r for r in self.runs() if r["status"] == "running" and r.get("session")), None))
         r = self.dispatch("wrap", i, "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         p.wait(timeout=20)
-        self.assertEqual([x["status"] for x in self.runs("codex")], ["已中断", "完成"])
-        self.assertEqual(len([m for m in self.msgs(i) if m["发起"] == "codex"]), 1)
+        self.assertEqual([x["status"] for x in self.runs("codex")], ["stopped", "done"])
+        self.assertEqual(len([m for m in self.msgs(i) if m["from"] == "codex"]), 1)
 
 
 class TestLimits(Ctl):
@@ -156,15 +156,15 @@ class TestLimits(Ctl):
         r = self.dispatch("meet", i, "--wake", "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         rs = self.runs("codex")
-        self.assertEqual([x["status"] for x in rs], ["已中断", "完成"], [x.get("error") for x in rs])
+        self.assertEqual([x["status"] for x in rs], ["stopped", "done"], [x.get("error") for x in rs])
         self.assertIn("步数 2", rs[0]["stop_reason"])
         self.assertLessEqual(rs[0]["steps"], 2)
-        self.assertEqual((rs[1]["mode"], rs[1]["session"]), ("续接", rs[0]["session"]))
-        self.assertIn("上限", rs[1]["收尾"])
-        notes = [e.get("说明", "") for e in state(self.sim, i)["事件"] if e["边"] == "进展"]
+        self.assertEqual((rs[1]["mode"], rs[1]["session"]), ("resume", rs[0]["session"]))
+        self.assertIn("上限", rs[1]["wrap"])
+        notes = [e.get("note", "") for e in state(self.sim, i)["events"] if e["edge"] == "progress"]
         self.assertTrue(any("步数 2" in n and "收尾" in n for n in notes), notes)
-        self.assertEqual([m["正文"] for m in self.msgs(i) if m["发起"] == "codex"], ["收尾：codex 用已有内容发言"])
-        self.assertIn("读到", rs[1])
+        self.assertEqual([m["body"] for m in self.msgs(i) if m["from"] == "codex"], ["收尾：codex 用已有内容发言"])
+        self.assertIn("read_upto", rs[1])
 
     def test_time_limit(self):
         self.team(**{"朝会运行上限": {"步数": 0, "分钟": 0.03}})
@@ -176,19 +176,19 @@ class TestLimits(Ctl):
         self.assertLess(time.time() - t, 30)
         rs = self.runs("codex")
         self.assertIn("时间", rs[0]["stop_reason"])
-        self.assertEqual(rs[1]["status"], "完成")
+        self.assertEqual(rs[1]["status"], "done")
 
     def test_member_override_and_default(self):
         self.assertEqual(dispatch.run_limits("codex") if False else {"步数": 40, "秒数": 600}, {"步数": 40, "秒数": 600})
         self.team(**{"朝会运行上限": {"步数": 10, "分钟": 5}})
-        m = json.loads((self.root / "team" / "班子.json").read_text(encoding="utf-8"))
+        m = json.loads((self.root / "team" / "team.json").read_text(encoding="utf-8"))
         m["成员"][0]["运行上限"] = {"步数": 3}
-        (self.root / "team" / "班子.json").write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
+        (self.root / "team" / "team.json").write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
         old = dispatch.TEAM_FILE
-        dispatch.TEAM_FILE = self.root / "team" / "班子.json"
+        dispatch.TEAM_FILE = self.root / "team" / "team.json"
         self.addCleanup(setattr, dispatch, "TEAM_FILE", old)
-        self.assertEqual(dispatch.run_limits("codex"), {"步数": 3, "秒数": 300})
-        self.assertEqual(dispatch.run_limits("deepseek"), {"步数": 10, "秒数": 300})
+        self.assertEqual(dispatch.run_limits("codex"), {"steps": 3, "seconds": 300})
+        self.assertEqual(dispatch.run_limits("deepseek"), {"steps": 10, "seconds": 300})
 
 
 if __name__ == "__main__":

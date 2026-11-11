@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把 安排.md 里日期早于今天的行移到 归档/YYYY-MM.md（按月一个文件，表格格式与 安排.md 相同）。
+"""把 schedule.md 里日期早于今天的行移到 archive/YYYY-MM.md（按月一个文件，表格格式与 schedule.md 相同）。
 
 用法：python3 archive.py --now-dir <NOW 目录>   （也可用环境变量 NOW_DATA_DIR；都没有时与本脚本同目录）
       加 --dry-run 只列出要移的行，不改文件
@@ -11,6 +11,10 @@ import os
 import re
 import sys
 from pathlib import Path
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[2] / "core"))
+import paths as P  # noqa: E402  数据文件名
 
 HEAD = "| 日期 | 时段 | 事项 | 任务 |"
 SEP = "|---|---|---|---|"
@@ -41,7 +45,7 @@ def row_date(line, today):
 
 def main():
     here = _data_dir()
-    plan = here / "安排.md"
+    plan = here / P.SCHEDULE
     if not plan.exists():
         sys.exit(f"未找到 {plan}")
     today = dt.date.today()
@@ -62,7 +66,7 @@ def main():
         return
 
     for month, rows in sorted(moved.items()):
-        f = here / "归档" / f"{month}.md"
+        f = here / P.ARCHIVE / f"{month}.md"
         old = f.read_text(encoding="utf-8").splitlines() if f.exists() else []
         have = [(row_date(l, today), l.strip()) for l in old if l.lstrip().startswith("|") and row_date(l, today)]
         seen = {l for _, l in have}
@@ -72,7 +76,7 @@ def main():
             continue
         allrows = sorted(have + new, key=lambda x: x[0])  # 稳定排序：同一天保持原顺序
         f.parent.mkdir(exist_ok=True)
-        f.write_text(f"# 安排归档 {month}\n[← 安排](../安排.md)\n\n{HEAD}\n{SEP}\n"
+        f.write_text(f"# 安排归档 {month}\n[← 安排](../schedule.md)\n\n{HEAD}\n{SEP}\n"
                      + "\n".join(l for _, l in allrows) + "\n", encoding="utf-8")
     if not dry:
         plan.write_text("\n".join(keep) + "\n", encoding="utf-8")

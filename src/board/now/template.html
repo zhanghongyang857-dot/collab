@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NOW 看板</title>
+<title>NOW</title>
 <style>
 :root {
   --bg: #f6f5f2;
@@ -214,7 +214,11 @@ footer a { color: var(--ink-3); text-decoration: underline; text-decoration-colo
 </div>
 
 <script>
+/*I18N_JS*/
+</script>
+<script>
 const DATA = /*DATA*/null;
+const T = (k, v) => window.t(k, v);  // 界面文字（i18n.js，语言包随页面一起写出）
 
 const CAT = DATA.catNames;
 const YEAR = Number(DATA.built.slice(0, 4));
@@ -223,14 +227,14 @@ const pad = (n) => String(n).padStart(2, "0");
 const mins = (hm) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
 const md = (s) => { const [m, d] = s.split("-").map(Number); return new Date(YEAR, m - 1, d); };
 const dayKey = (d) => `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const fmtDur = (m) => m >= 60 ? `${Math.floor(m / 60)} 小时${m % 60 ? ` ${m % 60} 分` : ""}` : `${m} 分钟`;
-const WD = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const fmtDur = (m) => m >= 60 ? (m % 60 ? T("now.dur.hm", {h: Math.floor(m / 60), m: m % 60}) : T("now.dur.h", {h: Math.floor(m / 60)})) : T("now.dur.m", {m});
+const WD = [0, 1, 2, 3, 4, 5, 6].map((i) => T("now.wd." + i));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // 模块用 NOW.register(id, {tabs: {标签页 id: (el, ctx) => …}, slots: {挂点: (ctx) => HTML}}) 登记自己的渲染；
 // 挂点：header（标题上方一行文字）、status（时钟下一行文字）、today.side、today.top、tasks.below（「任务」页里任务下面）
 const NOW = {
-  util: { CAT, YEAR, $, pad, mins, md, dayKey, fmtDur, WD, esc },
+  util: { CAT, YEAR, $, pad, mins, md, dayKey, fmtDur, WD, esc, T },
   defs: {}, errors: {},
   register(id, def) { this.defs[id] = def; },
   fail(id, e) { this.errors[id] = String((e && e.message) || e); },
@@ -241,11 +245,12 @@ const NOW = {
 </script>
 <script>
 const MODS = DATA.modules;
-const errCard = (name, msg) => `<section class="card"><div class="mod-err"><b>模块「${esc(name)}」出错</b>${esc(msg)}</div></section>`;
+const errCard = (name, msg) => `<section class="card"><div class="mod-err"><b>${esc(T("now.mod_err", {name}))}</b>${esc(msg)}</div></section>`;
 // 标签页：主板块是核心的「任务」加内嵌模块（按 config.json 的 modules 顺序，tab_order 可再调），扩展板块是链接标签，排在最后
-const MOD_TABS = MODS.flatMap(m => m.tabs.map(t => ({ ...t, mod: m })));
+const tabTitle = (t) => { const k = "now.tab." + t.id, s = T(k); return s === k ? t.title : s; };  // 模块标签名：语言包里有就按语言显示
+const MOD_TABS = MODS.flatMap(m => m.tabs.map(t => ({ ...t, label: tabTitle(t), mod: m })));
 // 主板块的先后由 build.py 算好放在 DATA.tabOrder；没有时按 modules 顺序
-const INNER_TABS = [{ id: "tasks", title: "任务" }, ...MOD_TABS.filter(t => !t.url)];
+const INNER_TABS = [{ id: "tasks", title: "任务", label: T("now.tab.tasks") }, ...MOD_TABS.filter(t => !t.url)];
 const TAB_SEQ = DATA.tabOrder || INNER_TABS.map(t => t.id);
 const TABS = [...TAB_SEQ.map(id => INNER_TABS.find(t => t.id === id)).filter(Boolean), ...MOD_TABS.filter(t => t.url)];
 // 带 url 的是链接标签：只在标签栏放一个跳转按钮，没有面板，也不渲染
@@ -268,7 +273,7 @@ function renderModuleTab(t, el, now) {
   const m = t.mod, err = m.error || NOW.errors[m.id];
   if (err) { el.innerHTML = errCard(m.name, err); return; }
   const fn = NOW.defs[m.id]?.tabs?.[t.id];
-  if (!fn) { el.innerHTML = errCard(m.name, `没有登记标签页 ${t.id} 的渲染`); return; }
+  if (!fn) { el.innerHTML = errCard(m.name, T("now.no_tab_renderer", {id: t.id})); return; }
   try { fn(el, makeCtx(now, m)); } catch (e) { console.error(m.id, e); el.innerHTML = errCard(m.name, String(e.message || e)); }
 }
 
@@ -278,7 +283,7 @@ function render() {
 
   // 顶部：日期和时钟是核心的；上方一行和时钟下一行由模块挂点提供
   $("eyebrow").innerHTML = slot("header", now);
-  $("title").textContent = `${now.getMonth() + 1} 月 ${now.getDate()} 日 ${WD[now.getDay()]}`;
+  $("title").textContent = T("now.title_date", {m: now.getMonth() + 1, d: now.getDate(), wd: WD[now.getDay()], mon: T("now.mon." + now.getMonth())});
   $("clock").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   $("status").innerHTML = slot("status", now);
 
@@ -289,22 +294,22 @@ function render() {
   const daysAgo = s => s ? Math.round((today0 - new Date(s + "T00:00:00")) / 864e5) : null;
   const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const days14 = [...Array(14)].map((_, i) => new Date(today0.getTime() - (13 - i) * 864e5));
-  const actCells = t => `<div class="act" title="近 14 天日志（深色 = 3 条以上）">` + days14.map((d, i) => {
+  const actCells = t => `<div class="act" title="${esc(T("now.act_title"))}">` + days14.map((d, i) => {
     const n = (t.activity || {})[iso(d)] || 0;
-    return `<i class="${n >= 3 ? "l2" : n ? "l1" : ""} ${i === 13 ? "today" : ""}" title="${iso(d).slice(5)}：${n ? n + " 条日志" : "无日志"}"></i>`;
+    return `<i class="${n >= 3 ? "l2" : n ? "l1" : ""} ${i === 13 ? "today" : ""}" title="${iso(d).slice(5)}${T("sep.colon")}${esc(n ? T("now.logs_n", {n}) : T("now.no_log"))}"></i>`;
   }).join("") + `</div>`;
   const trow = (t, no) => {
-    if (t.missing) return `<div class="trow" style="--c:var(--${t.cat})"><div><span class="tno num">${no}</span><span class="tn">${t.name}</span><div class="tx warn">找不到 PROGRESS.md，检查 NOW.md 中的链接</div></div></div>`;
+    if (t.missing) return `<div class="trow" style="--c:var(--${t.cat})"><div><span class="tno num">${no}</span><span class="tn">${t.name}</span><div class="tx warn">${esc(T("now.missing_progress"))}</div></div></div>`;
     const ago = daysAgo(t.last);
-    const fresh = ago === null ? "无日志" : ago <= 0 ? "今天" : `${ago} 天前`;
-    const tip = [t.next ? `下一步：${t.next.replace(/<[^>]+>/g, "")}` : "", t["截止"] ? `截止：${t["截止"]}` : ""].filter(Boolean).join("\n");
-    return `<div class="trow ${t.state === "暂停" ? "paused" : ""}" style="--c:var(--${t.cat})" title="${tip.replace(/"/g, "&quot;")}">
-      <div><span class="tno num">${no}</span><a class="tn" href="${t.href}">${t.name}</a>${t.level ? `<span class="lv">${t.level}</span>` : ""}${t.state && t.state !== "进行中" ? ` <span class="pill" style="--c:var(--other)">${t.state}</span>` : ""}${t.blockers ? ` <span class="warn" style="font-size:12px">卡点 ${t.blockers}</span>` : ""}</div>
+    const fresh = ago === null ? T("now.no_log") : ago <= 0 ? T("board.today") : T("now.days_ago", {n: ago});
+    const tip = [t.next ? T("now.tip_next", {s: t.next.replace(/<[^>]+>/g, "")}) : "", t.due ? T("now.tip_due", {s: t.due}) : ""].filter(Boolean).join("\n");
+    return `<div class="trow ${t.state === "paused" ? "paused" : ""}" style="--c:var(--${t.cat})" title="${tip.replace(/"/g, "&quot;")}">
+      <div><span class="tno num">${no}</span><a class="tn" href="${t.href}">${t.name}</a>${t.level ? `<span class="lv">${t.level}</span>` : ""}${t.state && t.state !== "active" ? ` <span class="pill" style="--c:var(--other)">${esc(I18n.name("state", t.state))}</span>` : ""}${t.blockers ? ` <span class="warn" style="font-size:12px">${esc(T("now.blockers_n", {n: t.blockers}))}</span>` : ""}</div>
       ${actCells(t)}
       <div class="fresh ${ago !== null && ago >= 4 ? "warn" : ""}">${fresh}</div>
     </div>`;
   };
-  const order = t => (t.state === "暂停") - 0;
+  const order = t => (t.state === "paused") - 0;
   const used = new Set();
   const lanes = N.dirs.map(d => {
     const ts = N.tasks.filter(t => d.cat !== "other" && t.cat === d.cat).sort((a, b) => order(a) - order(b));
@@ -312,30 +317,30 @@ function render() {
     return { ...d, ts };
   });
   const rest = N.tasks.filter(t => !used.has(t));
-  if (rest.length) lanes.push({ name: "其他", cat: "other", share: "", goal: "", milestones: "", ts: rest });
+  if (rest.length) lanes.push({ name: CAT.other, cat: "other", share: "", goal: "", milestones: "", ts: rest });
 
   const plain = h => (h || "").replace(/<[^>]+>/g, "").replace(/"/g, "&quot;");
-  const laneTip = l => [l.goal ? plain(l.goal) : "", l.milestones ? `关键节点：${plain(l.milestones)}` : ""].filter(Boolean).join("\n");
-  const active = N.tasks.filter(t => t.state !== "暂停").length;
-  let th = `<div class="card-head"><h2>${N.dirTitle || "方向与任务"} <span style="font-weight:400;color:var(--ink-3);font-size:14px">${active} 个进行中</span></h2><span class="meta"><a href="${DATA.sources.now}">NOW.md</a> · 详情以各 PROGRESS.md 为准</span></div>`;
+  const laneTip = l => [l.goal ? plain(l.goal) : "", l.milestones ? T("now.tip_milestones", {s: plain(l.milestones)}) : ""].filter(Boolean).join("\n");
+  const active = N.tasks.filter(t => t.state !== "paused").length;
+  let th = `<div class="card-head"><h2>${N.dirTitle || esc(T("now.dirs_title"))} <span style="font-weight:400;color:var(--ink-3);font-size:14px">${esc(T("now.active_n", {n: active}))}</span></h2><span class="meta"><a href="${DATA.sources.now}">NOW.md</a> · ${esc(T("now.see_progress"))}</span></div>`;
   th += lanes.map(l => `<div class="lane" style="--c:var(--${l.cat})">
     <div class="lane-head" title="${laneTip(l)}"><div class="ln">${l.name}${l.share ? `<small>${l.share}</small>` : ""}</div>
       ${l.goal ? `<div class="lg">${l.goal}</div>` : ""}</div>
-    <div>${l.ts.length ? l.ts.map((t, i) => trow(t, i + 1)).join("") : `<div class="lane-empty ${l.cat === "other" ? "quiet" : ""}">${l.cat === "other" ? "不挂任务" : "没有进行中的任务"}</div>`}</div>
+    <div>${l.ts.length ? l.ts.map((t, i) => trow(t, i + 1)).join("") : `<div class="lane-empty ${l.cat === "other" ? "quiet" : ""}">${esc(T(l.cat === "other" ? "now.lane_none" : "now.lane_empty"))}</div>`}</div>
   </div>`).join("");
 
   // 已完成
   const D = DATA.done;
-  let doh = `<div class="card-head"><h2>最近完成</h2><span class="meta">共 ${D.total} 条 · <a href="${DATA.sources.done}">已完成.md</a></span></div>`;
-  doh += D.items.length ? D.items.map(x => `<div class="done-row"><span class="dd num">${x.date}</span>${x.href ? `<a href="${x.href}">${x.name}</a>` : x.name}<div class="dr">${x.result}</div></div>`).join("") : `<div class="empty">还没有完成的任务</div>`;
+  let doh = `<div class="card-head"><h2>${esc(T("now.recent_done"))}</h2><span class="meta">${esc(T("now.total_n", {n: D.total}))} · <a href="${DATA.sources.done}">done.md</a></span></div>`;
+  doh += D.items.length ? D.items.map(x => `<div class="done-row"><span class="dd num">${x.date}</span>${x.href ? `<a href="${x.href}">${x.name}</a>` : x.name}<div class="dr">${x.result}</div></div>`).join("") : `<div class="empty">${esc(T("now.none_done"))}</div>`;
 
   $("pane-tasks").innerHTML = `<section class="card">${th}</section>${slot("tasks.below", now)}<section class="card" style="margin-top:20px">${doh}</section>`;
   const cnt = document.querySelector('.tabs button[data-tab="tasks"] .cnt');
   if (cnt) cnt.textContent = active || "";
 
-  $("howto").innerHTML = `改内容：编辑 Markdown 后运行 <code>${DATA.buildCmd}</code>`;
-  $("built").innerHTML = `生成于 ${DATA.built} · <a href="${DATA.sources.now}">NOW.md</a>`;
-  $("notes").textContent = DATA.notes.join("；");
+  $("howto").innerHTML = `${esc(T("now.howto"))} <code>${DATA.buildCmd}</code>`;
+  $("built").innerHTML = `${esc(T("now.built", {t: DATA.built}))} · <a href="${DATA.sources.now}">NOW.md</a>`;
+  $("notes").textContent = DATA.notes.join(T("sep.clause"));
 }
 
 // 标签栏和各页的容器
@@ -345,8 +350,8 @@ const SHOWN_PANES = SHOWN.filter(t => !t.url);  // 能切换到的标签，至�
 // 默认打开的标签：有内嵌模块时打开第一个模块标签，「任务」排在最前也不改变这一点
 const DEFAULT_TAB = (SHOWN_PANES.find(t => t.id !== "tasks") || SHOWN_PANES[0]).id;
 $("tabs").innerHTML = SHOWN.map((t, i) => t.url
-  ? `${i && !SHOWN[i - 1].url ? `<span class="tab-sep" aria-hidden="true"></span>` : ""}<a href="${esc(t.url)}" data-link="${esc(t.id)}">${esc(t.title)}</a>`
-  : `<button role="tab" data-tab="${t.id}" aria-selected="false">${esc(t.title)}${t.id === "tasks" ? `<span class="cnt"></span>` : ""}</button>`).join("");
+  ? `${i && !SHOWN[i - 1].url ? `<span class="tab-sep" aria-hidden="true"></span>` : ""}<a href="${esc(t.url)}" data-link="${esc(t.id)}">${esc(t.label || t.title)}</a>`
+  : `<button role="tab" data-tab="${t.id}" aria-selected="false">${esc(t.label || t.title)}${t.id === "tasks" ? `<span class="cnt"></span>` : ""}</button>`).join("");
 $("panes").innerHTML = PANES.map(t => `<div class="pane" id="pane-${t.id}" hidden></div>`).join("");
 $("tabs").hidden = SHOWN.length < 2;  // 只装核心时只有「任务」，不显示标签栏
 
@@ -365,7 +370,7 @@ let saved = DEFAULT_TAB;
 try { saved = localStorage.getItem("now-tab") || saved; } catch (e) {}
 const tabFromHash = () => {
   const hash = decodeURIComponent(location.hash.slice(1));
-  return PANES.find(t => hash && (t.id === hash || t.title.replace(/\s/g, "") === hash));
+  return PANES.find(t => hash && (t.id === hash || t.title.replace(/\s/g, "") === hash || (t.label || "").replace(/\s/g, "") === hash));
 };
 const fromHash = tabFromHash();
 showTab(fromHash ? fromHash.id : SHOWN_PANES.some(t => t.id === saved) ? saved : DEFAULT_TAB);

@@ -45,8 +45,8 @@ class Base(unittest.TestCase):
         # 样例里的占位符本由 init.sh 填，这里按今天填上
         d0 = dt.date.today()
         d1 = d0 + dt.timedelta(days=14)
-        for f, subs in (("安排.md", {"| MM-DD |": f"| {d0:%m-%d} |"}),
-                        ("截止.md", {"{{示例日期}}": d1.isoformat(), "{{示例周几}}": "周" + "一二三四五六日"[d1.weekday()]})):
+        for f, subs in (("schedule.md", {"| MM-DD |": f"| {d0:%m-%d} |"}),
+                        ("deadlines.md", {"{{示例日期}}": d1.isoformat(), "{{示例周几}}": "周" + "一二三四五六日"[d1.weekday()]})):
             p = self.data / f
             t = p.read_text(encoding="utf-8")
             for k, v in subs.items():
@@ -73,7 +73,7 @@ class Base(unittest.TestCase):
             del os.environ["NOW_DATA_DIR"]
         return mod
 
-    def module(self, mid, meta=None, load="def load(ctx):\n    return {'ok': True}\n", js="", where="模块"):
+    def module(self, mid, meta=None, load="def load(ctx):\n    return {'ok': True}\n", js="", where="modules"):
         d = self.data / where / mid
         d.mkdir(parents=True)
         meta = {"id": mid, "name": mid, "version": 1, "contract": 1, "tabs": [], "slots": [],
@@ -108,7 +108,7 @@ class TestLoader(Base):
 
     def link_module(self, mid, url):
         """只有 module.json 的链接模块。"""
-        d = self.data / "模块" / mid
+        d = self.data / "modules" / mid
         d.mkdir(parents=True)
         (d / "module.json").write_text(json.dumps({"id": mid, "name": mid, "version": 1, "contract": 1,
                                                    "tabs": [{"id": mid, "title": "外部", "url": url}]}), encoding="utf-8")
@@ -264,7 +264,7 @@ class TestLoader(Base):
         mod = self.build()
         _, _, watch = mod.load_modules()
         names = {p.name for p in mod.sources(watch)}
-        self.assertTrue({"安排.md", "本月布局.md", "截止.md", "load.py", "view.js"} <= names)
+        self.assertTrue({"schedule.md", "month.md", "deadlines.md", "load.py", "view.js"} <= names)
 
 
 class TestBuiltinModules(Base):
@@ -304,8 +304,8 @@ class TestBuiltinModules(Base):
         self.assertEqual(self.mods(self.build().collect())["schedule"]["data"]["plan"]["slots"], new)
 
     def test_schedule_without_files(self):
-        (self.data / "安排.md").unlink()
-        (self.data / "本月布局.md").unlink()
+        (self.data / "schedule.md").unlink()
+        (self.data / "month.md").unlink()
         s = self.mods(self.build().collect())["schedule"]
         self.assertEqual(s["error"], "")
         self.assertFalse(s["data"]["plan"]["exists"])

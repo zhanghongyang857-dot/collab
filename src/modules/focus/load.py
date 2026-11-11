@@ -54,7 +54,7 @@ def plans_by_day(items, today, category):
     """{日期: {"rows": {规范化的活动名: {name, cat, catName, min}}, "unquant": 条数}}。不计时、备注、全天行都不算。"""
     days = {}
     for it in items:
-        if it.get("when") == "备注" or it.get("cat") == "rest" or not it.get("task") or not it.get("when"):
+        if it.get("when") == "note" or it.get("cat") == "rest" or not it.get("task") or not it.get("when"):
             continue
         date = resolve_date(it, today)
         if date is None:
@@ -153,6 +153,7 @@ def day_summary(day, plan, segs):
     return {
         "date": day.isoformat(),
         "weekday": "一二三四五六日"[day.weekday()],
+        "weekday_n": (day.weekday() + 1) % 7,  # 0 = 周日，和 JS 的 getDay() 一样；看板按语言显示
         "planMin": plan_total,
         "actualMin": round(actual_total),
         "completion": round(matched / plan_total * 100) if plan_total else None,
@@ -233,18 +234,19 @@ def compute(export, items, cfg, today, now, category):
 def load(ctx):
     cfg = ctx.config
     if not cfg.get("file"):
-        return {"status": "off", "message": "还没有配置：在 config.json 加一节 focus，写明导出文件 file，见模块 README。"}
+        return {"status": "off", "message": "还没有配置：在 config.json 加一节 focus，写明导出文件 file，见模块 README。", "vars": {}}
     path = ctx.path(cfg["file"])
     ctx.watch(path)
     if not path.exists():
-        return {"status": "missing", "message": f"还没有读到导出文件 {path}：确认专注应用已开启导出，并计时一段。"}
+        return {"status": "missing", "message": f"还没有读到导出文件 {path}：确认专注应用已开启导出，并计时一段。", "vars": {"path": str(path)}}
     try:
         export = json.loads(path.read_text(encoding="utf-8"))
     except ValueError as e:
-        return {"status": "bad", "message": f"导出文件读不了：{e}"}
+        return {"status": "bad", "message": f"导出文件读不了：{e}", "vars": {"e": str(e)}}
     if not isinstance(export, dict):
-        return {"status": "bad", "message": "导出文件读不了：内容不是一个 JSON 对象。"}
+        return {"status": "bad", "message": "导出文件读不了：内容不是一个 JSON 对象。", "vars": {"e": "not a JSON object"}}
     if export.get("format") != FORMAT or export.get("version") != VERSION:
-        return {"status": "bad", "message": f"导出文件格式是 {export.get('format')} v{export.get('version')}，本模块只认 {FORMAT} v{VERSION}。"}
+        return {"status": "bad", "message": f"导出文件格式是 {export.get('format')} v{export.get('version')}，本模块只认 {FORMAT} v{VERSION}。",
+                "vars": {"e": f"format {export.get('format')} v{export.get('version')}, expected {FORMAT} v{VERSION}"}}
     plan = ctx.get("plan") or {"items": []}
     return compute(export, plan["items"], cfg, ctx.today, dt.datetime.now(), ctx.category)

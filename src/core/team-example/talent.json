@@ -1,0 +1,47 @@
+{
+ "note": "人才库示例（方案 05，规划中）：按身份记技能和擅长，以及可由哪些命令行成员扮演。看板班子页的「人才」区读 ~/.collab-team/talent.json，没有时显示本示例。身份怎么划分、技能怎么描述，后续再定。",
+ "talent": [
+  {
+   "identity": "执行工程师",
+   "skills": [
+    "写代码",
+    "跑实验",
+    "环境排障"
+   ],
+   "strengths": "按明确步骤把活做完，自测后交付",
+   "played_by": [
+    "Codex Astra",
+    "Codex"
+   ],
+   "status": "示例"
+  },
+  {
+   "identity": "独立审查员",
+   "skills": [
+    "验收",
+    "找漏洞",
+    "核对证据"
+   ],
+   "strengths": "不带总管上下文，开新会话独立确认交付",
+   "played_by": [
+    "Claude 命令行",
+    "Codex"
+   ],
+   "status": "示例"
+  },
+  {
+   "identity": "调研员",
+   "skills": [
+    "检索",
+    "对比",
+    "综合成文"
+   ],
+   "strengths": "多来源调研并写成结论清楚的报告",
+   "played_by": [
+    "DeepSeek",
+    "Codex Astra"
+   ],
+   "status": "示例"
+  }
+ ]
+}

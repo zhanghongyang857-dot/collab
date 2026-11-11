@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INIT = ROOT / "src" / "core" / "init.sh"
-WB = ROOT / "src" / "workbench" / "collab"
+WB = ROOT / "src" / "workbench" / "zh" / "collab"
 MAP = re.compile(r"(?ms)^## 加载地图[ \t]*\n.*?(?=^## |\Z)")
 
 
@@ -24,13 +24,13 @@ class TestProtocol(unittest.TestCase):
 
     def init(self, *args):
         return subprocess.run(["bash", str(INIT), *args], capture_output=True, text=True,
-                              env={"PATH": "/usr/bin:/bin:/usr/local/bin", "HOME": str(self.tmp), "COLLAB_TEAM": str(self.tmp / "无")})
+                              env={"PATH": "/usr/bin:/bin:/usr/local/bin", "HOME": str(self.tmp), "COLLAB_TEAM": str(self.tmp / "无"), "COLLAB_LANG": "zh"})
 
     def age(self):
         """把项目改成落后于工作台的样子，并写入项目自己的内容。"""
-        for tpl in WB.glob("*/_模板.md"):
+        for tpl in WB.glob("*/_template.md"):
             (self.col / tpl.relative_to(WB)).write_text("旧模板\n", encoding="utf-8")
-        p = self.col / "协议.md"
+        p = self.col / "protocol.md"
         p.write_text(p.read_text(encoding="utf-8").replace("## 1. 总则", "## 1. 旧总则")
                      .rstrip("\n") + "\n- 项目自己的规矩\n", encoding="utf-8")
         q = self.col / "PROGRESS.md"
@@ -42,13 +42,13 @@ class TestProtocol(unittest.TestCase):
         self.age()
         r = self.init("protocol", str(self.proj))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        for tpl in WB.glob("*/_模板.md"):
+        for tpl in WB.glob("*/_template.md"):
             self.assertEqual((self.col / tpl.relative_to(WB)).read_bytes(), tpl.read_bytes(), tpl)
         got = (self.col / "PROGRESS.md").read_text(encoding="utf-8")
         self.assertEqual(MAP.search(got).group(0), MAP.search((WB / "PROGRESS.md").read_text(encoding="utf-8")).group(0))
         self.assertIn("项目自己的下一步", got)
         self.assertNotIn("旧地图", got)
-        proto = (self.col / "协议.md").read_text(encoding="utf-8")
+        proto = (self.col / "protocol.md").read_text(encoding="utf-8")
         self.assertIn("## 1. 总则", proto)
         self.assertIn("项目自己的规矩", proto)
 

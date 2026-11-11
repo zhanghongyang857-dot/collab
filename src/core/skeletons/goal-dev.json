@@ -1,5 +1,9 @@
-{"骨架": "目标-开发", "版本": 1, "阶段": [
-  {"序": 1, "名称": "方案", "类型": "执行", "可并行": false, "前置": []},
-  {"序": 2, "名称": "实现", "类型": "执行", "可并行": true, "前置": [1]},
-  {"序": 3, "名称": "测试", "类型": "执行", "可并行": false, "前置": [2]}
-]}
+{
+  "skeleton": "goal-dev",
+  "version": 1,
+  "stages": [
+    {"order": 1, "name": "方案", "type": "work", "parallel": false, "depends_on": []},
+    {"order": 2, "name": "实现", "type": "work", "parallel": true, "depends_on": [1]},
+    {"order": 3, "name": "测试", "type": "work", "parallel": false, "depends_on": [2]}
+  ]
+}

@@ -1,4 +1,4 @@
-"""G015-T10：第三方验收（G015-T9）报告的问题的回归测试。假成员，不调用模型；真实成员的复现见 work/G015-朝会优化/G015-T10/复现/。"""
+"""G015-T10：第三方验收（G015-T9）报告的问题的回归测试。假成员，不调用模型；真实成员的复现见 work/G015/G015-T10/复现/。"""
 import json
 import os
 import subprocess
@@ -27,10 +27,10 @@ def feed_of(prompt):
 
 class Fix(Ctl):
     def speak(self, i, member="codex"):
-        return [m["正文"] for m in self.msgs(i) if m["发起"] == member]
+        return [m["body"] for m in self.msgs(i) if m["from"] == member]
 
     def live(self, member="codex"):
-        return self.wait(lambda: next((r for r in self.runs(member) if r["status"] == "运行中" and r.get("session")), None))
+        return self.wait(lambda: next((r for r in self.runs(member) if r["status"] == "running" and r.get("session")), None))
 
     def public(self, i, text):
         say(self.sim, i, "总裁", text)
@@ -50,13 +50,13 @@ class TestWrapKeepsFollowUp(Fix):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         p.wait(timeout=20)
         wrapped = self.runs("codex")[-1]
-        self.assertEqual((wrapped["status"], wrapped["mode"]), ("完成", "续接"))
+        self.assertEqual((wrapped["status"], wrapped["mode"]), ("done", "resume"))
         self.assertIn("不要再调用任何工具", wrapped["prompt"])
         self.assertIn("丁香", feed_of(wrapped["prompt"]))
         self.assertIn("第一问", feed_of(wrapped["prompt"]), "被停的那次可能还没存进会话，从上次成功的读到补起")
         self.ask(i, "第二问")
         self.dispatch("meet", i, "--wake", "codex")
-        self.assertEqual(self.runs("codex")[-1]["status"], "完成")
+        self.assertEqual(self.runs("codex")[-1]["status"], "done")
         self.assertNotIn("丁香", feed_of(self.runs("codex")[-1]["prompt"]), "收尾已经给过，不再重复")
 
     def test_wrap_right_after_start_answers_the_new_question(self):
@@ -66,12 +66,12 @@ class TestWrapKeepsFollowUp(Fix):
         session = self.runs("codex")[-1]["session"]
         self.ask(i, "第二题 3+3 [[慢启动]]")
         p = self.spawn(i)
-        self.wait(lambda: self.runs("codex")[-1]["status"] == "运行中" and "第二题" in self.runs("codex")[-1].get("prompt", ""))
+        self.wait(lambda: self.runs("codex")[-1]["status"] == "running" and "第二题" in self.runs("codex")[-1].get("prompt", ""))
         r = self.dispatch("wrap", i, "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         p.wait(timeout=20)
         w = self.runs("codex")[-1]
-        self.assertEqual((w["status"], w["session"]), ("完成", session))
+        self.assertEqual((w["status"], w["session"]), ("done", session))
         self.assertIn("第二题", feed_of(w["prompt"]))
         self.assertNotIn("第一题", feed_of(w["prompt"]))
 
@@ -79,13 +79,13 @@ class TestWrapKeepsFollowUp(Fix):
         i = self.start()
         self.ask(i, "第一问 [[慢启动]]")
         p = self.spawn(i)
-        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1]["status"] == "运行中" and self.runs("codex")[-1].get("pid"))
+        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1]["status"] == "running" and self.runs("codex")[-1].get("pid"))
         self.ask(i, "追问：丁香")
         r = self.dispatch("wrap", i, "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         p.wait(timeout=20)
         w = self.runs("codex")[-1]
-        self.assertEqual(w["status"], "完成")
+        self.assertEqual(w["status"], "done")
         for word in ("第一问", "丁香"):
             self.assertIn(word, feed_of(w["prompt"]))
 
@@ -97,9 +97,9 @@ class TestWrapKeepsFollowUp(Fix):
         self.live()
         self.ask(i, "追问：丁香对应 7")
         p.wait(timeout=30)
-        self.wait(lambda: len(self.runs("codex")) >= 3 and self.runs("codex")[-1]["status"] == "完成")
+        self.wait(lambda: len(self.runs("codex")) >= 3 and self.runs("codex")[-1]["status"] == "done")
         rs = self.runs("codex")
-        self.assertEqual([x["status"] for x in rs], ["已中断", "完成", "完成"])
+        self.assertEqual([x["status"] for x in rs], ["stopped", "done", "done"])
         self.assertIn("丁香", feed_of(rs[2]["prompt"]))
 
 
@@ -114,8 +114,8 @@ class TestDoubleWrap(Fix):
         outs = [w.communicate(timeout=30)[0] for w in ws]
         p.wait(timeout=20)
         self.assertEqual(len(self.speak(i)), 1, outs)
-        self.assertEqual([x["status"] for x in self.runs("codex")], ["已中断", "完成"])
-        notes = [e for e in state(self.sim, i)["事件"] if e["边"] == "进展" and "收尾" in e.get("说明", "")]
+        self.assertEqual([x["status"] for x in self.runs("codex")], ["stopped", "done"])
+        notes = [e for e in state(self.sim, i)["events"] if e["edge"] == "progress" and "收尾" in e.get("note", "")]
         self.assertEqual(len(notes), 1)
 
     def test_wrap_while_wrapping_and_after_speaking_does_nothing(self):
@@ -125,7 +125,7 @@ class TestDoubleWrap(Fix):
         self.live()
         first = subprocess.Popen([sys.executable, str(DISPATCH), "--project", str(self.root / "p"), "wrap", i, "codex"],
                                  env=self.env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        self.wait(lambda: self.runs("codex")[-1].get("收尾") and self.runs("codex")[-1]["status"] == "运行中")
+        self.wait(lambda: self.runs("codex")[-1].get("wrap") and self.runs("codex")[-1]["status"] == "running")
         self.assertIn("已经在收尾", self.dispatch("wrap", i, "codex").stdout)
         first.communicate(timeout=30)
         p.wait(timeout=20)
@@ -141,7 +141,7 @@ class TestFirstSpeechRedeliver(Fix):
         say(self.sim, i, "总裁", "@codex @deepseek 暗号甲是松", 点名=BOTH)
         os.environ.pop("FLOW_NOW", None)
         self.dispatch("meet", i, "--wake", "codex", "deepseek")
-        self.assertEqual(self.runs("codex")[-1]["status"], "失败")
+        self.assertEqual(self.runs("codex")[-1]["status"], "failed")
         self.assertTrue(self.speak(i, "deepseek"))
         (self.fail_dir / "codex").unlink()
 
@@ -152,11 +152,11 @@ class TestFirstSpeechRedeliver(Fix):
         self.dispatch("meet", i, "--wake", "codex")
         run = self.runs("codex")[-1]
         feed = feed_of(run["prompt"])
-        self.assertEqual(run["status"], "完成")
+        self.assertEqual(run["status"], "done")
         self.assertIn("暗号甲", feed)
         self.assertIn("暗号乙", feed)
         self.assertNotIn("### deepseek", feed, "同一句话叫来的人的回答看不到")
-        self.assertTrue(run["补到"], "喂到的项目序停在那句话，补过的单独记")
+        self.assertTrue(run["caught_up"], "喂到的项目序停在那句话，补过的单独记")
         self.ask(i, "下一问")
         self.dispatch("meet", i, "--wake", "codex")
         feed = feed_of(self.runs("codex")[-1]["prompt"])
@@ -174,7 +174,7 @@ class TestFirstSpeechRedeliver(Fix):
         say(self.sim, i, "总管", "总管公开说明")
         st = state(self.sim, i)
         os.environ.pop("FLOW_NOW", None)
-        body = lambda f: [r["正文"] for r in f[0]]
+        body = lambda f: [r["body"] for r in f[0]]
         plain = flow.issue_feed(st, "codex")
         self.assertEqual(body(plain), ["@codex @deepseek 第一句", "@codex 再说一遍"])
         caught = flow.issue_feed(st, "codex", catch_up=True)
@@ -211,15 +211,15 @@ class TestSessionLost(Fix):
         self.ask(i, "暗号甲是什么")
         self.dispatch("meet", i, "--wake", "codex")
         failed = self.runs("codex")[-1]
-        self.assertEqual((failed["status"], failed["session"]), ("失败", old))
+        self.assertEqual((failed["status"], failed["session"]), ("failed", old))
         self.assertIn("No conversation found", failed["error"])
-        self.assertTrue(failed["会话丢失"])
+        self.assertTrue(failed["session_lost"])
         import server
         self.assertIn("No conversation found", server.run_view(failed, self.root / "p")["error"])
         self.public(i, "补充：暗号乙是竹")
         self.dispatch("meet", i, "--wake", "codex")
         new = self.runs("codex")[-1]
-        self.assertEqual((new["status"], new["mode"]), ("完成", "新会话"))
+        self.assertEqual((new["status"], new["mode"]), ("done", "new"))
         self.assertNotEqual(new["session"], old)
         feed = feed_of(new["prompt"])
         for word in ("暗号甲是松", "暗号甲是什么", "暗号乙是竹", said):
@@ -229,7 +229,7 @@ class TestSessionLost(Fix):
         self.ask(i, "下一问")
         self.dispatch("meet", i, "--wake", "codex")
         next_ = self.runs("codex")[-1]
-        self.assertEqual((next_["status"], next_["session"]), ("完成", new["session"]))
+        self.assertEqual((next_["status"], next_["session"]), ("done", new["session"]))
         self.assertNotIn("暗号甲是松", feed_of(next_["prompt"]))
 
     def test_other_failures_keep_the_session(self):
@@ -243,7 +243,7 @@ class TestSessionLost(Fix):
         self.assertNotIn("会话丢失", self.runs("codex")[-1])
         (self.fail_dir / "codex").unlink()
         self.dispatch("meet", i, "--wake", "codex")
-        self.assertEqual((self.runs("codex")[-1]["mode"], self.runs("codex")[-1]["session"]), ("续接", old))
+        self.assertEqual((self.runs("codex")[-1]["mode"], self.runs("codex")[-1]["session"]), ("resume", old))
 
     def test_wrap_after_lost_session_starts_new(self):
         i = self.start()
@@ -256,7 +256,7 @@ class TestSessionLost(Fix):
         r = self.dispatch("wrap", i, "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         w = self.runs("codex")[-1]
-        self.assertEqual((w["status"], w["mode"]), ("完成", "新会话"))
+        self.assertEqual((w["status"], w["mode"]), ("done", "new"))
         self.assertIn("第一问", feed_of(w["prompt"]))
 
 
@@ -273,9 +273,9 @@ class TestStates(Fix):
         i = self.start()
         self.ask(i, "跑工具 [[心跳]]")
         p = self.spawn(i)
-        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1].get("phase") == "调用工具")
-        v = self.wait(lambda: self.view()["state"] == "疑似卡住" and self.view(), timeout=5)
-        self.assertEqual(v["phase"], "调用工具", "页面据此写「工具 N 秒没有新输出」")
+        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1].get("phase") == "tool")
+        v = self.wait(lambda: self.view()["state"] == "stalled" and self.view(), timeout=5)
+        self.assertEqual(v["phase"], "tool", "页面据此写「工具 N 秒没有新输出」")
         self.assertGreaterEqual(v["quiet"], 2)
         p.wait(timeout=20)
 
@@ -283,27 +283,27 @@ class TestStates(Fix):
         i = self.start()
         self.ask(i, "想 [[慢启动]]")
         p = self.spawn(i)
-        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1].get("phase") == "启动中" and "想" in self.runs("codex")[-1].get("prompt", ""))
+        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1].get("phase") == "starting" and "想" in self.runs("codex")[-1].get("prompt", ""))
         v = self.view()
-        self.assertEqual(v["state"], "启动中", "进程还没输出")
+        self.assertEqual(v["state"], "starting", "进程还没输出")
         self.assertFalse(self.runs("codex")[-1].get("last_at"))
         self.wait(lambda: self.runs("codex")[-1].get("session"))
-        self.assertEqual(self.view()["state"], "启动中", "只报了会话 ID 的初始化事件还算启动中")
+        self.assertEqual(self.view()["state"], "starting", "只报了会话 ID 的初始化事件还算启动中")
         p.wait(timeout=20)
-        self.assertEqual(self.runs("codex")[-1]["phase"], "完成")
+        self.assertEqual(self.runs("codex")[-1]["phase"], "done")
 
     def test_member_without_phases_moves_to_thinking(self):
         i = self.start()
         self.ask(i, "想 [[无阶段]]")
         p = self.spawn(i)
-        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1].get("phase") == "思考")
-        self.assertEqual(self.view()["state"], "思考")
+        self.wait(lambda: self.runs("codex") and self.runs("codex")[-1].get("phase") == "thinking")
+        self.assertEqual(self.view()["state"], "thinking")
         p.wait(timeout=20)
 
     def test_old_record_without_phase_still_labelled(self):
         import server
-        self.assertEqual(server.run_state({"status": "运行中", "started": dispatch.now_iso()}), "启动中")
-        self.assertEqual(server.run_state({"status": "运行中", "started": dispatch.now_iso(), "last_at": dispatch.now_iso()}), "思考")
+        self.assertEqual(server.run_state({"status": "running", "started": dispatch.now_iso()}), "starting")
+        self.assertEqual(server.run_state({"status": "running", "started": dispatch.now_iso(), "last_at": dispatch.now_iso()}), "thinking")
 
 
 class TestSmallFixes(unittest.TestCase):
@@ -318,7 +318,7 @@ class TestSmallFixes(unittest.TestCase):
         self.assertNotIn("\\n", text)
 
     def test_protocol_has_no_member_wake_notation(self):
-        text = (HERE.parent / "src" / "workbench" / "collab" / "协议.md").read_text(encoding="utf-8")
+        text = (HERE.parent / "src" / "workbench" / "zh" / "collab" / "protocol.md").read_text(encoding="utf-8")
         self.assertNotIn("要谁接着回答写", text)
         self.assertNotIn("看不到别人的观点", text)
 

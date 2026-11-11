@@ -81,7 +81,7 @@ class Room(Base):
         cmd = lambda name: {"派活名": name, "可用": "✓", "事件解析": "claude",
                             "新会话命令": [sys.executable, str(FAKE), name, "{prompt}"],
                             "续接命令": [sys.executable, str(FAKE), name, "{prompt}", "--resume", "{session}"]}
-        (team / "班子.json").write_text(json.dumps({"成员": [cmd("codex"), cmd("deepseek")]}, ensure_ascii=False), encoding="utf-8")
+        (team / "team.json").write_text(json.dumps({"成员": [cmd("codex"), cmd("deepseek")]}, ensure_ascii=False), encoding="utf-8")
         self.fail_dir = self.root / "fail"
         self.fail_dir.mkdir()
         self.env_dir = self.root / "envs"
@@ -92,7 +92,7 @@ class Room(Base):
         for k in ("FLOW_NOW", "COLLAB_ACTOR", "COLLAB_RUN", "COLLAB_WRITER", "COLLAB_FLOW"):
             self.env.pop(k, None)
         self.sim = Sim(self.root / "p")
-        self.runs_dir = self.root / "p" / "collab" / "内部" / "运行记录"
+        self.runs_dir = self.root / "p" / "collab" / "internal" / "runs"
 
     def dispatch(self, *args):
         return subprocess.run([sys.executable, str(DISPATCH), "--project", str(self.root / "p"), *args],
@@ -103,21 +103,21 @@ class Room(Base):
         return [r for r in rs if member in (None, r["member"])]
 
     def msgs(self, obj):
-        return [e for e in state(self.sim, obj)["事件"] if e["边"] in flow.MESSAGES]
+        return [e for e in state(self.sim, obj)["events"] if e["edge"] in flow.MESSAGES]
 
 
 class TestFailureAndRedeliver(Room):
     def test_failed_run_does_not_advance_read_and_redeliver_brings_missed(self):
         sim = self.sim
         i = meeting(sim)
-        sim.log(i, "开始", "总裁", 写入者="看板")
+        sim.log(i, "开始", "总裁", 写入者="board")
         os.environ.pop("FLOW_NOW", None)
         say(sim, i, "总裁", "@codex 先说立场", 点名=["codex"])
         os.environ.pop("FLOW_NOW", None)
         self.assertEqual(self.dispatch("meet", i, "--wake", "codex").returncode, 0)
         first = self.runs("codex")
-        self.assertEqual([r["status"] for r in first], ["完成"])
-        self.assertIn("读到", first[0])
+        self.assertEqual([r["status"] for r in first], ["done"])
+        self.assertIn("read_upto", first[0])
         # codex 再被点名，但这次叫不到（未登录）
         os.environ.pop("FLOW_NOW", None)
         q2 = say(sim, i, "总裁", "@codex 追问一个细节", 点名=["codex"])
@@ -125,10 +125,10 @@ class TestFailureAndRedeliver(Room):
         os.environ.pop("FLOW_NOW", None)
         self.dispatch("meet", i, "--wake", "codex")
         failed = self.runs("codex")[-1]
-        self.assertEqual(failed["status"], "失败")
+        self.assertEqual(failed["status"], "failed")
         self.assertIn("Not logged in", failed["error"])
-        self.assertNotIn("读到", failed, "失败的运行不推进读到")
-        self.assertEqual(len([m for m in self.msgs(i) if m["发起"] == "codex"]), 1, "失败不写发言")
+        self.assertNotIn("read_upto", failed, "失败的运行不推进读到")
+        self.assertEqual(len([m for m in self.msgs(i) if m["from"] == "codex"]), 1, "失败不写发言")
         # 失败期间别人又说了话
         os.environ.pop("FLOW_NOW", None)
         say(sim, i, "deepseek", "我补充一点：缓存要考虑失效")
@@ -138,33 +138,33 @@ class TestFailureAndRedeliver(Room):
         r = self.dispatch("meet", i, "--wake", "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         again = self.runs("codex")[-1]
-        self.assertEqual(again["status"], "完成", again.get("error"))
+        self.assertEqual(again["status"], "done", again.get("error"))
         self.assertIn("追问一个细节", again["prompt"])
         self.assertIn("缓存要考虑失效", again["prompt"], "错过的发言要补上")
         self.assertIn("上次叫你", again["prompt"])
-        self.assertGreater(again["读到"], first[0]["读到"])
+        self.assertGreater(again["read_upto"], first[0]["read_upto"])
         self.assertEqual(again["session"], first[0]["session"], "失败的运行不当作可续接的会话，仍接上次成功的那个")
-        self.assertEqual(len([m for m in self.msgs(i) if m["发起"] == "codex"]), 2)
+        self.assertEqual(len([m for m in self.msgs(i) if m["from"] == "codex"]), 2)
 
     def test_old_failed_run_with_read_mark_is_ignored(self):
         """I001 留下的旧记录：失败的运行也带了「读到」，现在不再当作已读。"""
         sim = self.sim
         i = meeting(sim)
-        sim.log(i, "开始", "总裁", 写入者="看板")
+        sim.log(i, "开始", "总裁", 写入者="board")
         os.environ.pop("FLOW_NOW", None)
         say(sim, i, "总裁", "@codex 说", 点名=["codex"])
         self.runs_dir.mkdir(parents=True, exist_ok=True)
-        old = {"run": f"{i}-01", "task": i, "seat": "与会", "member": "codex", "status": "失败", "session": "", "读到": 999,
+        old = {"run": f"{i}-01", "task": i, "seat": "attendee", "member": "codex", "status": "failed", "session": "", "read_upto": 999,
                "started": "2026-11-01T09:00:00+08:00", "error": "Not logged in"}
         (self.runs_dir / f"{i}-01.json").write_text(json.dumps(old, ensure_ascii=False), encoding="utf-8")
         r = self.dispatch("meet", i, "--wake", "codex")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        self.assertEqual([x["status"] for x in self.runs("codex")], ["失败", "完成"])
+        self.assertEqual([x["status"] for x in self.runs("codex")], ["failed", "done"])
 
     def test_dirty_environment_is_cleaned_for_members(self):
         sim = self.sim
         i = meeting(sim)
-        sim.log(i, "开始", "总裁", 写入者="看板")
+        sim.log(i, "开始", "总裁", 写入者="board")
         os.environ.pop("FLOW_NOW", None)
         say(sim, i, "总裁", "@codex 说", 点名=["codex"])
         self.assertEqual(self.dispatch("meet", i, "--wake", "codex").returncode, 0)

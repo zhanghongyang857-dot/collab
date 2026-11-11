@@ -35,3 +35,8 @@
 .bd-meet a { display: block; margin-top: 3px; color: #2f5bea; text-decoration: none; }
 .bd-meet .bd-w { color: #c98a06; }
 @media (prefers-color-scheme: dark) { .bd-meet { background: #1c1c1e; color: #f2f2f3; border-color: #2d2d31; } .bd-meet a { color: #7b9bff; } }
+
+/* 中 / EN 切换：NOW 页没有看板页头，放在右上角 */
+#langsw.langsw { position: fixed; top: 10px; right: 14px; z-index: 50; background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 6px; font-size: 12px; }
+#langsw.langsw button { border: 0; background: none; padding: 2px 4px; font: inherit; cursor: pointer; }
+#langsw.langsw button.on { font-weight: 600; text-decoration: underline; }

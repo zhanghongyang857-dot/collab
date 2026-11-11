@@ -1,5 +1,7 @@
 # 批红
 
+[English](README.en.md)
+
 **AI 票拟，你来批红。**
 
 明朝处理政务有一套分工：内阁先替皇帝拟好处理意见，叫「票拟」；皇帝用朱笔批可否，叫「批红」；六部照批示执行，给事中、御史可以把不妥的诏令退回。这个工具包把这套分工用在 AI 身上：AI 拟方案、做执行、互相把关，你只拿朱笔做决定。
@@ -124,10 +126,12 @@
 
    ```bash
    cd <项目目录>
-   ~/批红/系统/core/init.sh new
+   ~/批红/系统/core/init.sh new --lang zh
    ```
 
    项目会自动登记到看板，命令最后打印这个项目的看板网址；之后随时用 `~/批红/系统/core/init.sh open` 打开。http://127.0.0.1:3100 首页列出所有登记过的项目。
+
+   语言：`--lang zh|en`，不写时看环境变量 `COLLAB_LANG`、NOW `config.json` 的 `lang`，都没有用英文；已有项目用 `init.sh lang zh|en` 换语言（规则文档和模板换掉，卡片小节标题和字段名改写，正文不动）。
 
 然后让助手按 `collab/PROGRESS.md` 填好目标和「▶ 下一步」。需要派活给命令行成员时，用派活脚本，见 [core/README.md](core/README.md)「派活」。之后更新工具包：在本仓库拉取最新版，再运行一次第 1 步，看板会自动重启。
 
@@ -163,11 +167,12 @@ core/skeletons/        流程骨架：task、goal（general / research / dev 三
 core/dispatch.py       派活：派活、续接、停止、按流程检查、朝会、写运行记录（用法见 core/README.md）
 core/init.sh          给项目装工作台并登记到看板、open 打开项目看板、建 NOW、建班子、team-sync、装 hook、register / unregister、管理看板模块、合并口令；core/registry.py（项目登记表、NOW 位置）、core/team.py、core/now_rows.py、core/modules.py 是它的帮手
 core/publish.sh       把工具包发布成本机独立拷贝（如 ~/批红/系统）；--core 只带核心，--module 单独导出一个模块
-core/口令.md          核心的口令，和已启用模块的口令合并成 NOW/口令.md
-core/team-example/    班子、人才示例
+core/commands.zh.md   核心的口令（英文版 commands.en.md），和已启用模块的口令合并成 NOW/commands.md
+core/team-example/    班子、人才示例（en/ 是英文版）
+i18n/                  语言包：zh.json、en.json
 board/                 看板网页服务：首页（项目列表或 NOW 页）、各项目看板和归档页、朝会、班子；board/now/ 是 NOW 看板的核心（「任务」页、模块加载器）和数据样板
 modules/               NOW 看板的模块：schedule（今天、短期）、deadlines（近期截止）、focus（计划与实际对照）、calendar（日历），用 init.sh module 按需打开
-workbench/             工作台：init.sh new 装进项目的那一套（AGENTS.md、.claude/、collab/）
+workbench/zh/、en/     工作台：init.sh new 装进项目的那一套（AGENTS.md、.claude/、collab/），中英各一套，文件名相同
 ```
 
 ## 当前阶段
@@ -181,6 +186,6 @@ workbench/             工作台：init.sh new 装进项目的那一套（AGENTS
 - [init.sh 与班子](core/README.md)：装工作台、项目登记、NOW、班子配置。
 - [NOW 总看板](board/now/README.md)：核心与模块、数据、config.json。
 - [看板模块](modules/README.md)：模块怎么写、怎么装、挂点。
-- [协作协议](workbench/collab/协议.md)：各席位的职责、目标与流程、派活、验收、上报、朝会、校验与把关。
+- [协作协议](workbench/zh/collab/protocol.md)：各席位的职责、目标与流程、派活、验收、上报、朝会、校验与把关。
 - [看板](board/README.md)：首页、项目看板、归档页，以及开机常驻。
 - [派活脚本](core/README.md)：派活、续接、停止、朝会，以及派活前的三道关。

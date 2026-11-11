@@ -1,5 +1,7 @@
 # 看板网页服务
 
+English: [README.en.md](README.en.md)
+
 一个本地网页，本机所有项目共用一个服务（默认端口 3100），不用每个项目各起一个：
 
 - **首页**（`/`）：没启用 NOW 时是项目列表，列出项目登记表（工具包旁边的 `projects.json`，`init.sh new` 自动登记）里的项目；启用了 NOW 时是 NOW 页，项目列表另在 `/projects`。

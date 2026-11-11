@@ -1,0 +1,12 @@
+{
+  "note": "Team for the \"Wanli Reforms\" demo: the ministries are roles in the story, played by the apps in brackets. All data is fictional; the demo never really dispatches.",
+  "owner": {"duty": "Emperor: sets the course of state, approves in vermilion, rules on court debates.", "wake": "Memorials reach the Throne (the board's \"Awaiting the vermilion brush\")."},
+  "lead": {"name": "Grand Secretariat", "app": "Claude Desktop", "duty": "Senior Grand Secretary drafting rescripts: breaks down affairs of state, coordinates the ministries, consolidates memorials."},
+  "members": [
+    {"name": "Works", "dispatch_name": "Works", "aliases": ["Works"], "app": "Codex", "usual_seat": "Executor", "model": "gpt-6.1-sol", "tier": "A", "cost": "high", "strengths": "river works, building: engineering plans and construction", "weaknesses": "costing grain and silver", "available": "✓", "duty": "river works, building", "parser": "codex", "start_command": ["true"]},
+    {"name": "Revenue", "dispatch_name": "Revenue", "aliases": ["Revenue"], "app": "DeepSeek", "usual_seat": "Executor", "model": "deepseek-v4", "tier": "B", "cost": "low", "strengths": "grain, silver, land surveys, bulk accounting", "weaknesses": "hard engineering", "available": "✓", "duty": "grain, land tax, surveys", "parser": "dsh", "start_command": ["true"]},
+    {"name": "War", "dispatch_name": "War", "aliases": ["War"], "app": "Codex (another model)", "usual_seat": "Executor", "model": "gpt-6-astra", "tier": "A", "cost": "medium", "strengths": "frontier affairs, negotiating terms", "weaknesses": "—", "available": "✓", "duty": "frontier, border markets", "parser": "codex", "start_command": ["true"]},
+    {"name": "Censorate", "dispatch_name": "Censorate", "aliases": ["Censorate", "censors"], "app": "Claude CLI", "usual_seat": "Reviewer", "model": "claude-opus", "tier": "A", "cost": "high", "strengths": "verification, sending orders back, finding holes", "weaknesses": "—", "available": "✓", "duty": "inspecting censors, scrutiny", "parser": "claude", "start_command": ["true"]},
+    {"name": "Hanlin", "dispatch_name": "Hanlin", "aliases": ["Hanlin"], "app": "Claude CLI", "usual_seat": "Executor", "model": "claude-sonnet", "tier": "B", "cost": "medium", "strengths": "drafting edicts and documents", "weaknesses": "—", "available": "✓", "duty": "drafting edicts and documents", "parser": "claude", "start_command": ["true"]}
+  ]
+}
