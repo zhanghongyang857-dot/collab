@@ -10,6 +10,7 @@
 模块约定见 modules/README.md。
 """
 import datetime as dt
+import hashlib
 import html
 import importlib.util
 import json
@@ -270,9 +271,10 @@ def valid_tab_url(url):
     return parts.scheme in ("http", "https") and bool(parts.netloc)
 
 
-def load_modules():
+def load_modules(run=True):
     """按 config 的 modules 加载：读 module.json，查约定版本和硬依赖，调用 load.py 的 load(ctx)。
-    返回 (模块列表, 页脚提示, 要监视的文件)。一个模块出错只影响它自己。"""
+    返回 (模块列表, 页脚提示, 要监视的文件)。一个模块出错只影响它自己。
+    run=False 时不执行 load.py（data 为 None）：只拿外壳要的 css、js 和静态的监视清单。"""
     avail, wanted = find_modules(), enabled_modules()
     metas, notes, watch = {}, [], []
     for mid in wanted:
@@ -334,7 +336,7 @@ def load_modules():
         entry = {"id": mid, "name": meta.get("name", mid), "tabs": tabs,
                  "slots": meta.get("slots", []), "data": None, "error": "", "css": "", "js": ""}
         try:
-            if (d / "load.py").is_file():  # 只有链接标签的模块可以没有 load.py
+            if run and (d / "load.py").is_file():  # 只有链接标签的模块可以没有 load.py
                 entry["data"] = _import(d / "load.py", f"now_module_{mid}").load(ctx)
         except Exception as e:  # noqa: BLE001 — 模块出错只影响它自己
             tb = traceback.extract_tb(e.__traceback__)[-1]
@@ -360,6 +362,16 @@ def sources(watch=()):
     return [f for f in files if f and f.exists()]
 
 
+def shell_sources():
+    """外壳依赖的文件：模板、本脚本、config（启用哪些模块）、i18n.js 和语言包、启用模块的 module.json 和 view.css/js。不执行 load.py。"""
+    avail = find_modules()
+    files = [TEMPLATE, Path(__file__).resolve(), CONFIG, CODE.parent / "static" / "i18n.js", *sorted(i18n.I18N_DIR.glob("*.json"))]
+    for mid in enabled_modules():
+        if mid in avail:
+            files += [avail[mid] / f for f in ("module.json", "view.css", "view.js")]
+    return [f for f in files if f.exists()]
+
+
 def up_to_date():
     if not OUT.exists():
         return False
@@ -379,9 +391,12 @@ def tab_sequence(modules, order):
     return [next(queue) if i in picked else i for i in ids]
 
 
-def collect():
-    """生成页面所需的全部数据；模块的 css、js 单独返回，由 render() 内联进模板。"""
-    modules, notes, _ = load_modules()
+def collect(deps=None):
+    """生成页面所需的全部数据；模块的 css、js 单独返回，由 render() 内联进模板。
+    给了 deps（列表）时把这份数据依赖的文件（sources）追加进去，供服务端按文件指纹缓存、监视。"""
+    modules, notes, watch = load_modules()
+    if deps is not None:
+        deps += sources(watch)
     if "tab_order" in CFG and not isinstance(CFG["tab_order"], list):
         notes.append(L.t("now.note.tab_order"))
     return {
@@ -399,15 +414,42 @@ def collect():
     }
 
 
+def fingerprint(text):
+    """外壳指纹：内容的哈希前 16 位。"""
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()[:16]
+
+
+def _strip(mods):
+    return [{k: v for k, v in m.items() if k not in ("css", "js")} for m in mods]
+
+
+def shell(modules=None):
+    """外壳：模板 + 模块 CSS/JS + 语言包，数据留空（/*DATA*/null）。只在改代码、模板、模块或语言包时变，
+    不执行模块的 load.py（modules 给了已加载的模块列表时直接用它的 css、js）。"""
+    if modules is None:
+        modules = load_modules(run=False)[0]
+    return _page(modules, "null")
+
+
+def data(collected=None):
+    """数据：即 collect() 去掉模块的 css、js，带上外壳指纹 shell（外壳变了说明发布了新代码）。"""
+    d = collected or collect()
+    return {**d, "modules": _strip(d["modules"]), "shell": fingerprint(shell(d["modules"]))}
+
+
 def render(data):
-    mods = data["modules"]
+    """独立页面 = 外壳 + 内嵌数据（python3 build.py 生成的文件、静态导出用）。"""
+    page_data = {**data, "modules": _strip(data["modules"])}
+    return _page(data["modules"], json.dumps(page_data, ensure_ascii=False).replace("</", "<\\/"))
+
+
+def _page(mods, blob):
     css = "\n".join(f"/* 模块 {m['id']} */\n{m['css']}" for m in mods if m["css"])
     js = "\n".join(f"// 模块 {m['id']}\ntry {{\n{m['js']}\n}} catch (e) {{ NOW.fail({json.dumps(m['id'])}, e); }}"
                    for m in mods if m["js"])
-    page_data = {**data, "modules": [{k: v for k, v in m.items() if k not in ("css", "js")} for m in mods]}
-    blob = json.dumps(page_data, ensure_ascii=False).replace("</", "<\\/")
     packs = {x: i18n.pack(x).text_dict() for x in i18n.LANGS}  # 页面自带两种语言包和 i18n.js：直接打开文件也能切换
-    i18n_js = ("window.I18N_PACKS = " + json.dumps(packs, ensure_ascii=False) + ";\nwindow.BOARD_LANG = " + json.dumps(LANG) + ";\n"
+    # sort_keys：语言包里 names 的键序来自集合，不排序时每个进程不同，外壳指纹跟着变，服务一重启各端就都要整页重载
+    i18n_js = ("window.I18N_PACKS = " + json.dumps(packs, ensure_ascii=False, sort_keys=True) + ";\nwindow.BOARD_LANG = " + json.dumps(LANG) + ";\n"
                + (CODE.parent / "static" / "i18n.js").read_text(encoding="utf-8")).replace("</", "<\\/")
     return (TEMPLATE.read_text(encoding="utf-8")
             .replace("/*I18N_JS*/", i18n_js)

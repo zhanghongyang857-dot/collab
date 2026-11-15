@@ -89,8 +89,8 @@ python3 core/dispatch.py stop --all
 
 | Command | What it does |
 |---|---|
-| `start <task> <seat> <member> <prompt>` | Dispatch in a new session (`--override` / `--adhoc` / `--skip-check` are available, see below) |
-| `continue <task> <seat> <prompt> [--run id]` | Resume the latest session of that task and seat (or the one you name); the member is the same as that run's |
+| `start <task> <seat> <member> <prompt>` | Dispatch in a new session (`--override` / `--adhoc` / `--skip-check` are available, see below; `--effort` too) |
+| `continue <task> <seat> <prompt> [--run id]` | Resume the latest session of that task and seat (or the one you name); the member is the same as that run's; takes `--effort` |
 | `stop <id>` / `stop --all` | Stop one run / every running dispatch in this project; status becomes "interrupted", the session is kept and can be resumed |
 | `list [--all]` | List dispatches: all running ones plus the latest 10 (`--all` for every one) |
 | `show <id>` | Show a run's prompt, session, token breakdown and final reply |
@@ -103,6 +103,7 @@ python3 core/dispatch.py stop --all
 - The command exits only when the member finishes: 0 for done, 1 for failed, 130 for stopped. The Lead runs it as a background command and is woken automatically at the end; the final reply is at the end of the output.
 - Members run in the project root.
 - A seat is free text, usually `executor` or `reviewer`. Within one task, resuming is looked up by "task + seat", so executor and reviewer each have their own session.
+- `start` and `continue` take `--effort low|medium|high|xhigh|max` to set the reasoning effort for this one run; it is saved as `effort` in the run record. Without it nothing is passed and the member's default applies. Only agy members support it for now (it becomes `--effort <level>` right after `agy`); for any other member the dispatch is refused. Levels differ by model (agy 1.5.9: Claude models only have low, medium, high); agy rejects an unsupported level and the run is recorded as failed.
 
 ## New-structure projects (with `collab/internal/flow/`)
 
@@ -149,7 +150,7 @@ python3 core/dispatch.py meet I003                 # wake attendees who haven't 
 - **Lost session**: when resuming reports an error such as "No conversation found", the page shows the original text, the run record says "session lost", and that session isn't resumed again; next time (a catch-up or an @) a fresh session starts with every public post so far, including the member's own. Other command lines' wording is in `SESSION_LOST`; only Claude's has been tested.
 - **Session reuse**: an issue attached to a goal resumes that member's most recent session in this goal that ended normally or was stopped (failed ones don't count); a project-level issue only resumes its own; a reviewer-seat session isn't resumed; if that session is still running a new one starts.
 - **Writing back to the board**: members don't run commands. After the run, `flow.issue_end` splits the final reply into messages written to `collab/internal/flow/I003.jsonl`: each `<private owner>…</private>` becomes a private post, the rest one public post, a bare `[PASS]` is recorded as PASS; writes are refused once the discussion has ended, and the original text stays in the run record.
-- **Status and what's being written**: Claude members automatically get `--include-partial-messages`. The run record has `phase` (starting / thinking / calling a tool / writing the reply), `last_action`, `steps`, `tokens` (updated after every assistant message and replaced by the authoritative numbers when `result` arrives); what is being written goes live into `<run id>.draft.txt`, deleted at the end and replaced by the real post. The board shows starting, thinking, calling a tool, writing the reply, possibly stuck (running more than 90 seconds with no real output; heartbeats from a command while a tool runs don't count), failed, stopped, and the elapsed time; while someone is running the council page refreshes about once a second. dsh and codex stream no fragments, so only status, last action and (if present) usage show, not the text being written.
+- **Status and what's being written**: Claude members automatically get `--include-partial-messages`. The run record has `phase` (starting / thinking / calling a tool / writing the reply), `last_action`, `steps`, `tokens` (updated after every assistant message and replaced by the authoritative numbers when `result` arrives); what is being written goes live into `<run id>.draft.txt`, deleted at the end and replaced by the real post. The board shows starting, thinking, calling a tool, writing the reply, possibly stuck (running more than 90 seconds with no real output; heartbeats from a command while a tool runs don't count), failed, stopped, and the elapsed time; while someone is running the council page refreshes about once a second. dsh and codex stream no fragments, so only status, last action and (if present) usage show, not the text being written. agy streams the reply in fragments (`text_delta`), so the text being written shows too.
 - **Stopping and wrapping up**: `dispatch stop-member I003 <member>` stops that member's run on the issue (the session is kept for a catch-up); `dispatch wrap I003 <member>` stops first and then resumes the same session with "no more tool calls, speak from what you have", together with the new posts since the last successful "read up to" (follow-ups made during the run and the question of the stopped run included); the wrap-up itself has a limit (3 steps, 4 minutes). A wrap-up counts once: if one is already under way, or the member has already spoken and isn't running, clicking again does nothing. "Stop" and "Let it wrap up" on the page call these two commands.
 - **Run limits**: each run is capped at 40 steps or 10 minutes by default; at the cap it is stopped and the same session is resumed automatically to wrap up, and the issue gets a progress note giving the reason. Set in `team.json`: top-level `"meet_limits": {"steps": 40, "minutes": 10}`; a member's own `"limits"` overrides it; 0 means no limit. Nothing is capped by money.
 - **Only the Owner's @ wakes anyone**: an @ written by a member is plain text, with no mention recorded and no relay; an @ in the Owner's private post wakes nobody either. If the Owner publicly names a member while it is running, it's woken again after the run ends.
@@ -174,6 +175,15 @@ Without a team config dispatching fails straight away; run `init.sh team` first.
 | `codex` | `codex exec` (workspace writable) | dispatch, resume and resume-after-stop all tested |
 | `deepseek` | `dsh headless` | same |
 | `claude` | `claude -p` (acceptEdits) | same (tested after login on 2026-10-20) |
+| `agy` (parser) | `agy -p --output-format stream-json` (the Google Antigravity CLI; reuses the desktop app's Google sign-in and its membership quota) | dispatch, resume and `check` tested (2026-11-14, agy 1.5.9); samples and findings in `tests/样例/agy/` |
+
+See `team-example/en/team.json` for agy members (Gemini 4 Hydrogen, Gemini 4 Argon, plus Opus (Google) `agy-opus` and Sonnet (Google) `agy-sonnet` called through Antigravity, which are different members from `claude-opus` and `claude-sonnet` on the Claude subscription). Points to note:
+
+- Give `--model` an ID without an effort suffix (`gemini-4-hydrogen`, `claude-opus-5-5` and so on; `agy models` lists them all) so `--effort` can be used; a suffixed ID (such as `gemini-4-argon-low`) with a different `--effort` is an error.
+- Put `--model` in the resume command too; without it agy switches to its default model.
+- Add `--dangerously-skip-permissions`: without it, headless runs auto-deny writing files and running commands and the reply is empty (the run is recorded as failed, naming the denied tools).
+- If the session to resume can't be found, agy doesn't fail; it starts a new conversation. The dispatch script notices the session ID changed, records the new session (later resumes use it), keeps the old one in `session_replaced`, and notes in `error` that the member doesn't remember earlier work.
+- Tokens: summed per model call (`result` holds the whole conversation's running total, including earlier runs when resuming, so it isn't used); output already includes thinking.
 
 ## Run record format
 

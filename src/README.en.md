@@ -54,7 +54,7 @@ Work is split by seat instead of handing everything to one model:
 
 ### 4. Every capability of the native apps
 
-This isn't another agent. Each member runs in its own command-line tool (Claude Code, Codex CLI, DeepSeek Harness and so on), with files, terminal and search all working as usual. The dispatch script only starts, resumes and stops them and records every run. Within one goal it resumes existing sessions where it can instead of starting from scratch.
+This isn't another agent. Each member runs in its own command-line tool (Claude Code, Codex CLI, DeepSeek Harness, the Google Antigravity CLI `agy` and so on), with files, terminal and search all working as usual. The dispatch script only starts, resumes and stops them and records every run. Within one goal it resumes existing sessions where it can instead of starting from scratch.
 
 ### 5. You only handle what needs you
 
@@ -133,7 +133,7 @@ Then have your assistant fill in the goal and "▶ Next" following `collab/PROGR
 
 ### Language
 
-The toolkit's code, file names and folder names exist only in English; everything you read (rules, templates, commands, generated blocks, board, messages) comes in English and Chinese. A project picks its language when the workbench is installed: `init.sh new --lang en|zh`, or the `COLLAB_LANG` environment variable, or `"lang"` in the NOW `config.json`, and English otherwise. Switch an existing project with `init.sh lang en|zh`: rules and templates are replaced, card section titles and field names are rewritten, and what you wrote stays as it is. The board follows the project's language and has a 中 / EN switch in its header.
+The toolkit's code, file names and folder names exist only in English; everything you read (rules, templates, commands, generated blocks, board, messages) comes in English and Chinese. A project picks its language when the workbench is installed: `init.sh new --lang en|zh`, or the `COLLAB_LANG` environment variable, or `"lang"` in the NOW `config.json`, and English otherwise. Switch an existing project with `init.sh lang en|zh`: rules and templates are replaced, card section titles and field names are rewritten, and what you wrote stays as it is. The board follows the project's language; on a desktop a small English / 中文 link in the page footer switches it (hidden on touch screens).
 
 ### Optional: the NOW dashboard (several projects plus your own schedule)
 

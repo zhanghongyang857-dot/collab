@@ -201,7 +201,7 @@ demo/     演示「万历新政」：剧本、生成脚本、静态站生成
 
 <details><summary><b>支持哪些模型？</b></summary>
 
-总管通常是 Claude（Claude Code 或桌面版）；成员可以是 Codex CLI、DeepSeek、Claude 命令行等任何能在终端里跑的助手。成员在自己的原生命令行里干活，批红不替换它们。
+总管通常是 Claude（Claude Code 或桌面版）；成员可以是 Codex CLI、DeepSeek、Claude 命令行、Google Antigravity 命令行（agy）等任何能在终端里跑的助手。成员在自己的原生命令行里干活，批红不替换它们。
 </details>
 
 <details><summary><b>数据存在哪？要上传吗？</b></summary>
@@ -221,7 +221,12 @@ demo/     演示「万历新政」：剧本、生成脚本、静态站生成
 
 <details><summary><b>支持哪些语言？</b></summary>
 
-中文和英文。给项目装工作台时选（`--lang zh` 或 `--lang en`），规则、模板和提示都跟着走；已有项目用 `init.sh lang zh|en` 切换。两种语言底层的文件名和编号都是英文。看板顶上有 中 / EN 切换。
+中文和英文。给项目装工作台时选（`--lang zh` 或 `--lang en`），规则、模板和提示都跟着走；已有项目用 `init.sh lang zh|en` 切换。两种语言底层的文件名和编号都是英文。看板页脚有一个「English / 中文」小链接切换语言（只在电脑上显示，iPad 等触屏上不显示）。
+</details>
+
+<details><summary><b>能在手机上看看板吗？</b></summary>
+
+能，走 Tailscale 私网：Mac 和手机装 Tailscale、登录同一账号，运行 `bash ~/批红/系统/board/service.sh remote on`，手机打开它打印的地址。服务仍只监听本机，同一 Wi‑Fi 里的其他人连不上；手机上能看、能批，打不开 Mac 上的文件。Mac 要开着。详见 [src/board/README.md](src/board/README.md)。
 </details>
 
 <details><summary><b>支持哪些系统？</b></summary>

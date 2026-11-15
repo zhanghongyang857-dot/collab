@@ -25,7 +25,12 @@
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
     apply(document);
     const sw = document.getElementById("langsw");
-    if (sw) sw.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.lang === lang));
+    if (sw) {  // 链接写的是另一种语言，点了就换过去
+      const to = lang === "zh" ? "en" : "zh";
+      sw.dataset.lang = to;
+      sw.lang = to === "zh" ? "zh-CN" : "en";
+      sw.textContent = to === "zh" ? "中文" : "English";
+    }
   }
 
   const SINGULAR = /(?<![\d.,])1(<\/\w+>)? (goal|task|run|post|step|day|hour|minute|second|error|warning|question|call|row|record|issue|event|card|slot|member|item|attempt|round|file|stage|decision)s\b/g;
@@ -68,15 +73,22 @@
     location.replace(u.toString());
   }
 
+  // 中 / EN 切换平时用不到（G056-T9）：页脚一个不显眼的小文字链接，触屏设备上不显示（board.css、template.html 的 .langsw）。
+  // NOW 页放进模板的 footer，看板各页在 body 末尾另加一个 footer.langfoot
   function addSwitch() {
-    const top = document.querySelector("header.top") || document.querySelector("header") || document.body;
-    if (!top || document.getElementById("langsw")) return;
-    const sw = document.createElement("span");
+    if (!document.body || document.getElementById("langsw")) return;
+    let foot = document.querySelector(".wrap > footer");
+    if (!foot) {
+      foot = document.createElement("footer");
+      foot.className = "langfoot";
+      document.body.appendChild(foot);
+    }
+    const sw = document.createElement("a");
     sw.id = "langsw";
     sw.className = "langsw";
-    sw.innerHTML = '<button type="button" data-lang="zh" lang="zh-CN">中</button><span>/</span><button type="button" data-lang="en" lang="en">EN</button>';
-    sw.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.lang !== lang || !explicit) choose(b.dataset.lang); }));
-    top.appendChild(sw);
+    sw.href = "#";
+    sw.addEventListener("click", (e) => { e.preventDefault(); choose(sw.dataset.lang); });
+    foot.appendChild(sw);
     use(lang);
   }
 
@@ -89,7 +101,30 @@
   }
   const blocked = (p) => (p.alerts ? p.alerts.some((a) => a.kind === "blocked") : /受阻/.test(p.summary || ""));  // 旧结构的摘要是中文原文
 
+  // 打开本机文件：本机交给服务用默认应用打开；经 Tailscale 等远程访问时文件在 Mac 上，只提示一下
+  function toast(msg) {
+    let el = document.getElementById("bd-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "bd-toast";
+      el.style.cssText = "position:fixed;left:50%;bottom:64px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px);"
+        + "padding:8px 14px;border-radius:8px;background:rgba(40,40,40,.92);color:#fff;font-size:14px;z-index:9999;"
+        + "pointer-events:none;transition:opacity .3s";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = "1";
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.opacity = "0"; }, 2600);
+  }
+  function openFile(path) {
+    if (window.BOARD_REMOTE) return toast(t("board.remote_no_open"));
+    fetch("/api/open", {method: "POST", headers: {"Content-Type": "application/json", "X-Board": "1"},
+      body: JSON.stringify({path})});
+  }
+
   window.t = t;
+  window.boardOpenFile = openFile;
   window.I18n_summary = summary;
   window.I18n_blocked = blocked;
   window.I18n = {t, name, apply, project, use, lang: () => lang, explicit: () => explicit};

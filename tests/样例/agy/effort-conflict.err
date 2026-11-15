@@ -1,0 +1,1 @@
+error: invalid model selection (--model "gemini-4-argon-low" --effort "high"): --model gemini-4-argon-low conflicts with --effort=high

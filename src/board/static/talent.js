@@ -1,5 +1,6 @@
 // 人才市场（规划中）：按身份列出人才——拥有哪些技能、主要擅长什么、可由哪些命令行成员扮演。
-// 数据是静态的 ~/.collab-team/人才.json（没有时显示工具包示例），打开时读一次；点技能只看有这项技能的身份。
+// 数据是 ~/.collab-team/人才.json（没有时显示工具包示例）；推送来班子配置的变化（块 team，含人才.json）才重读，另有 60 秒保底，
+// 自带 If-None-Match，没变不重传、不重画；点技能只看有这项技能的身份，重画时保留。
 (function () {
   const app = document.getElementById("app");
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -42,6 +43,16 @@
     render();
   });
 
-  fetch("/api/talent", {cache: "no-store"}).then((r) => r.json()).then((d) => { data = d; render(); })
-    .catch((e) => { app.innerHTML = `<div class="empty">${esc(T("talent.failed"))}${esc(e.message)}</div>`; });
+  // 选中的技能如果在新数据里没有了，回到「全部」
+  const show = (d) => { data = d; if (skill && !d.items.some((x) => (x.skills || []).includes(skill))) skill = null; render(); };
+  const fail = (e) => { if (!data) app.innerHTML = `<div class="empty">${esc(T("talent.failed"))}${esc(e.message)}</div>`; };
+  if (!window.BoardLive) {
+    fetch("/api/talent", {cache: "no-cache"}).then((r) => r.json()).then(show).catch(fail);
+    return;
+  }
+  const live = BoardLive.pages({watch: ["team"], load: () => BoardLive.getJSON("/api/talent").then((r) => {
+    live.seen("team", r.version);
+    if (r.changed) show(r.data);
+  }).catch(fail)});
+  live.load();
 })();

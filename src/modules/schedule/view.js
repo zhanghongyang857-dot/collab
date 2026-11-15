@@ -1,4 +1,4 @@
-// 安排模块：「今天」「短期」两页；挂点 header（第几周 · 主题）、status（正在做什么）、tasks.below（本月布局）
+// 安排模块：「今天」「短期」两页；挂点 header（第几周 · 主题）、status（正在做什么）；开放 today.side、today.top、today.below、schedule.timeline.lanes
 (() => {
   const { CAT, $, pad, mins, md, dayKey, fmtDur, WD } = NOW.util;
   const tt = (k, v) => window.t(k, v);  // 界面文字（变量 T 在本模块里是「今天」的数据）
@@ -81,9 +81,12 @@
 
     // 右栏留给其他模块（如近期截止）；没有时「今天」占满一行
     const side = ctx.slot("today.side");
-    el.innerHTML = side
+    // 扩展点 today.below：两栏下方整行宽，放和今天安排分开看的卡片（如邮件摘要）；没有时不加任何元素
+    const below = ctx.slot("today.below");
+    el.innerHTML = (side
       ? `<div class="grid"><section class="card">${h}</section><aside class="card">${side}</aside></div>`
-      : `<section class="card">${h}</section>`;
+      : `<section class="card">${h}</section>`)
+      + (below ? `<div class="today-below" style="margin-top:20px">${below}</div>` : "");
   }
 
   // 时钟下一行：正在做什么，或下一段什么时候开始

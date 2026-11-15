@@ -1,12 +1,18 @@
 // 班子页：只展示个体——每个成员一张名片（头像、在忙还是空闲、擅长、能力档和用量、席位、手上的活，档案收起）。人才在单独的人才市场页（/talent）。
-// 数据来自 /api/team：班子.json 原样给出，现状和用量由服务端从各项目运行记录和 flow.py 视图模型现算。每 30 秒刷新。
+// 数据来自 /api/team：班子.json 原样给出，现状和用量由服务端从各项目运行记录和 flow.py 视图模型现算。
+// 推送来班子配置（块 team）或任一项目账本（块 p:*，运行记录在各项目 collab/ 里）的变化才拉数据，另有 60 秒保底；自带 If-None-Match，没变不重传、不重画。
 (function () {
   // 静态演示（board/export_static.py 导出、放到 GitHub Pages 等处）：window.BOARD_STATIC 给出项目、页面和到导出根的相对路径；
   // 这时数据读导出好的 JSON，链接改成相对路径，只读、不轮询。本机服务下没有它，行为不变。
   const SITE = window.BOARD_STATIC || null;
   const U = (p) => { if (!SITE) return p; const [a, h] = p.split("#"); return SITE.base + a + "/" + (h ? "#" + h : ""); };
+  let live = null;  // 本机服务下的推送订阅（BoardLive.pages）；静态导出没有
   const getJSON = async (p) => {
-    if (!SITE) return (await fetch(p, {cache: "no-store"})).json();
+    if (live) {  // 自己带 If-None-Match；没变回 null
+      const r = await BoardLive.getJSON(p);
+      return r.changed ? r.data : null;
+    }
+    if (!SITE) return (await fetch(p, {cache: "no-cache"})).json();
     const t = await (await fetch(SITE.base + p + ".json")).text();
     return JSON.parse(t.split("{{FILES}}").join(SITE.base + "/files"));
   };
@@ -99,17 +105,22 @@
   async function load() {
     try {
       const d = await getJSON("/api/team");
+      if (d === null) { tick(); return; }  // 没变（304）
       if (!d.exists) {
         app.innerHTML = card(esc(T("team.page")), `<div class="empty">${esc(T("team.missing", {path: d.source}))}</div>`);
       } else {
         app.innerHTML = renderMembers(d);
       }
       document.getElementById("meta").textContent = d.exists ? T("team.count", {n: d.members.length}) : "";
-      document.getElementById("tick").textContent = T(SITE ? "team.tick.static" : "team.tick.live") + new Date().toLocaleTimeString(I18n.lang() === "zh" ? "zh-CN" : "en-GB", {hour12: false});
+      tick();
     } catch (e) {
-      document.getElementById("tick").textContent = T("board.tick.failed") + e.message;
+      tick(T("board.tick.failed") + e.message);
     }
   }
-  load();
-  if (!SITE) setInterval(() => { if (document.visibilityState === "visible") load(); }, 30000);
+  function tick(text) {
+    text = text || T(SITE ? "team.tick.static" : "team.tick.live") + new Date().toLocaleTimeString(I18n.lang() === "zh" ? "zh-CN" : "en-GB", {hour12: false});
+    if (live) live.tick(text); else document.getElementById("tick").textContent = text;
+  }
+  if (SITE || !window.BoardLive) load();
+  else (live = BoardLive.pages({watch: (k) => k === "team" || k.startsWith("p:") || k.startsWith("r:"), load})).load();  // r:（谁在跑）服务端最多 10 秒推一次
 })();

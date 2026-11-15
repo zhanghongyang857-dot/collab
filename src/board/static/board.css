@@ -307,10 +307,11 @@ table.runs tr.dayrow span { font-size: 12px; color: var(--ink-3); }
 .toplink { font-size: 13px; color: var(--ink-2); text-decoration: none; margin-left: 12px; }
 .toplink:hover { color: var(--accent); }
 /* 中 / EN 切换（i18n.js 加在页头末尾） */
-.langsw { margin-left: 14px; font-size: 12px; color: var(--ink-3, #999); white-space: nowrap; }
-.langsw button { border: 0; background: none; padding: 2px 4px; font: inherit; color: var(--ink-2); cursor: pointer; border-radius: 4px; }
-.langsw button.on { color: var(--accent); font-weight: 600; }
-.langsw button:hover { background: var(--line, #eee); }
+/* 中 / EN 切换（G056-T9）：页脚一个不显眼的小文字链接，不用背景色（深色模式下不出白块）；触屏设备上不显示 */
+.langfoot { padding: 18px 20px 28px; text-align: right; }
+.langsw { font-size: 11.5px; color: var(--ink-3, #8c8e94); text-decoration: none; opacity: .7; }
+.langsw:hover { opacity: 1; text-decoration: underline; }
+@media (pointer: coarse) { .langfoot, .langsw { display: none; } }
 .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 .mcard, .tcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--card); }
 .mcard:target { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
@@ -547,6 +548,17 @@ button.act:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 静态演示（export_static.py 导出）：只读，隐藏写入口 */
 html.static .composer, html.static #addbtn, html.static [data-goalact], html.static textarea[data-draft] { display: none; }
+/* 离线（G056-T5，pwa.js 加 board-offline）：批红、发言这些写操作置灰，底部提示连上 Mac 后再操作 */
+html.board-offline [data-goalact], html.board-offline .composer button, html.board-offline .composer textarea,
+html.board-offline textarea[data-draft], html.board-offline #addbtn { opacity: .45; pointer-events: none; }
+.bd-offline-tip {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 60;
+  font-size: 12.5px; color: var(--amber); background: var(--card); border: 1px solid var(--amber);
+  border-radius: 999px; padding: 4px 12px; box-shadow: var(--shadow); white-space: nowrap;
+}
+.bd-offline-tip[hidden] { display: none; }
+/* 主屏 app 全屏（viewport-fit=cover）：左右让出刘海的安全区；没有刘海的设备和电脑上是 0，不影响原来的边距 */
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 
 /* 项目列表页（没启用 NOW 时的首页） */
 .proj-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; }
@@ -554,3 +566,22 @@ html.static .composer, html.static #addbtn, html.static [data-goalact], html.sta
 .proj-row:hover b { color: var(--accent); }
 .proj-row .proj-root { margin-left: auto; font-size: 11.5px; }
 .proj-done { opacity: .6; }
+
+/* iPad / 手机（触屏）：只在触屏下生效，桌面样式不动（G056-T6）。
+   点按区域 ≥44px；顶部、底部让出安全区；768–1000 竖屏单栏；时序图在窄屏不再缩成看不清，容器内横滑。本页没有只在悬停时才出现的操作 */
+@media (pointer: coarse) {
+  .top { padding-top: calc(14px + env(safe-area-inset-top)); }
+  main { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+  .back, .toplink, .pk, .gt, .chip, button.act, summary, .pfile a, .tlink { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+  .back, .toplink { padding: 0 8px; }
+  .pk, .chip { justify-content: center; }
+  .gt { justify-content: center; }
+  details > summary { display: flex; }
+  /* 行内文字链接：撑大点按区域但不改版面（内边距和负外边距相抵） */
+  .meta a, .gfiles a, .ldet a, .top a.meta { display: inline-block; padding: 15px 8px; margin: -15px -8px; }
+  div:has(> svg.seq), div:has(> svg.lanes) { overflow-x: auto; }
+}
+@media (pointer: coarse) and (max-width: 1000px) {
+  .row { grid-template-columns: minmax(0, 1fr); }
+  svg.seq { min-width: 720px; }
+}

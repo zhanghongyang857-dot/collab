@@ -134,6 +134,7 @@ The page redraws every 30 seconds. `ctx`: `now`, `today0` (today at 00:00), `now
 | `tasks.below` | In the "Tasks" page, under the task lanes and above recent completions | One or more cards |
 | `today.side` | The right column of "Today" (opened by schedule) | Card content; the frame is added by schedule |
 | `today.top` | Above the timeline on "Today" (opened by schedule) | A small block of HTML |
+| `today.below` | Below both columns of "Today", full width (opened by schedule) | One or more cards |
 | `schedule.timeline.lanes` | An extra track for each segment of the timeline on "Today" (opened by schedule); render function `(ctx, a, b, optional)`, where a and b are minutes of the day; when `optional` is true return an empty string if the segment has no content | An absolutely positioned element |
 
 If the page that owns a slot isn't installed (say, without the schedule module there is no `today.*`), what is hung there simply isn't shown, with no error. When several modules use one slot they are joined in `modules` order.

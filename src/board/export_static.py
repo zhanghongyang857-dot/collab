@@ -65,6 +65,9 @@ def _page(name: str, depth: int, conf: Dict[str, Any], extra_js: List[str]) -> s
     base = "/".join([".."] * depth) or "."
     conf = {**conf, "base": base}
     page = (STATIC / name).read_text(encoding="utf-8")
+    page = page.replace('<script src="/static/live.js" defer></script>\n', "")  # 静态导出不连推送、不轮询（G056）
+    page = page.replace('<script src="/static/pwa.js" defer></script>\n', "")  # 也不注册 Service Worker、不做主屏 app（G056-T5）
+    page = re.sub(r'<link rel="(?:manifest|apple-touch-icon)"[^>]*>\n', "", page)
     page = page.replace('href="/static/', f'href="{base}/static/').replace('src="/static/', f'src="{base}/static/')
     page = page.replace('<html lang="en">', '<html lang="en" class="static">', 1)
     page = re.sub(r'\s*<a class="toplink" href="/talent"[^>]*>[^<]*</a>', "", page)

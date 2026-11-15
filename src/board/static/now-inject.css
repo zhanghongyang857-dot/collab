@@ -15,8 +15,8 @@
 .bd-chip:hover { text-decoration: underline; }
 .bd-live {
   position: fixed;
-  right: 14px;
-  bottom: 12px;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 50;
   font-size: 12px;
   color: var(--ink-3, #8c8e94);
@@ -36,7 +36,16 @@
 .bd-meet .bd-w { color: #c98a06; }
 @media (prefers-color-scheme: dark) { .bd-meet { background: #1c1c1e; color: #f2f2f3; border-color: #2d2d31; } .bd-meet a { color: #7b9bff; } }
 
-/* 中 / EN 切换：NOW 页没有看板页头，放在右上角 */
-#langsw.langsw { position: fixed; top: 10px; right: 14px; z-index: 50; background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 6px; font-size: 12px; }
-#langsw.langsw button { border: 0; background: none; padding: 2px 4px; font: inherit; cursor: pointer; }
-#langsw.langsw button.on { font-weight: 600; text-decoration: underline; }
+/* 推送状态：实时 / 连接中 / 离线 · 截至 HH:MM */
+.bd-state::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--ink-3, #8c8e94); }
+.bd-state[data-s="live"]::before { background: var(--cat-green, #12a37f); }
+.bd-state[data-s="offline"] { color: var(--amber, #c98a06); font-weight: 600; }
+.bd-state[data-s="offline"]::before { background: var(--amber, #c98a06); }
+/* 主屏 app 全屏（viewport-fit=cover）：左右让出刘海的安全区；没有刘海的设备和电脑上是 0（G056-T5） */
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+/* iPad / 手机（触屏）：底部链接加大到 ≥44px（G056-T6）；语言切换在触屏上不显示（template.html） */
+@media (pointer: coarse) {
+  .bd-live a { display: inline-block; min-width: 44px; text-align: center; padding: 15px 8px; margin: -15px -8px; }
+  .bd-chip.bd-doc { display: inline-flex; align-items: center; min-height: 44px; }
+}

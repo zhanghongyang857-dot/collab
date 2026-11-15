@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NOW</title>
 <style>
 :root {
@@ -176,7 +176,12 @@ h2 { font-size: 17px; margin: 0; font-weight: 650; }
 }
 
 footer { margin-top: 26px; font-size: 12px; color: var(--ink-3); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer > * { min-width: 0; overflow-wrap: anywhere; }  /* 长路径在手机上折行，不撑宽页面 */
 footer a { color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--line); }
+/* 中 / EN 切换（i18n.js 放进 footer）：不显眼的小文字链接，触屏设备上不显示（G056-T9） */
+footer .langsw { margin-left: auto; font-size: 11.5px; text-decoration: none; opacity: .7; }
+footer .langsw:hover { opacity: 1; text-decoration: underline; }
+@media (pointer: coarse) { .langsw { display: none; } }
 @media (max-width: 520px) {
   .wrap { padding: 20px 16px 40px; }
   .slot, .gap { grid-template-columns: 64px 4px 1fr; gap: 0 10px; }
@@ -187,6 +192,26 @@ footer a { color: var(--ink-3); text-decoration: underline; text-decoration-colo
 .mod-err { font-size: 13.5px; color: var(--red); background: var(--red-soft); border-radius: 10px; padding: 10px 12px; }
 .mod-err b { display: block; margin-bottom: 2px; }
 .notes { flex-basis: 100%; color: var(--amber); }
+/* iPad / 手机（触屏）：只在触屏下生效，桌面样式不动（G056-T6）。
+   断点：≥1000 横屏保持两栏；768–1000 竖屏单栏、标签栏可横滑；<768 手机在此基础上收窄页边。点按区域 ≥44px；本页没有只在悬停时才出现的操作 */
+@media (pointer: coarse) {
+  .wrap { padding-top: calc(56px + env(safe-area-inset-top)); padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
+  .tabs { display: flex; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs > * { flex: none; white-space: nowrap; }
+  .tabs button, .tabs a, .tabs .tab-local { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; justify-content: center; }
+  /* 行内文字链接：撑大点按区域但不改版面（内边距和负外边距相抵） */
+  footer a, .meta a, .card-head a, .trow a { display: inline-block; padding: 15px 8px; margin: -15px -8px; }
+}
+@media (pointer: coarse) and (min-width: 768px) and (max-width: 1000px) {
+  .grid, .grid2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (pointer: coarse) and (max-width: 520px) {
+  .wrap { padding-top: calc(48px + env(safe-area-inset-top)); padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+}
+/* 本机链接标签（如「穿搭」指向 127.0.0.1）远程打不开：灰色说明，不放死链接 */
+.tabs .tab-local { font-size: 14px; color: var(--ink-3); padding: 6px 12px; cursor: default; }
+.tabs .tab-local small { font-size: 12px; margin-left: 6px; }
 /*MODULE_CSS*/
 </style>
 </head>
@@ -217,11 +242,11 @@ footer a { color: var(--ink-3); text-decoration: underline; text-decoration-colo
 /*I18N_JS*/
 </script>
 <script>
-const DATA = /*DATA*/null;
+// DATA：独立文件（build.py）里内嵌着数据，直接画；本机服务给的是外壳（null），由 refresh() 拉 /api/now 再画，之后有推送只换数据重画
+let DATA = /*DATA*/null;
 const T = (k, v) => window.t(k, v);  // 界面文字（i18n.js，语言包随页面一起写出）
 
-const CAT = DATA.catNames;
-const YEAR = Number(DATA.built.slice(0, 4));
+let CAT = {}, YEAR = new Date().getFullYear();  // 随数据更新（setData）
 const $ = (id) => document.getElementById(id);
 const pad = (n) => String(n).padStart(2, "0");
 const mins = (hm) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
@@ -241,20 +266,36 @@ const NOW = {
 };
 </script>
 <script>
+// 模块代码在有数据之后才执行（模块载入时会读 NOW.util.CAT、DATA），只执行一次；之后换数据只重画
+function NOW_LOAD_MODULES() {
 /*MODULE_JS*/
+}
 </script>
 <script>
-const MODS = DATA.modules;
+let MODS, MOD_TABS, INNER_TABS, TAB_SEQ, TABS, PANES, SHOWN, SHOWN_PANES, DEFAULT_TAB;
 const errCard = (name, msg) => `<section class="card"><div class="mod-err"><b>${esc(T("now.mod_err", {name}))}</b>${esc(msg)}</div></section>`;
 // 标签页：主板块是核心的「任务」加内嵌模块（按 config.json 的 modules 顺序，tab_order 可再调），扩展板块是链接标签，排在最后
 const tabTitle = (t) => { const k = "now.tab." + t.id, s = T(k); return s === k ? t.title : s; };  // 模块标签名：语言包里有就按语言显示
-const MOD_TABS = MODS.flatMap(m => m.tabs.map(t => ({ ...t, label: tabTitle(t), mod: m })));
-// 主板块的先后由 build.py 算好放在 DATA.tabOrder；没有时按 modules 顺序
-const INNER_TABS = [{ id: "tasks", title: "任务", label: T("now.tab.tasks") }, ...MOD_TABS.filter(t => !t.url)];
-const TAB_SEQ = DATA.tabOrder || INNER_TABS.map(t => t.id);
-const TABS = [...TAB_SEQ.map(id => INNER_TABS.find(t => t.id === id)).filter(Boolean), ...MOD_TABS.filter(t => t.url)];
-// 带 url 的是链接标签：只在标签栏放一个跳转按钮，没有面板，也不渲染
-const PANES = TABS.filter(t => !t.url);
+
+function setData(d) {
+  DATA = d;
+  CAT = DATA.catNames;
+  YEAR = Number(DATA.built.slice(0, 4));
+  Object.assign(NOW.util, { CAT, YEAR });
+  MODS = DATA.modules;
+  MOD_TABS = MODS.flatMap(m => m.tabs.map(t => ({ ...t, label: tabTitle(t), mod: m })));
+  // 主板块的先后由 build.py 算好放在 DATA.tabOrder；没有时按 modules 顺序
+  INNER_TABS = [{ id: "tasks", title: "任务", label: T("now.tab.tasks") }, ...MOD_TABS.filter(t => !t.url)];
+  TAB_SEQ = DATA.tabOrder || INNER_TABS.map(t => t.id);
+  TABS = [...TAB_SEQ.map(id => INNER_TABS.find(t => t.id === id)).filter(Boolean), ...MOD_TABS.filter(t => t.url)];
+  // 带 url 的是链接标签：只在标签栏放一个跳转按钮，没有面板，也不渲染
+  PANES = TABS.filter(t => !t.url);
+  // hidden 的标签页不进标签栏，只能从链接（#id 或 #标题）打开，也不当作"上次查看的标签"记住
+  SHOWN = TABS.filter(t => !t.hidden);
+  SHOWN_PANES = SHOWN.filter(t => !t.url);  // 能切换到的标签，至少有「任务」
+  // 默认打开的标签：有内嵌模块时打开第一个模块标签，「任务」排在最前也不改变这一点
+  DEFAULT_TAB = (SHOWN_PANES.find(t => t.id !== "tasks") || SHOWN_PANES[0]).id;
+}
 
 function makeCtx(now, m) {
   const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -343,41 +384,162 @@ function render() {
   $("notes").textContent = DATA.notes.join(T("sep.clause"));
 }
 
-// 标签栏和各页的容器
-// hidden 的标签页不进标签栏，只能从链接（#id 或 #标题）打开，也不当作"上次查看的标签"记住
-const SHOWN = TABS.filter(t => !t.hidden);
-const SHOWN_PANES = SHOWN.filter(t => !t.url);  // 能切换到的标签，至少有「任务」
-// 默认打开的标签：有内嵌模块时打开第一个模块标签，「任务」排在最前也不改变这一点
-const DEFAULT_TAB = (SHOWN_PANES.find(t => t.id !== "tasks") || SHOWN_PANES[0]).id;
-$("tabs").innerHTML = SHOWN.map((t, i) => t.url
-  ? `${i && !SHOWN[i - 1].url ? `<span class="tab-sep" aria-hidden="true"></span>` : ""}<a href="${esc(t.url)}" data-link="${esc(t.id)}">${esc(t.label || t.title)}</a>`
-  : `<button role="tab" data-tab="${t.id}" aria-selected="false">${esc(t.label || t.title)}${t.id === "tasks" ? `<span class="cnt"></span>` : ""}</button>`).join("");
-$("panes").innerHTML = PANES.map(t => `<div class="pane" id="pane-${t.id}" hidden></div>`).join("");
-$("tabs").hidden = SHOWN.length < 2;  // 只装核心时只有「任务」，不显示标签栏
+// 标签栏和各页的容器：标签结构（哪些标签、名字、链接）没变时不重建，换数据只重画面板里的内容
+let tabsKey = null;
+function buildTabs() {
+  const key = JSON.stringify([SHOWN.map(t => [t.id, t.label || t.title, t.url || ""]), PANES.map(t => t.id)]);
+  if (key === tabsKey) return false;
+  tabsKey = key;
+  $("tabs").innerHTML = SHOWN.map((t, i) => t.url
+    ? `${i && !SHOWN[i - 1].url ? `<span class="tab-sep" aria-hidden="true"></span>` : ""}${window.BOARD_REMOTE
+      ? `<span class="tab-local" data-link="${esc(t.id)}">${esc(t.label || t.title)}<small>${esc(T("now.tab.local_only"))}</small></span>`  // 远程设备打不开本机地址，不放死链接
+      : `<a href="${esc(t.url)}" data-link="${esc(t.id)}">${esc(t.label || t.title)}</a>`}`
+    : `<button role="tab" data-tab="${t.id}" aria-selected="false">${esc(t.label || t.title)}${t.id === "tasks" ? `<span class="cnt"></span>` : ""}</button>`).join("");
+  $("panes").innerHTML = PANES.map(t => `<div class="pane" id="pane-${t.id}" hidden></div>`).join("");
+  $("tabs").hidden = SHOWN.length < 2;  // 只装核心时只有「任务」，不显示标签栏
+  // 点标签时清掉地址栏的 #：否则留着 #对照，再点同一个链接地址不变，不会触发 hashchange
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    showTab(b.dataset.tab);
+  }));
+  return true;
+}
 
 // 标签页：记住上次查看的标签（浏览器存储不可用时默认第一个）；地址栏 #标签 id 或 #标题（去空格）直接打开
+let curTab = null;
 function showTab(name) {
+  curTab = name;
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
   PANES.forEach(t => { $(`pane-${t.id}`).hidden = t.id !== name; });
   if (SHOWN_PANES.some(t => t.id === name)) try { localStorage.setItem("now-tab", name); } catch (e) {}
 }
-// 点标签时清掉地址栏的 #：否则留着 #对照，再点同一个链接地址不变，不会触发 hashchange
-document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
-  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
-  showTab(b.dataset.tab);
-}));
-let saved = DEFAULT_TAB;
-try { saved = localStorage.getItem("now-tab") || saved; } catch (e) {}
 const tabFromHash = () => {
   const hash = decodeURIComponent(location.hash.slice(1));
   return PANES.find(t => hash && (t.id === hash || t.title.replace(/\s/g, "") === hash || (t.label || "").replace(/\s/g, "") === hash));
 };
-const fromHash = tabFromHash();
-showTab(fromHash ? fromHash.id : SHOWN_PANES.some(t => t.id === saved) ? saved : DEFAULT_TAB);
-window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t) showTab(t.id); });
+function pickTab() {
+  let saved = DEFAULT_TAB;
+  try { saved = localStorage.getItem("now-tab") || saved; } catch (e) {}
+  const fromHash = tabFromHash();
+  return fromHash ? fromHash.id : SHOWN_PANES.some(t => t.id === saved) ? saved : DEFAULT_TAB;
+}
+window.addEventListener("hashchange", () => { if (!PANES) return; const t = tabFromHash(); if (t) showTab(t.id); });
 
-render();
-setInterval(render, 30000);
+// 重画时保留现场：当前标签（不动标签栏）、页面和面板里可滚动区域的滚动位置、<details> 的展开状态
+const nodeKey = (el, root) => {
+  const path = [];
+  for (let n = el; n && n !== root; n = n.parentElement) {
+    let i = 0;
+    for (let s = n; (s = s.previousElementSibling);) if (s.tagName === n.tagName && s.className === n.className) i++;
+    path.push(`${n.tagName}.${n.className}:${i}`);
+  }
+  return path.reverse().join(">");
+};
+const detailsKey = (d) => d.id || Object.entries(d.dataset).map(([k, v]) => `${k}=${v}`).join("&")
+  || (d.querySelector("summary") ? "s:" + d.querySelector("summary").textContent.trim() : "");
+function saveView() {
+  const panes = $("panes"), open = {}, scroll = {};
+  panes.querySelectorAll("details").forEach(d => { const k = detailsKey(d); if (k) open[nodeKey(d.closest(".pane"), panes) + "|" + k] = d.open; });
+  panes.querySelectorAll("*").forEach(el => { if (el.scrollTop || el.scrollLeft) scroll[nodeKey(el, panes)] = [el.scrollLeft, el.scrollTop]; });
+  return { x: window.scrollX, y: window.scrollY, open, scroll };
+}
+function restoreView(v) {
+  const panes = $("panes");
+  panes.querySelectorAll("details").forEach(d => {
+    const k = nodeKey(d.closest(".pane"), panes) + "|" + detailsKey(d);
+    if (k in v.open && d.open !== v.open[k]) d.open = v.open[k];
+  });
+  if (Object.keys(v.scroll).length) panes.querySelectorAll("*").forEach(el => { const s = v.scroll[nodeKey(el, panes)]; if (s) el.scrollTo(s[0], s[1]); });
+  if (window.scrollX !== v.x || window.scrollY !== v.y) window.scrollTo(v.x, v.y);
+}
+
+// 正在操作时推迟重画：焦点在输入框、选择框或可编辑区域里，正选着文字，或刚点按、按键不到 1.5 秒
+let lastInput = 0;
+["pointerdown", "keydown", "wheel", "touchmove"].forEach(ev => document.addEventListener(ev, () => { lastInput = Date.now(); }, { capture: true, passive: true }));
+function busy() {
+  const a = document.activeElement;
+  if (a && (a.isContentEditable || a.tagName === "TEXTAREA" || a.tagName === "SELECT"
+      || (a.tagName === "INPUT" && !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(a.type)))) return true;
+  const sel = window.getSelection && window.getSelection();
+  if (sel && !sel.isCollapsed && String(sel).trim()) return true;
+  return Date.now() - lastInput < 1500;
+}
+
+let booted = false, pending = null, retry = null;
+function redraw() {
+  const v = saveView();
+  render();
+  restoreView(v);
+}
+// 换上一份数据并重画；正在操作时先记着，空下来再画
+function apply(d) {
+  if (booted && busy()) {
+    pending = d;
+    clearTimeout(retry);
+    retry = setTimeout(() => { if (pending) apply(pending); }, 1000);
+    return;
+  }
+  pending = null;
+  setData(d);
+  if (!booted) {  // 第一次：执行模块代码、建标签栏、打开该打开的标签
+    booted = true;
+    NOW_LOAD_MODULES();
+    buildTabs();
+    showTab(pickTab());
+    render();
+    return;
+  }
+  if (buildTabs()) showTab(PANES.some(t => t.id === curTab) ? curTab : pickTab());
+  redraw();
+}
+document.addEventListener("focusout", () => { if (pending) setTimeout(() => { if (pending) apply(pending); }, 0); });
+
+// refresh()：拉 /api/now（本机服务模式）。自己记 ETag 和版本号，带 If-None-Match，没变时服务端回 304、不重画。
+// 外壳指纹和本页不同（发布了新代码）时整页重载一次。并发调用合并成一次，进行中又来的请求在这次之后再拉一次。
+const PAGE_SHELL = (document.querySelector('meta[name="board-shell"]') || {}).content || null;
+const NOW_SYNC = { etag: null, version: null, at: null };
+let inflight = null, again = false;
+function refresh() {
+  if (inflight) { again = true; return inflight; }
+  inflight = (async () => {
+    try {
+      const r = await fetch("/api/now", { cache: "no-store", headers: NOW_SYNC.etag ? { "If-None-Match": NOW_SYNC.etag } : {} });
+      // 断线时 Service Worker 回退上次数据（X-Board-Cache: offline）：告诉 live.js 标「离线 · 截至」；它还没载入就先记下时间
+      const cached = r.headers.get("X-Board-Cache") === "offline";
+      if (cached) { if (window.BoardLive) window.BoardLive.noteResponse(r); else window.BOARD_CACHED_AT = r.headers.get("X-Board-Cached-At"); }
+      NOW_SYNC.version = r.headers.get("X-Board-Version") || NOW_SYNC.version;
+      if (r.status === 304) { NOW_SYNC.at = new Date(); return false; }
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      const shell = d.shell || r.headers.get("X-Board-Shell");
+      if (!cached && PAGE_SHELL && shell && shell !== PAGE_SHELL && window.BoardLive && window.BoardLive.reloadOnce(shell)) return false;
+      NOW_SYNC.etag = r.headers.get("ETag");
+      NOW_SYNC.at = new Date();
+      apply(d);
+      return true;
+    } finally {
+      inflight = null;
+      if (again) { again = false; setTimeout(() => refresh().catch(e => console.error(e)), 0); }
+    }
+  })();
+  return inflight;
+}
+NOW.refresh = refresh;
+NOW.sync = NOW_SYNC;
+NOW.shell = PAGE_SHELL;
+
+// 时钟等按时间算的内容：每分钟在本地重画一次（不请求数据），在后台或正在操作时跳过
+let lastMinute = new Date().getMinutes();
+setInterval(() => {
+  const m = new Date().getMinutes();
+  if (!booted || m === lastMinute || document.visibilityState === "hidden" || busy()) return;
+  lastMinute = m;
+  redraw();
+}, 5000);
+document.addEventListener("visibilitychange", () => { if (booted && document.visibilityState === "visible" && !pending) { lastMinute = new Date().getMinutes(); redraw(); } });
+
+if (DATA) apply(DATA);  // 独立文件：内嵌数据直接画，不连推送
+else refresh().catch(e => { console.error(e); $("panes").innerHTML = `<section class="card"><div class="mod-err"><b>NOW</b>${esc(String(e.message || e))}</div></section>`; });
 </script>
 </body>
 </html>

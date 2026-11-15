@@ -21,7 +21,7 @@
   fetch("/api/home").then((r) => r.json()).then((h) => {
     if (h.now) document.getElementById("back").hidden = false;
   }).catch(() => {});
-  const load = () => fetch("/api/projects", {cache: "no-store"}).then((r) => r.json()).then(render)
+  const load = () => fetch("/api/projects", {cache: "no-cache"}).then((r) => r.json()).then(render)
     .catch(() => { app.innerHTML = `<div class="empty">${esc(T("proj.load_failed"))}</div>`; });
   load();
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(); });

@@ -57,6 +57,176 @@
         "{session}",
         "{prompt}"
       ]
+    },
+    {
+      "name": "Gemini 4 Hydrogen",
+      "dispatch_name": "gemini-hydrogen",
+      "app": "Google Antigravity 命令行（agy）",
+      "usual_seat": "执行、验收",
+      "model": "gemini-4-hydrogen（经 Antigravity；不带档位后缀，走默认档）",
+      "tier": "A",
+      "cost": "Antigravity 会员额度",
+      "strengths": "复杂代码、排障、看图分析（与 Opus 同档）",
+      "weaknesses": "待填",
+      "available": "✓",
+      "duty": "执行或验收。经 Google Antigravity 调用（agy 沿用桌面版的 Google 登录）。总管可为单次派活加 --effort 指定推理档位。",
+      "permissions": "--dangerously-skip-permissions：无人值守时不加会自动拒绝写文件和跑命令；只在项目目录工作。",
+      "history": "Antigravity 会话；agy --conversation <会话 ID> 续接。",
+      "aliases": [
+        "gemini-hydrogen",
+        "Gemini 4 Hydrogen",
+        "Hydrogen"
+      ],
+      "parser": "agy",
+      "start_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--model",
+        "gemini-4-hydrogen",
+        "--dangerously-skip-permissions"
+      ],
+      "resume_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--conversation",
+        "{session}",
+        "--model",
+        "gemini-4-hydrogen",
+        "--dangerously-skip-permissions"
+      ]
+    },
+    {
+      "name": "Gemini 4 Argon",
+      "dispatch_name": "gemini-argon",
+      "app": "Google Antigravity 命令行（agy）",
+      "usual_seat": "执行",
+      "model": "gemini-4-argon（经 Antigravity；不带档位后缀，走默认档）",
+      "tier": "B",
+      "cost": "Antigravity 会员额度",
+      "strengths": "按明确步骤执行、整理、常规分析（与 Sonnet 同档）",
+      "weaknesses": "待填",
+      "available": "✓",
+      "duty": "执行或验收。经 Google Antigravity 调用（agy 沿用桌面版的 Google 登录）。总管可为单次派活加 --effort 指定推理档位。",
+      "permissions": "--dangerously-skip-permissions：无人值守时不加会自动拒绝写文件和跑命令；只在项目目录工作。",
+      "history": "Antigravity 会话；agy --conversation <会话 ID> 续接。",
+      "aliases": [
+        "gemini-argon",
+        "Gemini 4 Argon",
+        "Argon"
+      ],
+      "parser": "agy",
+      "start_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--model",
+        "gemini-4-argon",
+        "--dangerously-skip-permissions"
+      ],
+      "resume_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--conversation",
+        "{session}",
+        "--model",
+        "gemini-4-argon",
+        "--dangerously-skip-permissions"
+      ]
+    },
+    {
+      "name": "Opus（Google）",
+      "dispatch_name": "agy-opus",
+      "app": "Google Antigravity 命令行（agy）",
+      "usual_seat": "执行、验收",
+      "model": "claude-opus-5-5（经 Antigravity；不带档位后缀，走默认档）",
+      "tier": "A",
+      "cost": "Antigravity 会员额度",
+      "strengths": "复杂代码、排障、看图分析；经 Google Antigravity 调用，和走 Claude 订阅的 claude-opus 是两个成员",
+      "weaknesses": "待填",
+      "available": "✓",
+      "duty": "执行或验收。经 Google Antigravity 调用（agy 沿用桌面版的 Google 登录）。总管可为单次派活加 --effort 指定推理档位。",
+      "permissions": "--dangerously-skip-permissions：无人值守时不加会自动拒绝写文件和跑命令；只在项目目录工作。",
+      "history": "Antigravity 会话；agy --conversation <会话 ID> 续接。",
+      "aliases": [
+        "agy-opus",
+        "Opus（Google）"
+      ],
+      "parser": "agy",
+      "start_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--model",
+        "claude-opus-5-5",
+        "--dangerously-skip-permissions"
+      ],
+      "resume_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--conversation",
+        "{session}",
+        "--model",
+        "claude-opus-5-5",
+        "--dangerously-skip-permissions"
+      ]
+    },
+    {
+      "name": "Sonnet（Google）",
+      "dispatch_name": "agy-sonnet",
+      "app": "Google Antigravity 命令行（agy）",
+      "usual_seat": "执行",
+      "model": "claude-sonnet-5-5（经 Antigravity；不带档位后缀，走默认档）",
+      "tier": "B",
+      "cost": "Antigravity 会员额度",
+      "strengths": "按明确步骤执行、整理、常规分析；经 Google Antigravity 调用，和走 Claude 订阅的 claude-sonnet 是两个成员",
+      "weaknesses": "待填",
+      "available": "✓",
+      "duty": "执行或验收。经 Google Antigravity 调用（agy 沿用桌面版的 Google 登录）。总管可为单次派活加 --effort 指定推理档位。",
+      "permissions": "--dangerously-skip-permissions：无人值守时不加会自动拒绝写文件和跑命令；只在项目目录工作。",
+      "history": "Antigravity 会话；agy --conversation <会话 ID> 续接。",
+      "aliases": [
+        "agy-sonnet",
+        "Sonnet（Google）"
+      ],
+      "parser": "agy",
+      "start_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--model",
+        "claude-sonnet-5-5",
+        "--dangerously-skip-permissions"
+      ],
+      "resume_command": [
+        "agy",
+        "-p",
+        "{prompt}",
+        "--output-format",
+        "stream-json",
+        "--conversation",
+        "{session}",
+        "--model",
+        "claude-sonnet-5-5",
+        "--dangerously-skip-permissions"
+      ]
     }
   ]
 }

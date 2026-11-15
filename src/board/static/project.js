@@ -1,4 +1,5 @@
-// 御前看板：每 5 秒拉一次项目数据并重绘；展开状态保留。
+// 御前看板：推送来本项目的变化（live.js：账本块 p:<项目> 即时；运行块 r:<项目> 服务端最多 10 秒推一次）才拉数据并重绘，
+// 另有 60 秒保底；数据自带 If-None-Match，没变不重传。展开状态保留。
 // /p/<id>/archive 是归档页：只看归档的目标、任务、议题，打开时加载一次，不轮询。
 // 服务端给的 *Html 字段（来自 Markdown，已转义）用 innerHTML，其余一律转义。
 (function () {
@@ -6,8 +7,15 @@
   // 这时数据读导出好的 JSON，链接改成相对路径，只读、不轮询。本机服务下没有它，行为不变。
   const SITE = window.BOARD_STATIC || null;
   const U = (p) => { if (!SITE) return p; const [a, h] = p.split("#"); return SITE.base + a + "/" + (h ? "#" + h : ""); };
+  let live = null;  // 本机服务下的推送订阅（BoardLive.pages）；静态导出和归档页没有
   const getJSON = async (p) => {
-    if (!SITE) return (await fetch(p, {cache: "no-store"})).json();
+    if (live) {  // 自己带 If-None-Match；没变回 null
+      const r = await BoardLive.getJSON(p);
+      live.seen("p:" + id, r.version);
+      live.seen("r:" + id, r.runVersion);
+      return r.changed ? r.data : null;
+    }
+    if (!SITE) return (await fetch(p, {cache: "no-cache"})).json();
     const t = await (await fetch(SITE.base + p + ".json")).text();
     return JSON.parse(t.split("{{FILES}}").join(SITE.base + "/files"));
   };
@@ -1216,18 +1224,23 @@
   async function load() {
     try {
       const j = await getJSON("/api/p/" + id + (ARCHIVE ? "/archive" : ""));
+      if (j === null) { tick(); return; }  // 没变（304）
       if (j.error) throw new Error(j.error);
       const sig = JSON.stringify({...j, generated: 0});
-      const live = j.runs.some((x) => x.status === V.RunStatus.RUNNING);
+      const running = j.runs.some((x) => x.status === V.RunStatus.RUNNING);
       data = j;
       if (I18n.project(j.lang, j.names)) lastSig = "";  // 项目语言和称谓：读者没选过语言时跟着项目
-      if (sig !== lastSig || live) render();
+      if (sig !== lastSig || running) render();
       lastSig = sig;
-      const now = new Date().toLocaleTimeString(I18n.lang() === "zh" ? "zh-CN" : "en-GB", {hour12: false});
-      document.getElementById("tick").textContent = SITE ? T("board.tick.static") : ARCHIVE ? T("board.tick.archive", {t: now}) : T("board.tick.live", {t: now});
+      tick();
     } catch (e) {
-      document.getElementById("tick").textContent = T("board.tick.failed") + e.message;
+      tick(T("board.tick.failed") + e.message);
     }
+  }
+  function tick(text) {
+    const now = new Date().toLocaleTimeString(I18n.lang() === "zh" ? "zh-CN" : "en-GB", {hour12: false});
+    text = text || (SITE ? T("board.tick.static") : ARCHIVE ? T("board.tick.archive", {t: now}) : T("board.tick.live", {t: now}));
+    if (live) live.tick(text); else document.getElementById("tick").textContent = text;
   }
 
   function selectGoal(id) {
@@ -1269,6 +1282,7 @@
     if (btn.dataset.version != null) body.version = +btn.dataset.version;
     if (btn.dataset.tid) body.task = btn.dataset.tid;
     if (SITE) { apprMsg = T("board.appr.static"); render(); return; }
+    if (window.BoardPWA && BoardPWA.offline()) { apprMsg = T("board.live.offline_write"); render(); return; }  // 离线：写操作不发（按钮已置灰）
     if (act !== V.Edge.APPROVE && !body.text) { apprMsg = T("board.appr.write_first"); render(); return; }
     btn.disabled = true;
     try {
@@ -1279,6 +1293,7 @@
       if (key) delete drafts[key]; else delete drafts["goal:" + btn.dataset.goalid];
       lastSig = "";
       await load();
+      render();  // 草稿已清：数据没变（304）时 load 不重画，这里补一次
     } catch (err) {
       apprMsg = err.message;
       render();
@@ -1289,8 +1304,7 @@
     const a = e.target.closest('a[href^="file://"]');
     if (a) {
       e.preventDefault();
-      fetch("/api/open", {method: "POST", headers: {"Content-Type": "application/json", "X-Board": "1"},
-        body: JSON.stringify({path: decodeURIComponent(a.getAttribute("href").slice(7))})});
+      window.boardOpenFile(decodeURIComponent(a.getAttribute("href").slice(7)));
       return;
     }
     if (e.target.closest("a")) return;
@@ -1387,8 +1401,7 @@
     const a = e.target.closest('a[href^="file://"]');
     if (!a) return;
     e.preventDefault();
-    fetch("/api/open", {method: "POST", headers: {"Content-Type": "application/json", "X-Board": "1"},
-      body: JSON.stringify({path: decodeURIComponent(a.getAttribute("href").slice(7))})});
+    window.boardOpenFile(decodeURIComponent(a.getAttribute("href").slice(7)));
   });
 
   app.addEventListener("toggle", (e) => {
@@ -1406,6 +1419,16 @@
     back.href = U("/p/" + id);
     back.textContent = "← " + T("board.project_board");
   }
-  load().then(() => { if (ARCHIVE && openTask) document.querySelector(".task.open")?.scrollIntoView({block: "center"}); });
-  if (!ARCHIVE && !SITE) setInterval(() => { if (document.visibilityState === "visible") load(); }, 5000);
+  if (!ARCHIVE && !SITE && window.BoardLive) {
+    live = BoardLive.pages({watch: ["p:" + id, "r:" + id], load});
+    // 有成员在跑时，「已跑多久」要走：每 30 秒在本地重画一次，不发请求；正在写意见时跳过
+    setInterval(() => {
+      if (document.visibilityState !== "visible" || !data || !data.runs.some((x) => x.status === V.RunStatus.RUNNING)) return;
+      if (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.draft) return;
+      render();
+    }, 30000);
+    live.load();
+  } else {
+    load().then(() => { if (ARCHIVE && openTask) document.querySelector(".task.open")?.scrollIntoView({block: "center"}); });
+  }
 })();

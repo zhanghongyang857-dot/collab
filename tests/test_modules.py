@@ -258,7 +258,7 @@ class TestLoader(Base):
         page = mod.render(mod.collect())
         self.assertIn("NOW.register('j', {});", page)
         self.assertIn('NOW.fail("j", e)', page)
-        self.assertNotIn('"js":', page.split("const DATA = ", 1)[1].split(";\n", 1)[0])
+        self.assertNotIn('"js":', page.split("let DATA = ", 1)[1].split(";\n", 1)[0])
 
     def test_watch_includes_module_files(self):
         mod = self.build()
@@ -288,6 +288,13 @@ class TestBuiltinModules(Base):
         self.assertEqual([t["title"] for t in s["tabs"]], ["今天", "短期"])
         self.assertEqual([t["id"] for t in s["tabs"]], ["today", "plan"])
         self.assertNotIn("tasks.below", s["slots"])
+
+    def test_today_below_slot_opened_and_documented(self):
+        js = (ROOT / "src" / "modules" / "schedule" / "view.js").read_text(encoding="utf-8")
+        self.assertIn('ctx.slot("today.below")', js)
+        self.assertIn('below ? `<div class="today-below"', js)  # 没人挂时不加元素
+        for name in ("README.md", "README.en.md"):
+            self.assertIn("`today.below`", (ROOT / "src" / "modules" / name).read_text(encoding="utf-8"))
 
     def test_inline_single_star_is_emphasis_but_not_multiplication(self):
         mod = self.build()

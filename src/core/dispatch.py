@@ -305,7 +305,42 @@ def parse_claude(ev: Dict[str, Any], out: Dict[str, Any]) -> None:
             out["error"] = clip(ev.get("result") or "；".join(str(x) for x in ev.get("errors") or []) or ev.get("subtype") or "is_error", 300)
 
 
-PARSERS = {"dsh": parse_dsh, "codex": parse_codex, "claude": parse_claude}
+def parse_agy(ev: Dict[str, Any], out: Dict[str, Any]) -> None:
+    """Antigravity 命令行（agy -p --output-format stream-json，1.5.9 实测样本见 tests/样例/agy/）：
+    init 给会话 ID；step_update 按步报 user_input / agent_response / tool 的 ACTIVE、DONE，回复是 text_delta 片段；
+    result 给最终回复，出错时 status 是 ERROR、原因在 error；无人值守时被拒的工具记在 denied_actions。"""
+    ev_t = ev.get("event")
+    if ev_t == "init" and ev.get("conversation_id"):
+        out["session"] = ev["conversation_id"]
+    elif ev_t == "step_update":
+        s = ev.get("step_update") or {}
+        st, kind = s.get("state"), s.get("step_type")
+        if kind == "tool" and st == "ACTIVE":
+            info = s.get("tool_info") or {}
+            name, params = s.get("tool_name") or info.get("name") or L.t("disp.tool"), info.get("parameters") or {}
+            out["phase"] = RunPhase.TOOL
+            out["action"] = (L.t("disp.action.run") + str(params["CommandLine"]) if params.get("CommandLine")
+                             else _tool_brief(name, {k.lower(): v for k, v in params.items()}))
+            out["step"] = True
+        elif kind == "agent_response" and st == "ACTIVE":
+            out["phase"] = RunPhase.WRITING
+            if s.get("text_delta"):
+                out["draft_add"] = s["text_delta"]
+        elif kind == "agent_response" and st == "DONE":  # 一段回复写完（接下来调工具或结束），下一段重新攒
+            out["draft_reset"] = True
+            out["phase"] = RunPhase.THINKING
+        elif kind in ("user_input", "tool") and st == "DONE":
+            out["phase"] = RunPhase.THINKING
+    elif ev_t == "result":
+        r = ev.get("result") or {}
+        out["final"] = (r.get("response") or "").rstrip()  # response 以换行结尾
+        if r.get("status") != "SUCCESS":
+            out["error"] = clip(r.get("error") or r.get("status") or "error", 300)
+        elif r.get("denied_actions") and not out["final"].strip():
+            out["error"] = clip(L.t("disp.agy_denied", actions=L.join(a.get("action", "") for a in r["denied_actions"])), 300)
+
+
+PARSERS = {"dsh": parse_dsh, "codex": parse_codex, "claude": parse_claude, "agy": parse_agy}
 
 
 # ---------- token 汇总：每次派活记一行（输入、缓存、输出、调用次数、最后上下文）；算错只记未知，不影响派活 ----------
@@ -364,7 +399,27 @@ def usage_claude(ev: Dict[str, Any], acc: Dict[str, Any]) -> None:
             acc["cost_usd"] = round(ev["total_cost_usd"], 4)
 
 
-USAGE = {"dsh": usage_dsh, "codex": usage_codex, "claude": usage_claude}
+def usage_agy(ev: Dict[str, Any], acc: Dict[str, Any]) -> None:
+    """每次模型调用结束（agent_response 的 DONE）带一次 usage，逐次相加；result 的 usage 是整个会话的累计（续接时含前几次），不用。
+    input_tokens 不含 cache_read_tokens；total_tokens = input + output，所以 output 已含 thinking_tokens。"""
+    s = ev.get("step_update") if ev.get("event") == "step_update" else None
+    u = s.get("usage") if isinstance(s, dict) and s.get("state") == "DONE" else None
+    if isinstance(u, dict):
+        acc["calls"] = acc.get("calls", 0) + 1
+        acc["input"] = acc.get("input", 0) + _n(u.get("input_tokens"))
+        acc["cached"] = acc.get("cached", 0) + _n(u.get("cache_read_tokens"))
+        acc["output"] = acc.get("output", 0) + _n(u.get("output_tokens"))
+        acc["context"] = _n(u.get("input_tokens")) + _n(u.get("cache_read_tokens")) + _n(u.get("output_tokens"))
+
+
+USAGE = {"dsh": usage_dsh, "codex": usage_codex, "claude": usage_claude, "agy": usage_agy}
+
+# 能为单次派活指定推理档位的事件解析 → 命令行参数（agy 1.5.9 实测：--model 用不带档位后缀的 ID 加 --effort 可行；
+# 带后缀的 ID 再给不同的 --effort 会报错；各型号可用档位不同，不支持的档位 agy 自己报错）
+EFFORT_FLAG = {"agy": "--effort"}
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
+# 续接找不到会话时不报错、悄悄开新会话的命令行（agy 1.5.9 实测只在 stderr 打 warning）
+SILENT_NEW_SESSION = {"agy"}
 
 
 def finish_tokens(acc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -504,6 +559,7 @@ class Runner:
         self.rdir = runs_dir(project)
         self.rec = rec
         self.argv = argv
+        self.parser = parser
         self.parse = PARSERS[parser]
         self.usage = USAGE.get(parser)
         self.tokens: Dict[str, Any] = {"_base": token_base} if token_base else {}
@@ -618,6 +674,14 @@ class Runner:
                     self.rec["session"] = out["session"]
                     self.save(force=True)
                     print(L.t("disp.session", session=out['session']), flush=True)
+                elif (out.get("session") and out["session"] != self.rec["session"] and self.parser in SILENT_NEW_SESSION
+                      and self.rec.get("mode") == RunMode.RESUME and not self.rec.get("session_replaced")):
+                    # 要续接的会话没了，命令行开了新会话：换成新会话（之后续接接这个），记下原来的，提示成员不记得之前的内容
+                    old = self.rec["session"]
+                    self.rec.update(session=out["session"], session_replaced=old,
+                                    error=L.t("disp.session_replaced", old=old, new=out["session"]))
+                    self.save(force=True)
+                    print(self.rec["error"], flush=True)
                 if out.get("draft_reset"):
                     self.draft = ""
                 if out.get("draft_add"):
@@ -692,9 +756,22 @@ class Runner:
         return 0 if status == DONE else (130 if status == STOPPED else 1)
 
 
-def build_argv(member_cfg: Dict[str, Any], mode: str, prompt: str, session: str, last: Path) -> List[str]:
+def build_argv(member_cfg: Dict[str, Any], mode: str, prompt: str, session: str, last: Path, effort: str = "") -> List[str]:
     vals = {"prompt": prompt, "session": session, "last": str(last)}
-    return [re.sub(r"\{(prompt|session|last)\}", lambda m: vals[m.group(1)], a) for a in member_cfg[mode]]
+    argv = [re.sub(r"\{(prompt|session|last)\}", lambda m: vals[m.group(1)], a) for a in member_cfg[mode]]
+    return with_effort(argv, member_cfg, effort) if effort else argv
+
+
+def with_effort(argv: List[str], member_cfg: Dict[str, Any], effort: str) -> List[str]:
+    """总管为单次派活指定的推理档位：加在启动的程序后面；命令里已经写了的换成这次的。成员不支持时退出。"""
+    flag = EFFORT_FLAG.get(member_cfg.get("parser", ""))
+    if not flag:
+        sys.exit(L.t("disp.no_effort", parser=member_cfg.get("parser"), parsers=L.join(EFFORT_FLAG)))
+    if flag in argv:
+        i = argv.index(flag)
+        return argv[:i] + [flag, effort] + argv[i + 2:]
+    i = argv.index(_exe_of(argv)) if _exe_of(argv) else 0
+    return argv[:i + 1] + [flag, effort] + argv[i + 1:]
 
 
 def read_prompt(p: str) -> str:
@@ -720,7 +797,7 @@ def check_gate(project: Path, skip: str) -> Optional[str]:
 
 def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
               session: Optional[str] = None, parent: Optional[str] = None, override: str = "",
-              adhoc: str = "", skip_check: str = "") -> int:
+              adhoc: str = "", skip_check: str = "", effort: str = "") -> int:
     members = load_members()
     if member not in members:
         sys.exit(L.t("disp.unknown_member", member=member, members=L.join(members), src=members_source()))
@@ -729,13 +806,15 @@ def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
         print(L.t("disp.member_unavailable", member=member, status=cfg['available']), file=sys.stderr)
     if cfg.get("parser") not in PARSERS:
         sys.exit(L.t("disp.bad_parser", member=member, parser=cfg.get('parser'), parsers=L.join(PARSERS)))
+    if effort and cfg["parser"] not in EFFORT_FLAG:  # 派出去之前就拒，不留派发记录
+        sys.exit(L.t("disp.no_effort", parser=cfg["parser"], parsers=L.join(EFFORT_FLAG)))
     skipped = check_gate(project, skip_check)
     collab = project / P.COLLAB
     if (collab / P.INTERNAL_FLOW).is_dir():
         if adhoc:
             print(L.t("disp.no_adhoc"), file=sys.stderr)
             return 2
-        return start_flow_run(project, task, seat, member, cfg, prompt, session, parent, override, skipped)
+        return start_flow_run(project, task, seat, member, cfg, prompt, session, parent, override, skipped, effort)
     has_card = any(t["id"] == task for t in collab_parse.load_tasks(collab))
     if not has_card and not adhoc:
         print(f"未派活：{task} 没有任务卡。先建卡（协议「记录规范 · 编号」），总裁批准后再派；"
@@ -767,12 +846,14 @@ def start_run(project: Path, task: str, seat: str, member: str, prompt: str,
     rdir = runs_dir(project)
     rid = new_run_id(rdir, task, member, seat)
     mode = "resume" if session else "start"
-    argv = isolate(build_argv(cfg, mode, prompt, session or "", rdir / f"{rid}.last.txt"))
+    argv = isolate(build_argv(cfg, mode, prompt, session or "", rdir / f"{rid}.last.txt", effort))
     rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": RunMode.RESUME if session else RunMode.NEW,
            "session": session or "", "continues": parent or "", "prompt": prompt, "steps": 0,
            "last_action": "", "final": "", "error": "",
            "deviations": deviations, "override": "；".join(reasons),
            "adhoc": adhoc if not has_card else ""}
+    if effort:
+        rec["effort"] = effort
     base = None
     if parent:  # Codex 的用量是会话累计，续接时要减去上一次的累计
         prev = next((r for r in load_runs(project) if r.get("run") == parent), None)
@@ -796,7 +877,7 @@ def isolate(argv: List[str]) -> List[str]:
 
 
 def start_flow_run(project: Path, task: str, seat: str, member: str, cfg: Dict[str, Any], prompt: str,
-                   session: Optional[str], parent: Optional[str], override: str, skipped: Optional[str]) -> int:
+                   session: Optional[str], parent: Optional[str], override: str, skipped: Optional[str], effort: str = "") -> int:
     """新结构项目（有 collab/内部/流转/）：顺序、人选等由 flow.py 校验；派发、接手由本脚本代写；
     启动语拼上 flow.py 的上下文包；成员用环境变量里的身份自己写交付或上报，结束后补一条进展。"""
     if flow.kind_of(task) == Kind.ISSUE:
@@ -823,12 +904,14 @@ def start_flow_run(project: Path, task: str, seat: str, member: str, cfg: Dict[s
     st = flow.replay_all(proj)[0][task]
     (project / flow.workspace(proj, st, actor)["scratch"]).mkdir(parents=True, exist_ok=True)
     mode = "resume" if session else "start"
-    argv = isolate(build_argv(cfg, mode, full_prompt, session or "", rdir / f"{rid}.last.txt"))
+    argv = isolate(build_argv(cfg, mode, full_prompt, session or "", rdir / f"{rid}.last.txt", effort))
     deviations = [skipped] if skipped else []
     rec = {"run": rid, "task": task, "seat": seat, "member": member, "mode": RunMode.RESUME if session else RunMode.NEW,
            "session": session or "", "continues": parent or "", "prompt": full_prompt, "steps": 0,
            "last_action": "", "final": "", "error": "", "deviations": deviations,
            "override": L.join((r for r in (override, skipped) if r), "sep.clause"), "adhoc": ""}
+    if effort:
+        rec["effort"] = effort
     env = member_env({"COLLAB_ACTOR": actor, "COLLAB_RUN": rid, "COLLAB_WRITER": Writer.MEMBER, "COLLAB_FLOW": str(flow.FLOW_PY)})
     base = None
     if parent:
@@ -1201,7 +1284,7 @@ def cmd_ready(a, project: Path) -> int:
 
 def cmd_start(a, project: Path) -> int:
     return start_run(project, a.task, flow.value_code("seat", a.seat), a.member, read_prompt(a.prompt), override=a.override or "",
-                     adhoc=a.adhoc or "", skip_check=a.skip_check or "")
+                     adhoc=a.adhoc or "", skip_check=a.skip_check or "", effort=a.effort or "")
 
 
 def cmd_continue(a, project: Path) -> int:
@@ -1221,7 +1304,7 @@ def cmd_continue(a, project: Path) -> int:
         sys.exit(L.t("disp.no_session_id", run=base['run']))
     return start_run(project, base["task"], base["seat"], base["member"], read_prompt(a.prompt),
                      session=base["session"], parent=base["run"], override=a.override or "",
-                     adhoc=base.get("adhoc") or "", skip_check=a.skip_check or "")
+                     adhoc=base.get("adhoc") or "", skip_check=a.skip_check or "", effort=a.effort or "")
 
 
 def _stop_one(project: Path, r: Dict[str, Any]) -> str:
@@ -1531,11 +1614,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--override", help=H("h03"))
     p.add_argument("--adhoc", help=H("h04"))
     p.add_argument("--skip-check", help=H("h05"))
+    p.add_argument("--effort", choices=EFFORTS, help=H("h35"))
     p = sub.add_parser("continue", help=H("h06"))
     p.add_argument("task"); p.add_argument("seat"); p.add_argument("prompt")
     p.add_argument("--run", help=H("h07"))
     p.add_argument("--override", help=H("h08"))
     p.add_argument("--skip-check", help=H("h09"))
+    p.add_argument("--effort", choices=EFFORTS, help=H("h35"))
     p = sub.add_parser("stop", help=H("h10"))
     p.add_argument("run", nargs="?"); p.add_argument("--all", action="store_true")
     p = sub.add_parser("list", help=H("h11"))

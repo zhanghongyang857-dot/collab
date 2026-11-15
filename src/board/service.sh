@@ -5,7 +5,8 @@
 # Operation not permitted）。应用包在首次访问 ~/Documents 时由系统询问一次，总裁点
 # 「允许」后，它启动的 python 子进程继承该授权；不需要「完全磁盘访问」。
 #
-# 用法：bash board/service.sh install|uninstall|status|restart|logs [-f] [行数]
+# 用法：bash board/service.sh install|uninstall|status|restart|logs [-f] [行数]|remote on|off|status
+#   remote：经 Tailscale 私网让自己的其他设备访问（tailscale serve 代理到本机端口，服务仍只监听 127.0.0.1）
 #
 # 只写自己的文件：~/Applications/御前看板.app、
 # ~/Library/LaunchAgents/com.local.ai-company-board.plist、~/Library/Logs/ai-company-board/。
@@ -437,11 +438,41 @@ restart() {
 # 供测试 source：只加载函数，不执行子命令
 if [ "${BASH_SOURCE[0]}" != "$0" ]; then return 0; fi
 
+# 远程访问：tailscale serve 把 https://<本机>.<tailnet>.ts.net 代理到 127.0.0.1:<端口>，只有登录同一 Tailscale 账号的设备能访问。
+# 不用 funnel（那是公网）。经代理来的请求服务端算「远程」：能看能批，不能打开 Mac 上的文件。
+tailscale_bin() {
+  local b
+  b="$(command -v tailscale 2>/dev/null || true)"
+  [ -z "$b" ] && [ -x "/Applications/Tailscale.app/Contents/MacOS/Tailscale" ] && b="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+  printf '%s' "$b"
+}
+
+remote() {
+  local ts port url
+  ts="$(tailscale_bin)"
+  if [ -z "$ts" ]; then
+    say "没找到 Tailscale。先在本机和手机装 Tailscale（https://tailscale.com/download，Mac 也可从 App Store 装），用同一个账号登录，再运行 remote on。"
+    return 1
+  fi
+  port="$(installed_port)"
+  case "${1:-status}" in
+    on)
+      "$ts" serve --bg "$port" || die "tailscale serve 没开成功；按上面的提示操作（第一次用要在 Tailscale 后台开启 HTTPS），再运行 remote on。"
+      url="$("$ts" status --json 2>/dev/null | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print("https://" + d["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
+      say "远程访问已开：${url:-见下方 tailscale serve status}（只有你 Tailscale 里的设备能打开；Mac 需开着、不睡眠）"
+      ;;
+    off) "$ts" serve --https=443 off 2>/dev/null || "$ts" serve reset; say "远程访问已关" ;;
+    status) "$ts" serve status ;;
+    *) die "用法：remote on|off|status" ;;
+  esac
+}
+
 case "${1:-}" in
   install) install ;;
   uninstall) uninstall ;;
   status) status ;;
   restart) restart ;;
   logs) shift; logs "$@" ;;
-  *) say "用法：bash board/service.sh install|uninstall|status|restart|logs [-f] [行数]"; exit 2 ;;
+  remote) shift; remote "$@" ;;
+  *) say "用法：bash board/service.sh install|uninstall|status|restart|logs [-f] [行数]|remote on|off|status"; exit 2 ;;
 esac

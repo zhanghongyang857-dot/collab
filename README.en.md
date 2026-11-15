@@ -201,7 +201,7 @@ Full test suite: `python3 -m unittest discover -s tests`.
 
 <details><summary><b>Which models does it support?</b></summary>
 
-The Lead is usually Claude (Claude Code or the desktop app). Members can be Codex CLI, DeepSeek, the Claude CLI, or any assistant that runs in a terminal. Members work in their own native CLI; Vermilion doesn't replace them.
+The Lead is usually Claude (Claude Code or the desktop app). Members can be Codex CLI, DeepSeek, the Claude CLI, the Google Antigravity CLI (agy), or any assistant that runs in a terminal. Members work in their own native CLI; Vermilion doesn't replace them.
 </details>
 
 <details><summary><b>Where is my data? Is anything uploaded?</b></summary>
@@ -221,7 +221,12 @@ Multi-agent frameworks orchestrate agents talking to each other in code. Vermili
 
 <details><summary><b>Which languages does it support?</b></summary>
 
-English and Chinese. You choose when you install the workbench in a project (`--lang en` or `--lang zh`); protocol, templates and messages follow that choice, and `init.sh lang en|zh` switches an existing project. File names and codes underneath are English for both. The board has its own 中 / EN switch.
+English and Chinese. You choose when you install the workbench in a project (`--lang en` or `--lang zh`); protocol, templates and messages follow that choice, and `init.sh lang en|zh` switches an existing project. File names and codes underneath are English for both. The board has its own English / 中文 link in the page footer (desktop only; hidden on touch screens).
+</details>
+
+<details><summary><b>Can I use the board on my phone?</b></summary>
+
+Yes, over a Tailscale private network: install Tailscale on the Mac and the phone, sign in with the same account, run `bash ~/vermilion/system/board/service.sh remote on` and open the address it prints. The service still listens on the Mac only, so others on the same Wi‑Fi can't reach it; on the phone you can read and approve, but not open files on the Mac. The Mac has to be on. See [src/board/README.en.md](src/board/README.en.md).
 </details>
 
 <details><summary><b>Which operating systems?</b></summary>

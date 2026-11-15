@@ -1,13 +1,22 @@
 // 朝会页（方案 03 第 6.4、10.4 节）：/p/<项目>/meet/<议题>。左栏是本项目的议题，右边是群聊式对话。
 // 只画 /api/p/<项目>/meet/<议题> 给的数据；总裁的动作经 POST 同一路径写一条黑板事件，服务端走 flow.py 的检查，
-// 总裁带 @ 的发言在后台叫醒相关成员（只有总裁的 @ 能叫醒人，成员写的 @ 只是普通文字）。每 3 秒刷新。
+// 总裁带 @ 的发言在后台叫醒相关成员（只有总裁的 @ 能叫醒人，成员写的 @ 只是普通文字）。
+// 推送来本项目的变化（live.js：账本块 p:<项目> 即时；运行块 r:<项目> 即成员发言的流式输出，服务端最多 10 秒推一次、重算一次）才拉数据，
+// 另有 60 秒保底。数据自带 If-None-Match，没变不重传。
 (function () {
   // 静态演示（board/export_static.py 导出、放到 GitHub Pages 等处）：window.BOARD_STATIC 给出项目、页面和到导出根的相对路径；
   // 这时数据读导出好的 JSON，链接改成相对路径，只读、不轮询。本机服务下没有它，行为不变。
   const SITE = window.BOARD_STATIC || null;
   const U = (p) => { if (!SITE) return p; const [a, h] = p.split("#"); return SITE.base + a + "/" + (h ? "#" + h : ""); };
+  let live = null;  // 本机服务下的推送订阅（BoardLive.pages）；静态导出没有
   const getJSON = async (p) => {
-    if (!SITE) return (await fetch(p, {cache: "no-store"})).json();
+    if (live) {  // 自己带 If-None-Match；没变回 null
+      const r = await BoardLive.getJSON(p);
+      live.seen("p:" + pid, r.version);
+      live.seen("r:" + pid, r.runVersion);
+      return r.changed ? r.data : null;
+    }
+    if (!SITE) return (await fetch(p, {cache: "no-cache"})).json();
     const t = await (await fetch(SITE.base + p + ".json")).text();
     return JSON.parse(t.split("{{FILES}}").join(SITE.base + "/files"));
   };
@@ -235,6 +244,7 @@
   async function post(body) {
     if (busy) return false;
     if (SITE) { $("err").textContent = T("meet.err.static"); return false; }
+    if (window.BoardPWA && BoardPWA.offline()) { $("err").textContent = T("board.live.offline_write"); return false; }  // 离线：不发，草稿留着
     busy = true;
     $("err").textContent = "";
     try {
@@ -255,24 +265,26 @@
   async function load() {
     try {
       const j = await getJSON(`/api/p/${pid}/meet/${iid}`);
+      if (j === null) { tick(); return; }  // 没变（304）
       if (j.error) throw new Error(j.error);
       const sig = JSON.stringify({...j, generated: 0});
       data = j;
       if (I18n.project(j.lang, j.names)) lastSig = "";  // 项目语言和称谓：读者没选过语言时跟着项目
       if (sig !== lastSig) render();
       lastSig = sig;
-      $("tick").textContent = SITE ? T("board.tick.static") : T(data.runs.some((r) => r.status === V.RunStatus.RUNNING) ? "meet.tick.fast" : "meet.tick.slow") + new Date().toLocaleTimeString(I18n.lang() === "zh" ? "zh-CN" : "en-GB", {hour12: false});
+      tick();
     } catch (e) {
-      $("tick").textContent = T("board.tick.failed") + e.message;
+      tick(T("board.tick.failed") + e.message);
     }
   }
+  const running = () => !!data && data.runs.some((r) => r.status === V.RunStatus.RUNNING);
+  function tick(text) {
+    text = text || (SITE ? T("board.tick.static") : T(running() ? "meet.tick.fast" : "meet.tick.slow") + new Date().toLocaleTimeString(I18n.lang() === "zh" ? "zh-CN" : "en-GB", {hour12: false}));
+    if (live) live.tick(text); else $("tick").textContent = text;
+  }
   if (!pid) { $("tl").innerHTML = `<div class="empty">${esc(T("meet.bad_url"))}</div>`; return; }
-  load();
-  if (SITE) return;
-  // 有人在跑时约 1 秒刷新，否则 3 秒
-  let last = 0;
-  setInterval(() => {
-    const running = data && data.runs.some((r) => r.status === V.RunStatus.RUNNING);
-    if (document.visibilityState === "visible" && !busy && Date.now() - last >= (running ? 900 : 2900)) { last = Date.now(); load(); }
-  }, 300);
+  if (SITE || !window.BoardLive) { load(); return; }
+  // 有成员在跑时不再每秒拉（G056-T9 实测：Mac 不能因看板持续繁忙）：流式输出走运行块 r:<项目> 的推送，最多 10 秒一次
+  live = BoardLive.pages({watch: ["p:" + pid, "r:" + pid], load});
+  live.load();
 })();
