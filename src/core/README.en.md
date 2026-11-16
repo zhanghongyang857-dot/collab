@@ -24,6 +24,8 @@ Changing the plan: edit the plan file and rerun `flow.py plan`; the plan version
 
 Development-toolkit guard: a toolkit without `VERSION.txt` (that is, `src/` in the development repository) refuses to write the ledger of the repository it lives in, or the `workbench/` templates (`flow.py` writes, and every `dispatch.py` command except `list` and `show`); published toolkits, `demo/` and other projects are unaffected.
 
+Pushing after publish: after `publish.sh` publishes a full local copy (no `--core`, `--module` or `--dirty`), it runs `git push` for the current branch only if the development repository's root has a `.publish-push` file (a local setting, listed in `.gitignore`, never committed or exported to the public repository); its first line may name the remote, default `origin`. It never forces, and a failed push only prints a warning — the publish still succeeds. Without the file nothing is pushed; it prints "the private repository is N commits ahead of origin (auto-push is off: …)", and `touch <dev repo>/.publish-push` turns it on. If the development repository has `release/sync.sh`, it then prints how many commits the public repository is behind and which goals (G0xx, …), or that it is up to date (the source is read from the `来源：<hash>` line in the public repository's commit messages; the public repository defaults to `../collab` next to the development repository, override with `COLLAB_PUBLIC`); without `release/` this step is skipped.
+
 `skeletons/` holds the process skeletons: `task`, `goal` (with the three stage templates `goal-general` / `goal-research` / `goal-dev`), `issue`, the loading list `loading` and the render rules `render`; `history/` keeps old versions.
 
 # init.sh: workbench, NOW, team

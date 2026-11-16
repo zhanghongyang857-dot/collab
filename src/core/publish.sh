@@ -8,7 +8,10 @@
 # 做什么：
 #   1. 用 git archive 导出当前提交的 src/，写 版本.txt（提交号、分支、时间）
 #   2. 原来的拷贝改名为「<目标>.上一版」，回退就把它改回来
-#   3. 看板常驻已指向目标目录就重启；还没指向时提示运行 board/service.sh install
+#   3. 发布本机完整拷贝时（不带 --core、--module、--dirty）：开发仓库根目录有 .publish-push（本机配置，不进 git）
+#      才 git push 当前分支（第一行可写远端名，默认 origin；失败只提示），没开只报比远端多几个提交；
+#      再用 release/sync.sh --status 报公开仓库落后多少（没有 release/ 时跳过）
+#   4. 看板常驻已指向目标目录就重启；还没指向时提示运行 board/service.sh install
 set -euo pipefail
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -54,7 +57,7 @@ else
   git -C "$REPO" archive --format=tar HEAD:src | tar -xf - -C "$TMP"
 fi
 if [ -n "$MODULE" ]; then
-  [ -d "$TMP/modules/$MODULE" ] || { echo "错误：当前提交里没有模块 $MODULE，先提交" >&2; exit 1; }
+  [ -d "$TMP/modules/$MODULE" ] || { echo "错误：当前提交里没有模块 ${MODULE}，先提交" >&2; exit 1; }
   mv "$TMP/modules/$MODULE" "$TMP.模块"
   rm -rf "$TMP"
   mv "$TMP.模块" "$TMP"
@@ -86,7 +89,36 @@ mv "$TMP" "$DEST"
 trap - EXIT
 echo "已发布到 $DEST"
 sed 's/^/  /' "$DEST/${P_VERSION_TXT}"
-[ -d "$PREV" ] && echo "上一版：$PREV（回退：删掉 $DEST，把上一版改回原名）"
+[ -d "$PREV" ] && echo "上一版：${PREV}（回退：删掉 ${DEST}，把上一版改回原名）"
+
+# 发布本机完整拷贝后：开发仓库根目录有 .publish-push（本机配置，不进 git）才推当前分支（不 force；失败只提示），
+# 没开只报比远端多几个提交；再报公开仓库落后多少（G059）
+if [ "$CORE" = 0 ] && [ "$DIRTY" = 0 ]; then
+  BRANCH="$(git -C "$REPO" branch --show-current)"
+  REMOTE=origin
+  if [ -f "$REPO/.publish-push" ]; then
+    R="$(head -n 1 "$REPO/.publish-push" | tr -d '[:space:]')"
+    [ -z "$R" ] || REMOTE="$R"
+  fi
+  if [ -z "$BRANCH" ]; then
+    echo "私有仓库：不在分支上，没推送"
+  elif ! git -C "$REPO" remote get-url "$REMOTE" >/dev/null 2>&1; then
+    echo "私有仓库：没有远端 ${REMOTE}，没推送"
+  elif [ ! -f "$REPO/.publish-push" ]; then
+    if git -C "$REPO" rev-parse -q --verify "refs/remotes/$REMOTE/$BRANCH" >/dev/null; then
+      AHEAD="$(git -C "$REPO" rev-list --count "$REMOTE/$BRANCH..HEAD") 个提交"
+    else
+      AHEAD="全部提交（$REMOTE 上还没有 ${BRANCH}）"
+    fi
+    echo "私有仓库比 $REMOTE 多 ${AHEAD}（自动推送没开：touch \"$REPO/.publish-push\" 开启，第一行可写远端名，默认 origin）"
+  elif OUT="$(GIT_TERMINAL_PROMPT=0 git -C "$REPO" push "$REMOTE" "$BRANCH" 2>&1)"; then
+    echo "私有仓库：已推送 $BRANCH 到 ${REMOTE}（$(git -C "$REPO" rev-parse --short HEAD)）"
+  else
+    echo "私有仓库：推送失败（发布不受影响），稍后手动 git push："
+    echo "$OUT" | tail -n 3 | sed 's/^/  /'
+  fi
+  if [ -x "$REPO/release/sync.sh" ]; then "$REPO/release/sync.sh" --status || true; fi
+fi
 
 CONF="$HOME/Library/Application Support/ai-company-board/config"
 if [ -f "$CONF" ] && grep -qx "SERVER=$DEST/board/server.py" "$CONF"; then
