@@ -15,6 +15,12 @@ English: [README.en.md](README.en.md)
 
 只认 `- **` 开头、正文里有粗体日期的行；写「暂定」「待公告」会显示对应标记。
 
+同一行里可选写 `地点：…` 和 `备注：…`（也认英文 `Place:`、`Note:`），值到下一个 `；`、`;`、`。` 或行尾为止，粗体记号会去掉。装了日历模块时，它们显示在考试弹窗的说明行里。例如：
+
+```
+- **期末考试（60%）**：**2026-11-20（周五）09:00–11:00**。地点：**HALL C，座位 68**；备注：闭卷。
+```
+
 ## 配置（`config.json` 的 `deadlines` 一节）
 
 | 字段 | 含义 |
@@ -27,4 +33,4 @@ English: [README.en.md](README.en.md)
 
 ## 对外
 
-`provides: deadlines`：`[{date, weekday, time, course, title, weight, final, tentative, pending}]`，按日期排序。
+`provides: deadlines`：`[{date, weekday, time, course, title, weight, place, note, final, tentative, pending}]`，按日期排序；`place`、`note` 没写时是空串。

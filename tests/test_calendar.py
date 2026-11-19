@@ -201,6 +201,19 @@ class TestDeadlines(CalBase):
         self.assertEqual([e["title"] for e in evs if not e["exam"]], ["讲座"])
         self.assertEqual(evs[0]["title"], "讲座")  # 同一天按开始时间排：10:00 在 14:00 前
 
+    def test_exam_place_and_note(self):
+        (self.data / "deadlines.md").write_text(
+            f"## EE0001 示例课\n- **期末（60%）**：**{self.day}（周X）09:00–11:00**。地点：**HALL C，座位 68**；备注：闭卷。（据官网）\n"
+            f"- **期中（30%）**：**{self.day}（周X）14:00** Place: LT1; note: open book\n"
+            f"- **作业（10%）**：**{self.day}（周X）23:59**；见 Footnote: 无\n", encoding="utf-8")
+        exams = {e["title"]: (e["place"], e["note"]) for e in self.cal()["events"] if e["exam"]}
+        self.assertEqual(exams, {"EE0001 · 期末（60%）": ("HALL C，座位 68", "闭卷"),
+                                 "EE0001 · 期中（30%）": ("LT1", "open book"),
+                                 "EE0001 · 作业（10%）": ("", "")})
+
+    def test_exam_without_place_note_is_empty(self):
+        self.assertEqual({(e["place"], e["note"]) for e in self.cal()["events"] if e["exam"]}, {("", "")})
+
     def test_exam_category_uses_calendar_categories(self):
         self.config(deadlines={"file": "deadlines.md", "groups": ["EE0001"]},
                     calendar={"categories": [{"name": "课程", "keywords": ["EE0001"], "color": "red"}]})

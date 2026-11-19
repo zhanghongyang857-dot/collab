@@ -165,8 +165,8 @@ class SyncTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, out)
         self.assertIn("共 2 个提交，改了公开内容的 1 个", out)
         self.assertIn("- G901 看板换新皮肤", out)
-        self.assertNotIn("G902", out.split("提交信息（起草）")[1])
-        self.assertIn(f"来源：{head[:12]}", out)
+        self.assertNotIn("G902", out.split("区间内的目标")[1])
+        self.assertIn("== 提交信息 ==\n更新", out)
         self.assertIn("README 提示", out)
         self.assertIn("src/core/README.md", out)
         self.assertIn("停在提交前", out)
@@ -175,22 +175,25 @@ class SyncTest(unittest.TestCase):
         self.assertTrue((self.pub / "src" / "core" / "README.md").exists())  # 导出到了公开仓库工作区
 
         r = self.sync("--push")
-        self.assertNotEqual(r.returncode, 0)
-        self.assertIn("--message", r.stderr)
-
-        r = self.sync("--push", "--message", "跟上新版：看板换皮肤")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertEqual(self.ref(self.origin), head)
         self.assertEqual(self.ref(self.pubgit), self.ref(self.pub, "HEAD"))
-        msg = self.git(self.pub, "log", "-1", "--format=%B").stdout.strip().splitlines()
-        self.assertEqual(msg[0], "跟上新版：看板换皮肤")
-        self.assertIn("- G901 看板换新皮肤", msg)
-        self.assertEqual(msg[-1], f"来源：{head[:12]}")
-        # 新写法「来源：」能读回来：落后 0
+        # 公开提交信息只有一行中性标题，不带目标和来源
+        self.assertEqual(self.git(self.pub, "log", "-1", "--format=%B").stdout.strip(), "更新")
+        # 来源记在开发仓库标签 public-synced，并推到私有仓库
+        self.assertEqual(self.ref(self.dev, "public-synced^{commit}"), head)
+        self.assertEqual(self.ref(self.origin, "public-synced^{commit}"), head)
         r = self.sync("--status")
         self.assertIn("已是最新", r.stdout)
         r = self.sync()
         self.assertIn("公开仓库已是最新，不用同步", r.stdout)
+
+        # --message 可换标题；标签优先于公开仓库里的旧来源写法
+        self.commit("src/core/新功能.txt", "x\n", "G901-T2：新功能")
+        r = self.sync("--push", "--message", "v0.2.0")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("共 1 个提交", r.stdout)
+        self.assertEqual(self.git(self.pub, "log", "-1", "--format=%B").stdout.strip(), "v0.2.0")
 
     def test_stops_on_uncommitted_and_on_blocked_word(self):
         (self.dev / "src" / "新文件.txt").write_text("x\n", encoding="utf-8")
@@ -211,7 +214,7 @@ class SyncTest(unittest.TestCase):
         r = self.sync()
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("export.sh 没有走完", r.stderr)
-        self.assertNotIn("提交信息（起草）", r.stdout)
+        self.assertNotIn("== 提交信息 ==", r.stdout)
 
     def test_no_readme_hint_when_public_readme_changed(self):
         self.commit("src/core/README.md", "改了说明\n", "G901-T1：说明")

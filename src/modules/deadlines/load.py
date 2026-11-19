@@ -2,8 +2,17 @@
 
 截止文件格式：`## 分组 …` 下的 `- **事项（权重）**：… **YYYY-MM-DD（周X）时间**…`。
 写「暂定」「待公告」会显示对应标记，事项名含 final_keyword（默认「期末」）的单独列出。
+同一行里可选写 `地点：…`、`备注：…`（英文 `Place:`、`Note:`），值到下一个 `；` `;` `。` 或行尾为止，粗体记号去掉。
 """
 import re
+
+FIELDS = {"place": r"地点|Place", "note": r"备注|Note"}
+
+
+def field(line, key):
+    """行里 `地点：…` / `备注：…` 的值；没写返回空串。"""
+    m = re.search(rf"(?<![A-Za-z])(?:{FIELDS[key]})\s*[：:]\s*([^；;。\n]+)", line, re.I)
+    return m.group(1).replace("*", "").strip() if m else ""
 
 
 def parse(ctx, path):
@@ -25,6 +34,7 @@ def parse(ctx, path):
         title = re.sub(r"\s*[（(]\d+%[）)]", "", name)
         items.append({"date": d.group(1), "weekday": d.group(2), "time": d.group(3).strip(),
                       "course": course, "title": title, "weight": w.group(1) if w else "",
+                      "place": field(line, "place"), "note": field(line, "note"),
                       "final": any(k.lower() in title.lower() for k in final_kws),
                       "tentative": "暂定" in line or "tentative" in line.lower(),
                       "pending": "待公告" in line or "to be announced" in line.lower()})

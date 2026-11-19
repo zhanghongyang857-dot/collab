@@ -123,7 +123,7 @@ def exam_events(items, cat):
         out.append({"date": it["date"], "end": it["date"], "start": f"{int(m.group(1)):02d}:{m.group(2)}" if m else "",
                     "endTime": "", "allDay": not text, "timeText": text,
                     "title": f"{it['course']} · {it['title']}" + (f"（{it['weight']}）" if it.get("weight") else ""),
-                    "important": bool(it.get("final")), "place": "", "note": "",
+                    "important": bool(it.get("final")), "place": it.get("place", ""), "note": it.get("note", ""),
                     "category": it["course"], "cat": cat(it["course"])[0], "catKey": cat(it["course"])[1],
                     "tentative": bool(it.get("tentative") or it.get("pending")), "exam": True, "source": "deadlines"})
     return out

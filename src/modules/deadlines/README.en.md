@@ -13,6 +13,12 @@ One Markdown file whose location is set in the config (the sample uses `deadline
 
 Only lines starting with `- **` and carrying a bold date in the text are read; writing "tentative" or "to be announced" shows the matching marker.
 
+A line may also carry `Place: …` and `Note: …` (the Chinese `地点：`, `备注：` work too). Each value runs to the next `；`, `;`, `。` or the end of the line, with bold marks removed. With the calendar module installed they show on the exam's detail line. For example:
+
+```
+- **Final exam (60%)**: **2026-11-20 (Fri) 09:00–11:00**. Place: **HALL C, seat 68**; Note: closed book.
+```
+
 ## Settings (the `deadlines` section of `config.json`)
 
 | Field | Meaning |
@@ -25,4 +31,4 @@ Only lines starting with `- **` and carrying a bold date in the text are read; w
 
 ## What it offers
 
-`provides: deadlines`: `[{date, weekday, time, course, title, weight, final, tentative, pending}]`, sorted by date.
+`provides: deadlines`: `[{date, weekday, time, course, title, weight, place, note, final, tentative, pending}]`, sorted by date; `place` and `note` are empty strings when not written.
